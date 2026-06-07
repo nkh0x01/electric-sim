@@ -1,0 +1,35 @@
+{
+  "identifier" : "E1EC0000-0000-0000-0000-000000000001",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : false,
+      "internalID" : "E1EC0000-0000-0000-0000-0000000000A1",
+      "localizations" : [
+        {
+          "description" : "3 ფაზის მოდული, ყველა დონე და რეკლამის გარეშე სწავლა.",
+          "displayName" : "ელექტრიკი Pro",
+          "locale" : "ka"
+        },
+        {
+          "description" : "Unlocks the three-phase module, all levels, and removes ads.",
+          "displayName" : "ElectricSim Pro",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "pro_unlock",
+      "referenceName" : "ElectricSim Pro Unlock",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "0",
+    "_developerTeamID" : "0"
+  },
+  "subscriptionGroups" : [],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

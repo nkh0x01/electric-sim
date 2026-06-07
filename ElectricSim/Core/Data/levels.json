@@ -1,0 +1,846 @@
+[
+  {
+    "id": "lvl_tutorial",
+    "index": 1,
+    "title": "გაკვეთილი 1 — პირველი ნათურა",
+    "brief": "დააკავშირე 1 ფაზიანი ხაზი: მთავარი ამომრთველი + ავტომატი B10 + 1 ნათურა. შეაერთე ფაზა (ყავისფერი), ნული (ლურჯი) და მიწა (ყვითელ-მწვანე).",
+    "hint": "კვებიდან: L → მთავარი ამომრთველი → ავტომატი B10 → ნათურის L. N → მთავარი ამომრთველი → ნათურის N. PE → ნათურის PE. გამოიყენე 1.5mm² კაბელი განათებაზე.",
+    "phase": "single",
+    "palette": [
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b10",
+        "max": 1,
+        "csaOptions": [
+          1.5,
+          2.5
+        ]
+      },
+      {
+        "templateId": "lamp_60",
+        "max": 1
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "lamp": 1
+      },
+      "description": "ნათურა უნდა აანთდეს, შეცდომებისა და გაგდების გარეშე."
+    }
+  },
+  {
+    "id": "lvl_socket_rcd",
+    "index": 2,
+    "title": "გაკვეთილი 2 — როზეტი RCD-ით",
+    "brief": "დააკავშირე როზეტის ხაზი. როზეტი ვალდებულია იყოს RCD-ის (30mA) ქვემოთ. გამოიყენე 2.5mm² კაბელი და ავტომატი B16.",
+    "hint": "L → მთავარი → RCD → ავტომატი B16 → როზეტი. N → მთავარი → RCD → როზეტი. PE პირდაპირ მიწის ზოლიდან როზეტამდე. RCD-ის გარეშე როზეტი დაუშვებელია.",
+    "phase": "single",
+    "palette": [
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "rcd_30",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 1,
+        "csaOptions": [
+          1.5,
+          2.5,
+          4
+        ]
+      },
+      {
+        "templateId": "socket_16",
+        "max": 1
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "socket": 1
+      },
+      "description": "როზეტი უნდა იკვებებოდეს RCD-ის დაცვით, ampacity-ს დაცვით."
+    }
+  },
+  {
+    "id": "lvl_full_board",
+    "index": 3,
+    "title": "გაკვეთილი 3 — სრული ფარი",
+    "brief": "ააწყვე სრული ფარი: მთავარი ამომრთველი, SPD, RCD, ორი ხაზი — განათება (B10) და როზეტი (B16). გამოიყენე სავარცხელი ზოლი ავტომატების კვებისთვის.",
+    "hint": "სტანდარტული თანმიმდევრობა: მთავარი → SPD → RCD → ავტომატები (busbar-ით) → ხაზები. განათება 1.5mm², როზეტი 2.5mm².",
+    "phase": "single",
+    "palette": [
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "spd",
+        "max": 1
+      },
+      {
+        "templateId": "rcd_30",
+        "max": 1
+      },
+      {
+        "templateId": "busbar_l",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b10",
+        "max": 1,
+        "csaOptions": [
+          1.5,
+          2.5
+        ]
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 1,
+        "csaOptions": [
+          2.5,
+          4
+        ]
+      },
+      {
+        "templateId": "lamp_60",
+        "max": 1
+      },
+      {
+        "templateId": "socket_16",
+        "max": 1
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "lamp": 1,
+        "socket": 1
+      },
+      "description": "ორივე ხაზი უნდა მუშაობდეს, RCD-ითა და სწორი კაბელებით."
+    }
+  },
+  {
+    "id": "lvl_fault_open",
+    "index": 4,
+    "title": "დეფექტი 1 — ნათურა არ ანათებს",
+    "brief": "ფარი აწყობილია, მაგრამ ნათურა არ ანათებს. იპოვე რა აკლია და დააკავშირე გამოტოვებული სადენი.",
+    "hint": "გამოიყენე მულტიმეტრი ან ფაზის ინდიკატორი. შეამოწმე — ფაზაც და ნულიც აღწევს თუ არა ნათურამდე? ნული (ლურჯი) აკლია მთავარი ამომრთველიდან ნათურამდე.",
+    "phase": "single",
+    "mode": "faultFind",
+    "palette": [],
+    "prebuilt": {
+      "components": [
+        {
+          "templateId": "supply_1ph",
+          "id": "supply"
+        },
+        {
+          "templateId": "main_2p",
+          "id": "main"
+        },
+        {
+          "templateId": "mcb_b10",
+          "id": "brk"
+        },
+        {
+          "templateId": "lamp_60",
+          "id": "lamp"
+        }
+      ],
+      "wires": [
+        {
+          "from": {
+            "c": "supply",
+            "p": "L"
+          },
+          "to": {
+            "c": "main",
+            "p": "Lin"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "brk",
+            "p": "in"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "N"
+          },
+          "to": {
+            "c": "main",
+            "p": "Nin"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "PE"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "PE"
+          },
+          "csa": 1.5,
+          "color": "yellowGreen"
+        }
+      ]
+    },
+    "goal": {
+      "poweredLoads": {
+        "lamp": 1
+      },
+      "description": "გამოტოვებული ნულის სადენის დამატების შემდეგ ნათურა აანთდება."
+    }
+  },
+  {
+    "id": "lvl_fault_short",
+    "index": 5,
+    "title": "დეფექტი 2 — ავტომატი მყისვე იგდება",
+    "brief": "ძაბვის ჩართვისთანავე ავტომატი მყისიერად იგდება. იპოვე მოკლე ჩართვა და მოაშორე ზედმეტი სადენი.",
+    "hint": "მაგნიტური (მყისიერი) გაგდება = მოკლე ჩართვა. მულტიმეტრით L–N აჩვენებს 0V-ს იქ, სადაც 230V უნდა იყოს. გახსენი „სადენების სია“ და წაშალე ფაზა-ნულის შემაერთებელი ზედმეტი სადენი.",
+    "phase": "single",
+    "mode": "faultFind",
+    "palette": [],
+    "prebuilt": {
+      "components": [
+        {
+          "templateId": "supply_1ph",
+          "id": "supply"
+        },
+        {
+          "templateId": "main_2p",
+          "id": "main"
+        },
+        {
+          "templateId": "mcb_b10",
+          "id": "brk"
+        },
+        {
+          "templateId": "lamp_60",
+          "id": "lamp"
+        }
+      ],
+      "wires": [
+        {
+          "from": {
+            "c": "supply",
+            "p": "L"
+          },
+          "to": {
+            "c": "main",
+            "p": "Lin"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "brk",
+            "p": "in"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "N"
+          },
+          "to": {
+            "c": "main",
+            "p": "Nin"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "N"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "PE"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "PE"
+          },
+          "csa": 1.5,
+          "color": "yellowGreen"
+        },
+        {
+          "from": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "N"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        }
+      ]
+    },
+    "goal": {
+      "poweredLoads": {
+        "lamp": 1
+      },
+      "description": "ზედმეტი (L–N) სადენის წაშლის შემდეგ ნათურა აანთდება გაგდების გარეშე."
+    }
+  },
+  {
+    "id": "lvl_fault_leakage",
+    "index": 6,
+    "title": "დეფექტი 3 — RCD ხშირად იგდება",
+    "brief": "ხაზი დაცულია RCD-ით, მაგრამ ძაბვის ჩართვისას RCD იგდება. როზეტში ჩართული მოწყობილობა დენს აჟონავს. შეცვალე გაუმართავი როზეტი ახლით.",
+    "hint": "RCD გაგდება = დენის გაჟონვა (>30mA). RCD სწორად მუშაობს — პრობლემა დატვირთვაშია. წაშალე გაუმართავი როზეტი (− ღილაკით) და დაამატე ახალი პალიტრიდან, შემდეგ დააკავშირე L, N და PE (2.5mm²).",
+    "phase": "single",
+    "mode": "faultFind",
+    "palette": [
+      {
+        "templateId": "socket_16",
+        "max": 1,
+        "csaOptions": [
+          2.5
+        ]
+      }
+    ],
+    "prebuilt": {
+      "components": [
+        {
+          "templateId": "supply_1ph",
+          "id": "supply"
+        },
+        {
+          "templateId": "main_2p",
+          "id": "main"
+        },
+        {
+          "templateId": "rcd_30",
+          "id": "rcd"
+        },
+        {
+          "templateId": "mcb_b16",
+          "id": "brk"
+        },
+        {
+          "templateId": "socket_16",
+          "id": "soc",
+          "leakageMa": 80
+        }
+      ],
+      "wires": [
+        {
+          "from": {
+            "c": "supply",
+            "p": "L"
+          },
+          "to": {
+            "c": "main",
+            "p": "Lin"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "rcd",
+            "p": "Lin"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "rcd",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "brk",
+            "p": "in"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "soc",
+            "p": "L"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "N"
+          },
+          "to": {
+            "c": "main",
+            "p": "Nin"
+          },
+          "csa": 2.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "rcd",
+            "p": "Nin"
+          },
+          "csa": 2.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "rcd",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "soc",
+            "p": "N"
+          },
+          "csa": 2.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "PE"
+          },
+          "to": {
+            "c": "soc",
+            "p": "PE"
+          },
+          "csa": 2.5,
+          "color": "yellowGreen"
+        }
+      ]
+    },
+    "goal": {
+      "poweredLoads": {
+        "socket": 1
+      },
+      "description": "გაუმართავი როზეტის გამოცვლის შემდეგ ხაზი მუშაობს RCD-ის გაგდების გარეშე."
+    }
+  },
+  {
+    "id": "lvl_three_phase",
+    "index": 7,
+    "title": "3 ფაზა — ფაზების განაწილება",
+    "brief": "სამფაზიანი ფარი: 4-პოლუსიანი მთავარი ამომრთველი და 3 ნათურა. გაანაწილე დატვირთვა — თითო ნათურა თითო ფაზაზე (L1/L2/L3), რომ ფაზები დაბალანსდეს.",
+    "hint": "L1 (ყავისფერი) → ნათურა 1, L2 (შავი) → ნათურა 2, L3 (ნაცრისფერი) → ნათურა 3. ნული საერთოა მთავარიდან. ყველა ნათურა ერთ ფაზაზე → დისბალანსი.",
+    "phase": "three",
+    "palette": [
+      {
+        "templateId": "main_4p",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 3,
+        "csaOptions": [
+          1.5,
+          2.5
+        ]
+      },
+      {
+        "templateId": "lamp_60",
+        "max": 3
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "lamp": 3
+      },
+      "description": "სამივე ნათურა უნდა აანთდეს და ფაზები დაბალანსებული იყოს.",
+      "requireBalanced": true
+    }
+  },
+  {
+    "id": "lvl_motor",
+    "index": 8,
+    "title": "3-ფაზიანი მოტორი",
+    "brief": "დააკავშირე 3-ფაზიანი მოტორი: 4-პოლუსიანი მთავარი, C-ტიპის ავტომატ(ებ)ი და მოტორი. სამივე ფაზა (L1/L2/L3) + მიწა (PE).",
+    "hint": "მოტორი ინდუქციურია — გამოიყენე C მახასიათებლის ავტომატი (C16). სამივე ფაზა უნდა მიუვიდეს მოტორს, PE სავალდებულოა. 2.5mm² კაბელი საკმარისია.",
+    "phase": "three",
+    "palette": [
+      {
+        "templateId": "main_4p",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_c16",
+        "max": 3,
+        "csaOptions": [
+          2.5,
+          4
+        ]
+      },
+      {
+        "templateId": "motor_3ph",
+        "max": 1
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "motor": 1
+      },
+      "description": "მოტორი უნდა ამუშავდეს სამივე ფაზაზე, C-ავტომატითა და მიწით."
+    }
+  },
+  {
+    "id": "lvl_sandbox_1ph",
+    "index": 90,
+    "title": "Sandbox — 1 ფაზა",
+    "brief": "თავისუფალი აწყობა შეზღუდვების გარეშე. ააწყვე ნებისმიერი ერთფაზიანი წრედი და ექსპერიმენტი ჩაატარე.",
+    "hint": "ყველა კომპონენტი ხელმისაწვდომია. მიზანი არ არის — უბრალოდ ისწავლე და სცადე.",
+    "phase": "single",
+    "mode": "sandbox",
+    "palette": [
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "spd",
+        "max": 1
+      },
+      {
+        "templateId": "rcd_30",
+        "max": 2
+      },
+      {
+        "templateId": "rcbo_b16_30",
+        "max": 2
+      },
+      {
+        "templateId": "busbar_l",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b10",
+        "max": 4,
+        "csaOptions": [
+          1.5,
+          2.5,
+          4,
+          6,
+          10
+        ]
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 4,
+        "csaOptions": [
+          1.5,
+          2.5,
+          4,
+          6,
+          10
+        ]
+      },
+      {
+        "templateId": "mcb_b20",
+        "max": 4,
+        "csaOptions": [
+          1.5,
+          2.5,
+          4,
+          6,
+          10
+        ]
+      },
+      {
+        "templateId": "mcb_c32",
+        "max": 4,
+        "csaOptions": [
+          1.5,
+          2.5,
+          4,
+          6,
+          10
+        ]
+      },
+      {
+        "templateId": "mcb_d20",
+        "max": 2,
+        "csaOptions": [
+          2.5,
+          4,
+          6,
+          10
+        ]
+      },
+      {
+        "templateId": "contactor_1p",
+        "max": 2
+      },
+      {
+        "templateId": "relay_1p",
+        "max": 2
+      },
+      {
+        "templateId": "light_switch",
+        "max": 3
+      },
+      {
+        "templateId": "wago_5",
+        "max": 3
+      },
+      {
+        "templateId": "lamp_60",
+        "max": 6
+      },
+      {
+        "templateId": "led_lamp",
+        "max": 6
+      },
+      {
+        "templateId": "led_panel",
+        "max": 4
+      },
+      {
+        "templateId": "led_strip",
+        "max": 4
+      },
+      {
+        "templateId": "dimmer_lamp",
+        "max": 3
+      },
+      {
+        "templateId": "socket_16",
+        "max": 6
+      },
+      {
+        "templateId": "boiler_2000",
+        "max": 2
+      },
+      {
+        "templateId": "oven_3500",
+        "max": 2
+      },
+      {
+        "templateId": "heater_2000",
+        "max": 2
+      },
+      {
+        "templateId": "ac_1500",
+        "max": 2
+      },
+      {
+        "templateId": "smart_switch",
+        "max": 3
+      },
+      {
+        "templateId": "smart_relay",
+        "max": 3
+      },
+      {
+        "templateId": "smart_dimmer",
+        "max": 3
+      },
+      {
+        "templateId": "smart_meter",
+        "max": 1
+      },
+      {
+        "templateId": "fuse_16",
+        "max": 2
+      },
+      {
+        "templateId": "terminal_block",
+        "max": 2
+      },
+      {
+        "templateId": "selector",
+        "max": 2
+      },
+      {
+        "templateId": "indicator",
+        "max": 2
+      },
+      {
+        "templateId": "ct",
+        "max": 2
+      },
+      {
+        "templateId": "solar",
+        "max": 2
+      },
+      {
+        "templateId": "ups",
+        "max": 2
+      },
+      {
+        "templateId": "inverter",
+        "max": 2
+      },
+      {
+        "templateId": "battery",
+        "max": 2
+      }
+    ],
+    "goal": {
+      "poweredLoads": {},
+      "description": "თავისუფალი რეჟიმი — მიზანი არ არის."
+    }
+  },
+  {
+    "id": "lvl_sandbox_3ph",
+    "index": 91,
+    "title": "Sandbox — 3 ფაზა",
+    "brief": "თავისუფალი აწყობა სამფაზიან ფარზე. ექსპერიმენტი ჩაატარე ფაზებით, ბალანსით და მოტორით.",
+    "hint": "ყველა სამფაზიანი კომპონენტი ხელმისაწვდომია. მიზანი არ არის.",
+    "phase": "three",
+    "mode": "sandbox",
+    "palette": [
+      {
+        "templateId": "main_4p",
+        "max": 1
+      },
+      {
+        "templateId": "busbar_l",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 6,
+        "csaOptions": [
+          1.5,
+          2.5,
+          4,
+          6,
+          10
+        ]
+      },
+      {
+        "templateId": "mcb_c16",
+        "max": 6,
+        "csaOptions": [
+          1.5,
+          2.5,
+          4,
+          6,
+          10
+        ]
+      },
+      {
+        "templateId": "mpcb_16",
+        "max": 2
+      },
+      {
+        "templateId": "contactor_3p",
+        "max": 2
+      },
+      {
+        "templateId": "lamp_60",
+        "max": 6
+      },
+      {
+        "templateId": "socket_16",
+        "max": 6
+      },
+      {
+        "templateId": "socket3ph_16",
+        "max": 2
+      },
+      {
+        "templateId": "motor_3ph",
+        "max": 2
+      },
+      {
+        "templateId": "smart_meter",
+        "max": 1
+      },
+      {
+        "templateId": "estop",
+        "max": 2
+      },
+      {
+        "templateId": "transformer",
+        "max": 2
+      },
+      {
+        "templateId": "vfd",
+        "max": 2
+      },
+      {
+        "templateId": "generator",
+        "max": 2
+      }
+    ],
+    "goal": {
+      "poweredLoads": {},
+      "description": "თავისუფალი რეჟიმი — მიზანი არ არის."
+    }
+  }
+]

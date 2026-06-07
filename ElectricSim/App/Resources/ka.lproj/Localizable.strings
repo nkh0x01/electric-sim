@@ -1,0 +1,43 @@
+/* ელექტრიკის სიმულატორი — ქართული (ნაგულისხმევი / source) */
+"app.title" = "ელექტრიკის სიმულატორი";
+"section.levels" = "დონეები";
+"section.tools" = "ხელსაწყოები";
+"section.myLevels" = "ჩემი დონეები";
+"action.check" = "შემოწმება";
+"action.powerOn" = "ჩართე ძაბვა";
+"action.close" = "დახურვა";
+"action.restore" = "შესყიდვების აღდგენა";
+"about.title" = "შესახებ";
+"result.title" = "შედეგი";
+"report.title" = "ანგარიში";
+"tab.graph" = "გრაფი";
+"tab.diagram" = "ნახაზი";
+"tab.advice" = "რჩევა";
+"tab.cost" = "ხარჯი";
+"pro.unlock" = "განბლოკე ელექტრიკი Pro";
+"pro.restore" = "შესყიდვების აღდგენა";
+"sponsor" = "სპონსორი: Tsili.ge";
+"creator" = "შექმნილია gadget.ge-ს მიერ";
+"achievements" = "მიღწევები";
+
+/* Paywall */
+"paywall_title" = "გახსენი Pro";
+"paywall_subtitle" = "ერთჯერადი გადახდა — გამოწერის გარეშე";
+"paywall_b1" = "ყველა დონე — 1 და 3 ფაზა";
+"paywall_b2" = "3-ფაზიანი ქსელები და დატვირთვის ბალანსი";
+"paywall_b3" = "დეფექტის ძებნა (fault-finding)";
+"paywall_b4" = "Sandbox — თავისუფალი აწყობა შეზღუდვების გარეშე";
+"paywall_b5" = "სრული კატალოგი: გენერატორი, მზე, UPS, VFD — 48 კომპონენტი";
+"paywall_buy" = "გახსენი Pro · %@";
+"paywall_restore" = "შენაძენის აღდგენა";
+"paywall_footer" = "ერთჯერადი გადახდა. გამოწერა არ არის.";
+"paywall_locked_badge" = "Pro";
+"paywall_restore_ok" = "Pro აღდგენილია";
+"paywall_restore_none" = "აღსადგენი შენაძენი ვერ მოიძებნა";
+
+/* Mechanics fixes */
+"next_level" = "შემდეგი დონე →";
+"back_to_menu" = "მენიუში დაბრუნება";
+"cable_type_solid" = "ხისტი";
+"cable_type_stranded" = "მრავალწვერა";
+"cable_section_label" = "კვეთა";

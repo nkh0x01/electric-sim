@@ -1,0 +1,43 @@
+/* Electricity Simulator — English */
+"app.title" = "Electricity Simulator";
+"section.levels" = "Levels";
+"section.tools" = "Tools";
+"section.myLevels" = "My Levels";
+"action.check" = "Check";
+"action.powerOn" = "Power On";
+"action.close" = "Close";
+"action.restore" = "Restore Purchases";
+"about.title" = "About";
+"result.title" = "Result";
+"report.title" = "Report";
+"tab.graph" = "Graph";
+"tab.diagram" = "Diagram";
+"tab.advice" = "Advice";
+"tab.cost" = "Cost";
+"pro.unlock" = "Unlock Electrician Pro";
+"pro.restore" = "Restore Purchases";
+"sponsor" = "Sponsor: Tsili.ge";
+"creator" = "Made by gadget.ge";
+"achievements" = "Achievements";
+
+/* Paywall */
+"paywall_title" = "Unlock Pro";
+"paywall_subtitle" = "One-time purchase — no subscription";
+"paywall_b1" = "All levels — single & three-phase";
+"paywall_b2" = "Three-phase networks and load balancing";
+"paywall_b3" = "Fault-finding";
+"paywall_b4" = "Sandbox — free building with no limits";
+"paywall_b5" = "Full catalog: generator, solar, UPS, VFD — 48 components";
+"paywall_buy" = "Unlock Pro · %@";
+"paywall_restore" = "Restore Purchases";
+"paywall_footer" = "One-time purchase. No subscription.";
+"paywall_locked_badge" = "Pro";
+"paywall_restore_ok" = "Pro restored";
+"paywall_restore_none" = "No purchases to restore";
+
+/* Mechanics fixes */
+"next_level" = "Next level →";
+"back_to_menu" = "Back to menu";
+"cable_type_solid" = "Solid";
+"cable_type_stranded" = "Stranded";
+"cable_section_label" = "Section";

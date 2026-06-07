@@ -1,0 +1,526 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		E1EC00000000000000000201 /* Domain.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000F1 /* Domain.swift */; };
+		E1EC00000000000000000202 /* UnionFind.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000F2 /* UnionFind.swift */; };
+		E1EC00000000000000000203 /* SimulationResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000F3 /* SimulationResult.swift */; };
+		E1EC00000000000000000204 /* CircuitSolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000F4 /* CircuitSolver.swift */; };
+		E1EC00000000000000000205 /* CircuitSolver+Analysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000F5 /* CircuitSolver+Analysis.swift */; };
+		E1EC00000000000000000206 /* Levels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000F6 /* Levels.swift */; };
+		E1EC00000000000000000207 /* ElectricSimApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000F7 /* ElectricSimApp.swift */; };
+		E1EC00000000000000000208 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000F8 /* GameState.swift */; };
+		E1EC00000000000000000209 /* Style.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000F9 /* Style.swift */; };
+		E1EC0000000000000000020A /* LevelListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000FA /* LevelListView.swift */; };
+		E1EC0000000000000000020B /* WorkbenchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000FB /* WorkbenchView.swift */; };
+		E1EC0000000000000000020C /* ResultPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000FC /* ResultPanelView.swift */; };
+		E1EC0000000000000000020D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000FD /* Assets.xcassets */; };
+		E1EC0000000000000000020E /* components.json in Resources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000FE /* components.json */; };
+		E1EC0000000000000000020F /* levels.json in Resources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000FF /* levels.json */; };
+		E1EC00000000000000000210 /* Monetization.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC00000000000000000110 /* Monetization.swift */; };
+		E1EC00000000000000000211 /* StoreViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC00000000000000000111 /* StoreViews.swift */; };
+		E1EC00000000000000000212 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = E1EC00000000000000000112 /* PrivacyInfo.xcprivacy */; };
+		E1EC00000000000000000213 /* Achievements.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC00000000000000000113 /* Achievements.swift */; };
+		E1EC00000000000000000214 /* LevelEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC00000000000000000114 /* LevelEditorView.swift */; };
+		E1EC00000000000000000220 /* ElectricSimUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC00000000000000000120 /* ElectricSimUITests.swift */; };
+		E1EC00000000000000000215 /* Reports.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC00000000000000000115 /* Reports.swift */; };
+		E1EC00000000000000000216 /* ReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC00000000000000000116 /* ReportsView.swift */; };
+		E1EC00000000000000000217 /* Recommender.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC00000000000000000117 /* Recommender.swift */; };
+		E1EC00000000000000000218 /* Engineering.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC00000000000000000118 /* Engineering.swift */; };
+		E1EC00000000000000000219 /* GameCenterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC00000000000000000119 /* GameCenterManager.swift */; };
+		E1EC0000000000000000021B /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = E1EC0000000000000000031A /* Localizable.strings */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		E1EC000000000000000000F1 /* Domain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Domain.swift; sourceTree = "<group>"; };
+		E1EC000000000000000000F2 /* UnionFind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnionFind.swift; sourceTree = "<group>"; };
+		E1EC000000000000000000F3 /* SimulationResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulationResult.swift; sourceTree = "<group>"; };
+		E1EC000000000000000000F4 /* CircuitSolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircuitSolver.swift; sourceTree = "<group>"; };
+		E1EC000000000000000000F5 /* CircuitSolver+Analysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CircuitSolver+Analysis.swift"; sourceTree = "<group>"; };
+		E1EC000000000000000000F6 /* Levels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Levels.swift; sourceTree = "<group>"; };
+		E1EC000000000000000000F7 /* ElectricSimApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ElectricSimApp.swift; sourceTree = "<group>"; };
+		E1EC000000000000000000F8 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
+		E1EC000000000000000000F9 /* Style.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Style.swift; sourceTree = "<group>"; };
+		E1EC000000000000000000FA /* LevelListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelListView.swift; sourceTree = "<group>"; };
+		E1EC000000000000000000FB /* WorkbenchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkbenchView.swift; sourceTree = "<group>"; };
+		E1EC000000000000000000FC /* ResultPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultPanelView.swift; sourceTree = "<group>"; };
+		E1EC000000000000000000FD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E1EC000000000000000000FE /* components.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = components.json; sourceTree = "<group>"; };
+		E1EC000000000000000000FF /* levels.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = levels.json; sourceTree = "<group>"; };
+		E1EC00000000000000000100 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		E1EC00000000000000000110 /* Monetization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Monetization.swift; sourceTree = "<group>"; };
+		E1EC00000000000000000111 /* StoreViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreViews.swift; sourceTree = "<group>"; };
+		E1EC00000000000000000112 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		E1EC00000000000000000113 /* Achievements.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Achievements.swift; sourceTree = "<group>"; };
+		E1EC00000000000000000114 /* LevelEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelEditorView.swift; sourceTree = "<group>"; };
+		E1EC00000000000000000115 /* Reports.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reports.swift; sourceTree = "<group>"; };
+		E1EC00000000000000000116 /* ReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsView.swift; sourceTree = "<group>"; };
+		E1EC00000000000000000117 /* Recommender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Recommender.swift; sourceTree = "<group>"; };
+		E1EC00000000000000000118 /* Engineering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Engineering.swift; sourceTree = "<group>"; };
+		E1EC00000000000000000119 /* GameCenterManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenterManager.swift; sourceTree = "<group>"; };
+		E1EC0000000000000000011A /* ElectricSim.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ElectricSim.entitlements; sourceTree = "<group>"; };
+		E1EC0000000000000000011B /* ka */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ka; path = ka.lproj/Localizable.strings; sourceTree = "<group>"; };
+		E1EC0000000000000000011C /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		E1EC0000000000000000011D /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
+		E1EC00000000000000000101 /* ElectricSim.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ElectricSim.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E1EC00000000000000000120 /* ElectricSimUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ElectricSimUITests.swift; sourceTree = "<group>"; };
+		E1EC00000000000000000121 /* ElectricSimUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ElectricSimUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		E1EC0000000000000000040A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E1EC00000000000000000507 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		E1EC00000000000000000300 = {
+			isa = PBXGroup;
+			children = (
+				E1EC00000000000000000301 /* ElectricSim */,
+				E1EC00000000000000000320 /* ElectricSimUITests */,
+				E1EC00000000000000000306 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		E1EC00000000000000000320 /* ElectricSimUITests */ = {
+			isa = PBXGroup;
+			children = (
+				E1EC00000000000000000120 /* ElectricSimUITests.swift */,
+			);
+			path = ElectricSimUITests;
+			sourceTree = "<group>";
+		};
+		E1EC00000000000000000301 /* ElectricSim */ = {
+			isa = PBXGroup;
+			children = (
+				E1EC00000000000000000302 /* Core */,
+				E1EC00000000000000000304 /* App */,
+			);
+			path = ElectricSim;
+			sourceTree = "<group>";
+		};
+		E1EC00000000000000000302 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				E1EC000000000000000000F1 /* Domain.swift */,
+				E1EC000000000000000000F2 /* UnionFind.swift */,
+				E1EC000000000000000000F3 /* SimulationResult.swift */,
+				E1EC000000000000000000F4 /* CircuitSolver.swift */,
+				E1EC000000000000000000F5 /* CircuitSolver+Analysis.swift */,
+				E1EC000000000000000000F6 /* Levels.swift */,
+				E1EC00000000000000000115 /* Reports.swift */,
+				E1EC00000000000000000117 /* Recommender.swift */,
+				E1EC00000000000000000118 /* Engineering.swift */,
+				E1EC00000000000000000303 /* Data */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		E1EC00000000000000000303 /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				E1EC000000000000000000FE /* components.json */,
+				E1EC000000000000000000FF /* levels.json */,
+			);
+			path = Data;
+			sourceTree = "<group>";
+		};
+		E1EC00000000000000000304 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				E1EC000000000000000000F7 /* ElectricSimApp.swift */,
+				E1EC000000000000000000F8 /* GameState.swift */,
+				E1EC000000000000000000F9 /* Style.swift */,
+				E1EC00000000000000000110 /* Monetization.swift */,
+				E1EC00000000000000000113 /* Achievements.swift */,
+				E1EC00000000000000000119 /* GameCenterManager.swift */,
+				E1EC00000000000000000305 /* Views */,
+				E1EC000000000000000000FD /* Assets.xcassets */,
+				E1EC00000000000000000307 /* Resources */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		E1EC00000000000000000305 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				E1EC000000000000000000FA /* LevelListView.swift */,
+				E1EC000000000000000000FB /* WorkbenchView.swift */,
+				E1EC000000000000000000FC /* ResultPanelView.swift */,
+				E1EC00000000000000000111 /* StoreViews.swift */,
+				E1EC00000000000000000114 /* LevelEditorView.swift */,
+				E1EC00000000000000000116 /* ReportsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		E1EC00000000000000000307 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				E1EC00000000000000000100 /* Info.plist */,
+				E1EC00000000000000000112 /* PrivacyInfo.xcprivacy */,
+				E1EC0000000000000000011A /* ElectricSim.entitlements */,
+				E1EC0000000000000000031A /* Localizable.strings */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		E1EC00000000000000000306 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E1EC00000000000000000101 /* ElectricSim.app */,
+				E1EC00000000000000000121 /* ElectricSimUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXVariantGroup section */
+		E1EC0000000000000000031A /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				E1EC0000000000000000011B /* ka */,
+				E1EC0000000000000000011C /* en */,
+				E1EC0000000000000000011D /* ru */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin PBXNativeTarget section */
+		E1EC00000000000000000400 /* ElectricSim */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E1EC00000000000000000403 /* Build configuration list for PBXNativeTarget "ElectricSim" */;
+			buildPhases = (
+				E1EC00000000000000000408 /* Sources */,
+				E1EC0000000000000000040A /* Frameworks */,
+				E1EC00000000000000000409 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ElectricSim;
+			productName = ElectricSim;
+			productReference = E1EC00000000000000000101 /* ElectricSim.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E1EC00000000000000000500 /* ElectricSimUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E1EC00000000000000000502 /* Build configuration list for PBXNativeTarget "ElectricSimUITests" */;
+			buildPhases = (
+				E1EC00000000000000000501 /* Sources */,
+				E1EC00000000000000000507 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E1EC00000000000000000505 /* PBXTargetDependency */,
+			);
+			name = ElectricSimUITests;
+			productName = ElectricSimUITests;
+			productReference = E1EC00000000000000000121 /* ElectricSimUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E1EC00000000000000000401 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					E1EC00000000000000000400 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					E1EC00000000000000000500 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = E1EC00000000000000000400;
+					};
+				};
+			};
+			buildConfigurationList = E1EC00000000000000000402 /* Build configuration list for PBXProject "ElectricSim" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = ka;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				ka,
+				en,
+				ru,
+				Base,
+			);
+			mainGroup = E1EC00000000000000000300;
+			productRefGroup = E1EC00000000000000000306 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E1EC00000000000000000400 /* ElectricSim */,
+				E1EC00000000000000000500 /* ElectricSimUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E1EC00000000000000000409 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E1EC0000000000000000020D /* Assets.xcassets in Resources */,
+				E1EC0000000000000000020E /* components.json in Resources */,
+				E1EC0000000000000000020F /* levels.json in Resources */,
+				E1EC0000000000000000021B /* Localizable.strings in Resources */,
+				E1EC00000000000000000212 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E1EC00000000000000000408 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E1EC00000000000000000201 /* Domain.swift in Sources */,
+				E1EC00000000000000000202 /* UnionFind.swift in Sources */,
+				E1EC00000000000000000203 /* SimulationResult.swift in Sources */,
+				E1EC00000000000000000204 /* CircuitSolver.swift in Sources */,
+				E1EC00000000000000000205 /* CircuitSolver+Analysis.swift in Sources */,
+				E1EC00000000000000000206 /* Levels.swift in Sources */,
+				E1EC00000000000000000207 /* ElectricSimApp.swift in Sources */,
+				E1EC00000000000000000208 /* GameState.swift in Sources */,
+				E1EC00000000000000000209 /* Style.swift in Sources */,
+				E1EC0000000000000000020A /* LevelListView.swift in Sources */,
+				E1EC0000000000000000020B /* WorkbenchView.swift in Sources */,
+				E1EC0000000000000000020C /* ResultPanelView.swift in Sources */,
+				E1EC00000000000000000210 /* Monetization.swift in Sources */,
+				E1EC00000000000000000211 /* StoreViews.swift in Sources */,
+				E1EC00000000000000000213 /* Achievements.swift in Sources */,
+				E1EC00000000000000000214 /* LevelEditorView.swift in Sources */,
+				E1EC00000000000000000215 /* Reports.swift in Sources */,
+				E1EC00000000000000000216 /* ReportsView.swift in Sources */,
+				E1EC00000000000000000217 /* Recommender.swift in Sources */,
+				E1EC00000000000000000218 /* Engineering.swift in Sources */,
+				E1EC00000000000000000219 /* GameCenterManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E1EC00000000000000000501 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E1EC00000000000000000220 /* ElectricSimUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		E1EC00000000000000000505 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E1EC00000000000000000400 /* ElectricSim */;
+			targetProxy = E1EC00000000000000000506 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXContainerItemProxy section */
+		E1EC00000000000000000506 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E1EC00000000000000000401 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E1EC00000000000000000400;
+			remoteInfo = ElectricSim;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin XCBuildConfiguration section */
+		E1EC00000000000000000404 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		E1EC00000000000000000405 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SDKROOT = iphoneos;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		E1EC00000000000000000406 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ElectricSim/App/Resources/ElectricSim.entitlements;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ElectricSim/App/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ge.gadget.electricsim;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		E1EC00000000000000000407 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ElectricSim/App/Resources/ElectricSim.entitlements;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ElectricSim/App/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ge.gadget.electricsim;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		E1EC00000000000000000503 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ge.gadget.electricsim.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ElectricSim;
+			};
+			name = Debug;
+		};
+		E1EC00000000000000000504 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ge.gadget.electricsim.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ElectricSim;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		E1EC00000000000000000402 /* Build configuration list for PBXProject "ElectricSim" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E1EC00000000000000000404 /* Debug */,
+				E1EC00000000000000000405 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E1EC00000000000000000403 /* Build configuration list for PBXNativeTarget "ElectricSim" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E1EC00000000000000000406 /* Debug */,
+				E1EC00000000000000000407 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E1EC00000000000000000502 /* Build configuration list for PBXNativeTarget "ElectricSimUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E1EC00000000000000000503 /* Debug */,
+				E1EC00000000000000000504 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = E1EC00000000000000000401 /* Project object */;
+}

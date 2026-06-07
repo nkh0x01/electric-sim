@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "comp_smartRelay.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

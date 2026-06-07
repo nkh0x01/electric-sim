@@ -1,0 +1,43 @@
+/* Симулятор электрика — Русский (TODO: перевод) */
+"app.title" = "TODO";
+"section.levels" = "TODO";
+"section.tools" = "TODO";
+"section.myLevels" = "TODO";
+"action.check" = "TODO";
+"action.powerOn" = "TODO";
+"action.close" = "TODO";
+"action.restore" = "TODO";
+"about.title" = "TODO";
+"result.title" = "TODO";
+"report.title" = "TODO";
+"tab.graph" = "TODO";
+"tab.diagram" = "TODO";
+"tab.advice" = "TODO";
+"tab.cost" = "TODO";
+"pro.unlock" = "TODO";
+"pro.restore" = "TODO";
+"sponsor" = "TODO";
+"creator" = "TODO";
+"achievements" = "TODO";
+
+/* Paywall (TODO) */
+"paywall_title" = "TODO";
+"paywall_subtitle" = "TODO";
+"paywall_b1" = "TODO";
+"paywall_b2" = "TODO";
+"paywall_b3" = "TODO";
+"paywall_b4" = "TODO";
+"paywall_b5" = "TODO";
+"paywall_buy" = "TODO %@";
+"paywall_restore" = "TODO";
+"paywall_footer" = "TODO";
+"paywall_locked_badge" = "Pro";
+"paywall_restore_ok" = "TODO";
+"paywall_restore_none" = "TODO";
+
+/* Mechanics fixes (TODO) */
+"next_level" = "TODO";
+"back_to_menu" = "TODO";
+"cable_type_solid" = "TODO";
+"cable_type_stranded" = "TODO";
+"cable_section_label" = "TODO";

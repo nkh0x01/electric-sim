@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "comp_terminalBlock.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

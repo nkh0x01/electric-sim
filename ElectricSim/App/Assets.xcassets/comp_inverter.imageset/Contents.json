@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "comp_inverter.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "comp_battery.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
