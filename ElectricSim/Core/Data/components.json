@@ -2,19 +2,22 @@
   {
     "id": "supply_1ph",
     "kind": "supply",
-    "name": "შემომავალი კვება 230V (TN-C-S)"
+    "name": "შემომავალი კვება 230V (TN-C-S)",
+    "category": "supply"
   },
   {
     "id": "main_2p",
     "kind": "mainSwitch",
     "name": "მთავარი ამომრთველი 2P",
-    "priceGEL": 25
+    "priceGEL": 25,
+    "category": "supply"
   },
   {
     "id": "spd",
     "kind": "spd",
     "name": "ზეძაბვის დამცავი (SPD)",
-    "priceGEL": 60
+    "priceGEL": 60,
+    "category": "protection"
   },
   {
     "id": "rcd_30",
@@ -22,7 +25,8 @@
     "name": "დიფ. დამცავი (RCD) 40A 30mA",
     "ratingA": 40,
     "mAtrip": 30,
-    "priceGEL": 55
+    "priceGEL": 55,
+    "category": "protection"
   },
   {
     "id": "rcbo_b16_30",
@@ -31,7 +35,8 @@
     "ratingA": 16,
     "curve": "B",
     "mAtrip": 30,
-    "priceGEL": 45
+    "priceGEL": 45,
+    "category": "protection"
   },
   {
     "id": "mcb_b10",
@@ -39,7 +44,8 @@
     "name": "ავტომატი (MCB) B10 — განათება",
     "ratingA": 10,
     "curve": "B",
-    "priceGEL": 12
+    "priceGEL": 12,
+    "category": "protection"
   },
   {
     "id": "mcb_b16",
@@ -47,7 +53,8 @@
     "name": "ავტომატი (MCB) B16 — როზეტი",
     "ratingA": 16,
     "curve": "B",
-    "priceGEL": 12
+    "priceGEL": 12,
+    "category": "protection"
   },
   {
     "id": "mcb_b20",
@@ -55,7 +62,8 @@
     "name": "ავტომატი (MCB) B20",
     "ratingA": 20,
     "curve": "B",
-    "priceGEL": 13
+    "priceGEL": 13,
+    "category": "protection"
   },
   {
     "id": "mcb_c32",
@@ -63,14 +71,16 @@
     "name": "ავტომატი (MCB) C32 — ბოილერი",
     "ratingA": 32,
     "curve": "C",
-    "priceGEL": 16
+    "priceGEL": 16,
+    "category": "protection"
   },
   {
     "id": "busbar_l",
     "kind": "busbar",
     "name": "შინა (busbar)",
     "poles": 6,
-    "priceGEL": 8
+    "priceGEL": 8,
+    "category": "auxiliary"
   },
   {
     "id": "lamp_60",
@@ -78,7 +88,8 @@
     "name": "ნათურა 60W",
     "powerW": 60,
     "requiresPE": true,
-    "priceGEL": 15
+    "priceGEL": 15,
+    "category": "load"
   },
   {
     "id": "socket_16",
@@ -86,13 +97,15 @@
     "name": "როზეტი 16A",
     "powerW": 2300,
     "requiresPE": true,
-    "priceGEL": 12
+    "priceGEL": 12,
+    "category": "load"
   },
   {
     "id": "main_4p",
     "kind": "mainSwitch",
     "name": "მთავარი ამომრთველი 4P",
-    "priceGEL": 40
+    "priceGEL": 40,
+    "category": "supply"
   },
   {
     "id": "mcb_c16",
@@ -100,7 +113,8 @@
     "name": "ავტომატი (MCB) C16 — ძრავა",
     "ratingA": 16,
     "curve": "C",
-    "priceGEL": 14
+    "priceGEL": 14,
+    "category": "protection"
   },
   {
     "id": "motor_3ph",
@@ -108,7 +122,8 @@
     "name": "ძრავა (3-ფაზიანი) 4kW",
     "powerW": 4000,
     "requiresPE": true,
-    "priceGEL": 800
+    "priceGEL": 800,
+    "category": "load"
   },
   {
     "id": "mcb_d20",
@@ -116,7 +131,8 @@
     "name": "ავტომატი (MCB) D20 — ძრავა/ტრანსფ.",
     "ratingA": 20,
     "curve": "D",
-    "priceGEL": 18
+    "priceGEL": 18,
+    "category": "protection"
   },
   {
     "id": "mpcb_16",
@@ -125,42 +141,48 @@
     "ratingA": 16,
     "curve": "D",
     "poles": 3,
-    "priceGEL": 70
+    "priceGEL": 70,
+    "category": "protection"
   },
   {
     "id": "contactor_1p",
     "kind": "contactor",
     "name": "კონტაქტორი 1P",
     "poles": 1,
-    "priceGEL": 30
+    "priceGEL": 30,
+    "category": "control"
   },
   {
     "id": "contactor_3p",
     "kind": "contactor",
     "name": "კონტაქტორი 3P",
     "poles": 3,
-    "priceGEL": 45
+    "priceGEL": 45,
+    "category": "control"
   },
   {
     "id": "relay_1p",
     "kind": "relay",
     "name": "რელე",
     "poles": 1,
-    "priceGEL": 10
+    "priceGEL": 10,
+    "category": "control"
   },
   {
     "id": "light_switch",
     "kind": "lightSwitch",
     "name": "გამთიშველი",
     "poles": 1,
-    "priceGEL": 8
+    "priceGEL": 8,
+    "category": "control"
   },
   {
     "id": "wago_5",
     "kind": "wago",
     "name": "კლემა (Wago) 5",
     "poles": 5,
-    "priceGEL": 6
+    "priceGEL": 6,
+    "category": "auxiliary"
   },
   {
     "id": "boiler_2000",
@@ -168,7 +190,8 @@
     "name": "ბოილერი 2kW",
     "powerW": 2000,
     "requiresPE": true,
-    "priceGEL": 350
+    "priceGEL": 350,
+    "category": "load"
   },
   {
     "id": "oven_3500",
@@ -176,7 +199,8 @@
     "name": "ღუმელი 3.5kW",
     "powerW": 3500,
     "requiresPE": true,
-    "priceGEL": 600
+    "priceGEL": 600,
+    "category": "load"
   },
   {
     "id": "heater_2000",
@@ -184,7 +208,8 @@
     "name": "გამახურებელი 2kW",
     "powerW": 2000,
     "requiresPE": true,
-    "priceGEL": 120
+    "priceGEL": 120,
+    "category": "load"
   },
   {
     "id": "ac_1500",
@@ -192,7 +217,8 @@
     "name": "კონდიციონერი 1.5kW",
     "powerW": 1500,
     "requiresPE": true,
-    "priceGEL": 900
+    "priceGEL": 900,
+    "category": "load"
   },
   {
     "id": "dimmer_lamp",
@@ -200,7 +226,8 @@
     "name": "დიმერით განათება",
     "powerW": 100,
     "requiresPE": true,
-    "priceGEL": 25
+    "priceGEL": 25,
+    "category": "load"
   },
   {
     "id": "socket3ph_16",
@@ -208,35 +235,40 @@
     "name": "3-ფაზიანი როზეტი 16A",
     "powerW": 6000,
     "requiresPE": true,
-    "priceGEL": 25
+    "priceGEL": 25,
+    "category": "load"
   },
   {
     "id": "smart_switch",
     "kind": "smartSwitch",
     "name": "ჭკვიანი ამომრთველი",
     "poles": 1,
-    "priceGEL": 45
+    "priceGEL": 45,
+    "category": "control"
   },
   {
     "id": "smart_relay",
     "kind": "smartRelay",
     "name": "ჭკვიანი რელე",
     "poles": 1,
-    "priceGEL": 45
+    "priceGEL": 45,
+    "category": "control"
   },
   {
     "id": "smart_dimmer",
     "kind": "smartDimmer",
     "name": "ჭკვიანი დიმერი",
     "poles": 1,
-    "priceGEL": 48
+    "priceGEL": 48,
+    "category": "control"
   },
   {
     "id": "smart_meter",
     "kind": "smartMeter",
     "name": "ჭკვიანი მრიცხველი",
     "poles": 1,
-    "priceGEL": 90
+    "priceGEL": 90,
+    "category": "control"
   },
   {
     "id": "led_lamp",
@@ -244,7 +276,8 @@
     "name": "ნათურა LED 9W",
     "powerW": 9,
     "requiresPE": false,
-    "priceGEL": 8
+    "priceGEL": 8,
+    "category": "load"
   },
   {
     "id": "led_panel",
@@ -252,7 +285,8 @@
     "name": "პანელი LED 36W",
     "powerW": 36,
     "requiresPE": true,
-    "priceGEL": 30
+    "priceGEL": 30,
+    "category": "load"
   },
   {
     "id": "led_strip",
@@ -260,7 +294,8 @@
     "name": "ლენტი LED 18W",
     "powerW": 18,
     "requiresPE": false,
-    "priceGEL": 20
+    "priceGEL": 20,
+    "category": "load"
   },
   {
     "id": "fuse_16",
@@ -268,28 +303,32 @@
     "name": "დამცველი 16A",
     "ratingA": 16,
     "poles": 1,
-    "priceGEL": 6
+    "priceGEL": 6,
+    "category": "protection"
   },
   {
     "id": "terminal_block",
     "kind": "terminalBlock",
     "name": "კლემების ბლოკი",
     "poles": 6,
-    "priceGEL": 5
+    "priceGEL": 5,
+    "category": "auxiliary"
   },
   {
     "id": "estop",
     "kind": "emergencyStop",
     "name": "ავარიული გაჩერება",
     "poles": 3,
-    "priceGEL": 22
+    "priceGEL": 22,
+    "category": "auxiliary"
   },
   {
     "id": "selector",
     "kind": "selectorSwitch",
     "name": "გადამრთველი",
     "poles": 1,
-    "priceGEL": 18
+    "priceGEL": 18,
+    "category": "control"
   },
   {
     "id": "indicator",
@@ -297,57 +336,66 @@
     "name": "სასიგნალო ნათურა",
     "powerW": 2,
     "requiresPE": false,
-    "priceGEL": 6
+    "priceGEL": 6,
+    "category": "auxiliary"
   },
   {
     "id": "ct",
     "kind": "currentTransformer",
     "name": "დენის ტრანსფორმატორი (CT)",
     "poles": 1,
-    "priceGEL": 25
+    "priceGEL": 25,
+    "category": "protection"
   },
   {
     "id": "transformer",
     "kind": "transformer",
     "name": "ტრანსფორმატორი",
     "poles": 3,
-    "priceGEL": 400
+    "priceGEL": 400,
+    "category": "supply"
   },
   {
     "id": "vfd",
     "kind": "vfd",
     "name": "სიხშირის გარდამქმნელი (VFD)",
     "poles": 3,
-    "priceGEL": 650
+    "priceGEL": 650,
+    "category": "control"
   },
   {
     "id": "generator",
     "kind": "generator",
     "name": "გენერატორი (3-ფაზა)",
-    "priceGEL": 3500
+    "priceGEL": 3500,
+    "category": "supply"
   },
   {
     "id": "solar",
     "kind": "solarPanel",
     "name": "მზის პანელი",
-    "priceGEL": 250
+    "priceGEL": 250,
+    "category": "supply"
   },
   {
     "id": "ups",
     "kind": "ups",
     "name": "უწყვეტი კვება (UPS)",
-    "priceGEL": 700
+    "priceGEL": 700,
+    "category": "supply"
   },
   {
     "id": "inverter",
     "kind": "inverter",
     "name": "ინვერტორი",
-    "priceGEL": 900
+    "priceGEL": 900,
+    "category": "supply"
   },
   {
     "id": "battery",
     "kind": "battery",
     "name": "აკუმულატორი",
-    "priceGEL": 500
+    "priceGEL": 500,
+    "category": "supply"
   }
 ]

@@ -9,6 +9,52 @@ import Foundation
 
 // MARK: - Component template (components.json)
 
+/// კომპონენტის პალიტრის კატეგორია (UI-ში დასაჯგუფებლად). data-driven (components.json).
+public enum ComponentCategory: String, Codable, Sendable, CaseIterable {
+    case protection   // დამცავები
+    case supply       // კვება/წყარო
+    case load         // დატვირთვა
+    case control      // მართვა/ჭკვიანი
+    case auxiliary    // დამხმარე
+
+    public var georgian: String {
+        switch self {
+        case .protection: return "დამცავები"
+        case .supply:     return "კვება/წყარო"
+        case .load:       return "დატვირთვა"
+        case .control:    return "მართვა/ჭკვიანი"
+        case .auxiliary:  return "დამხმარე"
+        }
+    }
+
+    public var order: Int {
+        switch self {
+        case .protection: return 0
+        case .supply:     return 1
+        case .load:       return 2
+        case .control:    return 3
+        case .auxiliary:  return 4
+        }
+    }
+
+    /// ნაგულისხმევი კატეგორია kind-იდან (თუ JSON-ში არ არის მითითებული).
+    public static func forKind(_ kind: ComponentKind) -> ComponentCategory {
+        switch kind {
+        case .mcb, .rcd, .rcbo, .spd, .mpcb, .fuse, .currentTransformer:
+            return .protection
+        case .supply, .mainSwitch, .generator, .solarPanel, .ups, .inverter, .battery, .transformer:
+            return .supply
+        case .lamp, .dimmer, .socket, .boiler, .oven, .heater, .airConditioner, .motor, .socket3ph:
+            return .load
+        case .contactor, .relay, .lightSwitch, .selectorSwitch,
+             .smartSwitch, .smartRelay, .smartDimmer, .smartMeter, .vfd:
+            return .control
+        case .busbar, .wago, .terminalBlock, .emergencyStop, .indicatorLight:
+            return .auxiliary
+        }
+    }
+}
+
 public struct ComponentTemplate: Codable, Identifiable, Sendable {
     public let id: String
     public let kind: ComponentKind
@@ -22,6 +68,10 @@ public struct ComponentTemplate: Codable, Identifiable, Sendable {
     public var leakageMa: Double?
     public var faultShortToN: Bool?
     public var priceGEL: Double?
+    public var category: ComponentCategory?
+
+    /// გადაჭრილი პალიტრის კატეგორია (explicit ან kind-იდან).
+    public var resolvedCategory: ComponentCategory { category ?? ComponentCategory.forKind(kind) }
 
     /// შაბლონიდან კონკრეტული კომპონენტის შექმნა უნიკალური id-ით.
     public func makeComponent(instanceID: String, phase: Phase = .single) -> Component {

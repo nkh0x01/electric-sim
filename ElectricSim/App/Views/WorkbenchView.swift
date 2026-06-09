@@ -342,6 +342,55 @@ struct WorkbenchView: View {
         guard !store.isPro else { return false }
         return !ComponentGating.isPaletteEntryAvailableForFree(e, templates: model.templates)
     }
+
+    // MARK: პალიტრის დაჯგუფება კატეგორიებად
+    private func paletteCategory(_ e: PaletteEntry) -> ComponentCategory {
+        model.templates[e.templateId]?.resolvedCategory ?? .auxiliary
+    }
+    /// დონის პალიტრაში წარმოდგენილი კატეგორიები, რიგით.
+    private var paletteCategories: [ComponentCategory] {
+        var seen: [ComponentCategory] = []
+        for e in model.level.palette {
+            let c = paletteCategory(e)
+            if !seen.contains(c) { seen.append(c) }
+        }
+        return seen.sorted { $0.order < $1.order }
+    }
+    private func paletteEntries(in category: ComponentCategory) -> [PaletteEntry] {
+        model.level.palette.filter { paletteCategory($0) == category }
+    }
+
+    @ViewBuilder
+    private func paletteCard(_ e: PaletteEntry) -> some View {
+        let t = model.templates[e.templateId]
+        let locked = isPaletteLocked(e)
+        Button {
+            if locked { showPaywall = true } else { model.add(e) }
+        } label: {
+            VStack(spacing: 2) {
+                Image(systemName: locked ? "lock.fill" : (t?.kind ?? .mcb).sfSymbol)
+                Text(t?.name ?? e.templateId).font(.caption2).lineLimit(1)
+                if locked {
+                    Text("paywall_locked_badge")
+                        .font(.system(size: 9, weight: .heavy))
+                        .padding(.horizontal, 5).padding(.vertical, 1)
+                        .background(Color.brand, in: Capsule())
+                        .foregroundStyle(.white)
+                } else {
+                    Text("\(model.placed(e.templateId))/\(e.max)")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+            .padding(8)
+            .frame(width: 96)
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
+        .disabled(!locked && !model.canAdd(e))
+        .opacity(locked ? 0.85 : (model.canAdd(e) ? 1 : 0.4))
+    }
+
     @State private var zoom: CGFloat = 1.0
     @GestureState private var pinch: CGFloat = 1.0
     @State private var pan: CGSize = .zero
@@ -689,37 +738,21 @@ struct WorkbenchView: View {
 
             Text(model.tool.hint).font(.caption2).foregroundStyle(.secondary)
 
-            // კომპონენტების პალიტრა (უფასოში — მხოლოდ ბაზისური ნაკრები)
+            // კომპონენტების პალიტრა — დაჯგუფებული კატეგორიებად (data-driven)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(model.level.palette) { e in
-                        let t = model.templates[e.templateId]
-                        let locked = isPaletteLocked(e)
-                        Button {
-                            if locked { showPaywall = true } else { model.add(e) }
-                        } label: {
-                            VStack(spacing: 2) {
-                                Image(systemName: locked ? "lock.fill" : (t?.kind ?? .mcb).sfSymbol)
-                                Text(t?.name ?? e.templateId).font(.caption2).lineLimit(1)
-                                if locked {
-                                    Text("paywall_locked_badge")
-                                        .font(.system(size: 9, weight: .heavy))
-                                        .padding(.horizontal, 5).padding(.vertical, 1)
-                                        .background(Color.brand, in: Capsule())
-                                        .foregroundStyle(.white)
-                                } else {
-                                    Text("\(model.placed(e.templateId))/\(e.max)")
-                                        .font(.caption2).foregroundStyle(.secondary)
-                                }
+                HStack(alignment: .top, spacing: 16) {
+                    ForEach(paletteCategories, id: \.self) { cat in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(cat.georgian)
+                                .font(.caption2.bold()).foregroundStyle(.secondary)
+                                .padding(.leading, 2)
+                            HStack(spacing: 8) {
+                                ForEach(paletteEntries(in: cat)) { e in paletteCard(e) }
                             }
-                            .padding(8)
-                            .frame(width: 96)
-                            .background(Color(.secondarySystemBackground))
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
-                        .buttonStyle(.plain)
-                        .disabled(!locked && !model.canAdd(e))
-                        .opacity(locked ? 0.85 : (model.canAdd(e) ? 1 : 0.4))
+                        if cat != paletteCategories.last {
+                            Divider().frame(height: 78)
+                        }
                     }
                 }.padding(.horizontal)
             }
