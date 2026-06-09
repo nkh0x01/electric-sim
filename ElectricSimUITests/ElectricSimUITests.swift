@@ -57,7 +57,7 @@ final class ElectricSimUITests: XCTestCase {
         XCTAssertTrue(faults.waitForExistence(timeout: 20), "მენიუში უნდა იყოს დიაგნოსტიკა")
         faults.tap()
         // free მისიის გახსნა → ბრიფინგის „დაიწყე დიაგნოსტიკა“ ღილაკი.
-        let mission = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "გადახურებული ავტომატი")).firstMatch
+        let mission = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "გადამეტებული ავტომატი")).firstMatch
         XCTAssertTrue(mission.waitForExistence(timeout: 10), "დიაგნოსტიკის სიაში უნდა ჩანდეს მისია")
         mission.tap()
         XCTAssertTrue(app.buttons["fault-start"].waitForExistence(timeout: 10),

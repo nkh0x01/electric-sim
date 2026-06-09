@@ -1,121 +1,2050 @@
 [
   {
-    "id": "fault_wrong_breaker",
-    "georgianTitle": "ნათურის ხაზი — გადახურებული ავტომატი",
-    "customerName": "ზურაბ ლომიძე",
-    "location": "ვაკე, თბილისი",
-    "difficulty": 2,
+    "id": "fault_bedroom_wrong_breaker",
+    "georgianTitle": "საძინებლის გადამეტებული ავტომატი",
+    "customerName": "გიორგი ლომიძე",
+    "location": "ბინა ვაკეში",
+    "difficulty": 1,
     "tier": "free",
-    "customerComplaint": "ახალი ელექტრიკოსის შემდეგ ხშირად ვგრძნობ ცხელ კაბელს და მეშინია ხანძრის.",
+    "customerComplaint": "ხაზზე არაფერი ითიშება, მაგრამ კედელი თბება.",
     "symptoms": [
-      "კაბელი თბება დატვირთვისას",
-      "ავტომატი არ იგდება გადატვირთვაზე"
+      "კაბელი თბება",
+      "ავტომატი არ ითიშება",
+      "განათება მუშაობს"
     ],
     "faultType": "wrongBreakerSize",
-    "phase": "single",
     "board": {
       "components": [
-        { "templateId": "supply_1ph", "id": "supply" },
-        { "templateId": "main_2p", "id": "main" },
-        { "templateId": "mcb_b16", "id": "brk" },
-        { "templateId": "lamp_60", "id": "lamp" }
+        {
+          "templateId": "supply_1ph",
+          "id": "supply"
+        },
+        {
+          "templateId": "main_2p",
+          "id": "main"
+        },
+        {
+          "templateId": "mcb_b16",
+          "id": "brk"
+        },
+        {
+          "templateId": "lamp_60",
+          "id": "lamp"
+        }
       ],
       "wires": [
-        { "from": { "c": "supply", "p": "L" }, "to": { "c": "main", "p": "Lin" }, "csa": 1.5, "color": "brown" },
-        { "from": { "c": "main", "p": "Lout" }, "to": { "c": "brk", "p": "in" }, "csa": 1.5, "color": "brown" },
-        { "from": { "c": "brk", "p": "out" }, "to": { "c": "lamp", "p": "L" }, "csa": 1.5, "color": "brown" },
-        { "from": { "c": "supply", "p": "N" }, "to": { "c": "main", "p": "Nin" }, "csa": 1.5, "color": "blue" },
-        { "from": { "c": "main", "p": "Nout" }, "to": { "c": "lamp", "p": "N" }, "csa": 1.5, "color": "blue" },
-        { "from": { "c": "supply", "p": "PE" }, "to": { "c": "lamp", "p": "PE" }, "csa": 1.5, "color": "yellowGreen" }
+        {
+          "from": {
+            "c": "supply",
+            "p": "L"
+          },
+          "to": {
+            "c": "main",
+            "p": "Lin"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "brk",
+            "p": "in"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "N"
+          },
+          "to": {
+            "c": "main",
+            "p": "Nin"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "N"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "PE"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "PE"
+          },
+          "csa": 1.5,
+          "color": "yellowGreen"
+        }
       ]
     },
-    "fault": { "setRatingA": { "brk": 32 } },
-    "fix": { "setRatingA": { "brk": 16 } },
-    "xpReward": 80,
-    "cashReward": 70
+    "fault": {
+      "setRatingA": {
+        "brk": 32
+      }
+    },
+    "fix": {
+      "setRatingA": {
+        "brk": 16
+      }
+    },
+    "xpReward": 100,
+    "cashReward": 120
   },
   {
-    "id": "fault_missing_pe",
-    "georgianTitle": "როზეტის ხაზი — დაკარგული მიწა",
-    "customerName": "ეკა ნოზაძე",
-    "location": "საბურთალო, თბილისი",
-    "difficulty": 3,
-    "tier": "pro",
-    "customerComplaint": "მაცივრის კორპუსი „კბენს“ — სუსტი დარტყმა ვიგრძენი შეხებისას.",
+    "id": "fault_washing_machine_no_pe",
+    "georgianTitle": "სარეცხი მანქანის დარტყმა",
+    "customerName": "ნინო ბერიძე",
+    "location": "ბინა საბურთალოზე",
+    "difficulty": 1,
+    "tier": "free",
+    "customerComplaint": "სარეცხ მანქანას რომ ვეხები, დენი მირტყამს.",
     "symptoms": [
-      "ლითონის კორპუსი დენიანია",
-      "PE-ფეხი არსად არ არის მიერთებული"
+      "PE არ არის მიერთებული",
+      "RCD არ ითიშება",
+      "კორპუსზე ძაბვა"
     ],
     "faultType": "missingPE",
-    "phase": "single",
     "board": {
       "components": [
-        { "templateId": "supply_1ph", "id": "supply" },
-        { "templateId": "main_2p", "id": "main" },
-        { "templateId": "rcd_30", "id": "rcd" },
-        { "templateId": "mcb_b16", "id": "brk" },
-        { "templateId": "socket_16", "id": "soc" }
+        {
+          "templateId": "supply_1ph",
+          "id": "supply"
+        },
+        {
+          "templateId": "main_2p",
+          "id": "main"
+        },
+        {
+          "templateId": "rcd_30",
+          "id": "rcd"
+        },
+        {
+          "templateId": "mcb_b16",
+          "id": "brk"
+        },
+        {
+          "templateId": "socket_16",
+          "id": "soc"
+        }
       ],
       "wires": [
-        { "from": { "c": "supply", "p": "L" }, "to": { "c": "main", "p": "Lin" }, "csa": 2.5, "color": "brown" },
-        { "from": { "c": "main", "p": "Lout" }, "to": { "c": "rcd", "p": "Lin" }, "csa": 2.5, "color": "brown" },
-        { "from": { "c": "rcd", "p": "Lout" }, "to": { "c": "brk", "p": "in" }, "csa": 2.5, "color": "brown" },
-        { "from": { "c": "brk", "p": "out" }, "to": { "c": "soc", "p": "L" }, "csa": 2.5, "color": "brown" },
-        { "from": { "c": "supply", "p": "N" }, "to": { "c": "main", "p": "Nin" }, "csa": 2.5, "color": "blue" },
-        { "from": { "c": "main", "p": "Nout" }, "to": { "c": "rcd", "p": "Nin" }, "csa": 2.5, "color": "blue" },
-        { "from": { "c": "rcd", "p": "Nout" }, "to": { "c": "soc", "p": "N" }, "csa": 2.5, "color": "blue" },
-        { "from": { "c": "supply", "p": "PE" }, "to": { "c": "soc", "p": "PE" }, "csa": 2.5, "color": "yellowGreen" }
+        {
+          "from": {
+            "c": "supply",
+            "p": "L"
+          },
+          "to": {
+            "c": "main",
+            "p": "Lin"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "rcd",
+            "p": "Lin"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "rcd",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "brk",
+            "p": "in"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "soc",
+            "p": "L"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "N"
+          },
+          "to": {
+            "c": "main",
+            "p": "Nin"
+          },
+          "csa": 2.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "rcd",
+            "p": "Nin"
+          },
+          "csa": 2.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "rcd",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "soc",
+            "p": "N"
+          },
+          "csa": 2.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "PE"
+          },
+          "to": {
+            "c": "soc",
+            "p": "PE"
+          },
+          "csa": 2.5,
+          "color": "yellowGreen"
+        }
       ]
     },
     "fault": {
       "removeWires": [
-        { "from": { "c": "supply", "p": "PE" }, "to": { "c": "soc", "p": "PE" }, "csa": 2.5 }
+        {
+          "from": {
+            "c": "supply",
+            "p": "PE"
+          },
+          "to": {
+            "c": "soc",
+            "p": "PE"
+          },
+          "csa": 2.5
+        }
       ]
     },
     "fix": {
       "addWires": [
-        { "from": { "c": "supply", "p": "PE" }, "to": { "c": "soc", "p": "PE" }, "csa": 2.5, "color": "yellowGreen" }
+        {
+          "from": {
+            "c": "supply",
+            "p": "PE"
+          },
+          "to": {
+            "c": "soc",
+            "p": "PE"
+          },
+          "csa": 2.5,
+          "color": "yellowGreen"
+        }
       ]
     },
-    "xpReward": 110,
-    "cashReward": 120
+    "xpReward": 120,
+    "cashReward": 140
   },
   {
-    "id": "fault_earth_leakage",
-    "georgianTitle": "30mA RCD ხშირად იგდება",
-    "customerName": "ირაკლი ფხაკაძე",
-    "location": "გლდანი, თბილისი",
-    "difficulty": 3,
-    "tier": "pro",
-    "customerComplaint": "სამზარეულოს RCD წუთ-წუთ იგდება, დენი ქრება. ვერ ვხვდები რა ხდება.",
+    "id": "fault_kitchen_overloaded_cable",
+    "georgianTitle": "გადახურებული სამზარეულოს ხაზი",
+    "customerName": "მაია კუპატაძე",
+    "location": "ბინა დიდ დიღომში",
+    "difficulty": 1,
+    "tier": "free",
+    "customerComplaint": "ჩაიდანს და მიკროტალღურს ერთად რომ ვრთავ, სუნი გამოდის.",
     "symptoms": [
-      "RCD ჩართვისთანავე იგდება",
-      "კონკრეტული როზეტის ჩართვისას ქრება დენი"
+      "კაბელი ცხელდება",
+      "იზოლაცია მუქდება",
+      "ძაბვა ეცემა"
     ],
-    "faultType": "earthLeakage",
-    "phase": "single",
+    "faultType": "overloadedCable",
     "board": {
       "components": [
-        { "templateId": "supply_1ph", "id": "supply" },
-        { "templateId": "main_2p", "id": "main" },
-        { "templateId": "rcd_30", "id": "rcd" },
-        { "templateId": "mcb_b16", "id": "brk" },
-        { "templateId": "socket_16", "id": "soc" }
+        {
+          "templateId": "supply_1ph",
+          "id": "supply"
+        },
+        {
+          "templateId": "main_2p",
+          "id": "main"
+        },
+        {
+          "templateId": "mcb_b16",
+          "id": "brk"
+        },
+        {
+          "templateId": "lamp_60",
+          "id": "lamp"
+        }
       ],
       "wires": [
-        { "from": { "c": "supply", "p": "L" }, "to": { "c": "main", "p": "Lin" }, "csa": 2.5, "color": "brown" },
-        { "from": { "c": "main", "p": "Lout" }, "to": { "c": "rcd", "p": "Lin" }, "csa": 2.5, "color": "brown" },
-        { "from": { "c": "rcd", "p": "Lout" }, "to": { "c": "brk", "p": "in" }, "csa": 2.5, "color": "brown" },
-        { "from": { "c": "brk", "p": "out" }, "to": { "c": "soc", "p": "L" }, "csa": 2.5, "color": "brown" },
-        { "from": { "c": "supply", "p": "N" }, "to": { "c": "main", "p": "Nin" }, "csa": 2.5, "color": "blue" },
-        { "from": { "c": "main", "p": "Nout" }, "to": { "c": "rcd", "p": "Nin" }, "csa": 2.5, "color": "blue" },
-        { "from": { "c": "rcd", "p": "Nout" }, "to": { "c": "soc", "p": "N" }, "csa": 2.5, "color": "blue" },
-        { "from": { "c": "supply", "p": "PE" }, "to": { "c": "soc", "p": "PE" }, "csa": 2.5, "color": "yellowGreen" }
+        {
+          "from": {
+            "c": "supply",
+            "p": "L"
+          },
+          "to": {
+            "c": "main",
+            "p": "Lin"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "brk",
+            "p": "in"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "N"
+          },
+          "to": {
+            "c": "main",
+            "p": "Nin"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "N"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "PE"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "PE"
+          },
+          "csa": 1.5,
+          "color": "yellowGreen"
+        }
       ]
     },
-    "fault": { "setLeakageMa": { "soc": 80 } },
-    "fix": { "setLeakageMa": { "soc": 0 } },
-    "xpReward": 120,
-    "cashReward": 130
+    "fault": {
+      "setFaultFlag": {
+        "brk": "overloadedCable"
+      }
+    },
+    "fix": {
+      "clearFaultFlag": [
+        "brk"
+      ]
+    },
+    "xpReward": 130,
+    "cashReward": 150
+  },
+  {
+    "id": "fault_bathroom_missing_rcd",
+    "georgianTitle": "დაუცველი აბაზანა",
+    "customerName": "ირაკლი ჯაფარიძე",
+    "location": "ბინა ბათუმში",
+    "difficulty": 2,
+    "tier": "free",
+    "customerComplaint": "აბაზანაში უსაფრთხოდ არის ყველაფერი?",
+    "symptoms": [
+      "როზეტებია აბაზანაში",
+      "RCD არ ჩანს",
+      "ფარი მუშაობს"
+    ],
+    "faultType": "missingRCD",
+    "board": {
+      "components": [
+        {
+          "templateId": "supply_1ph",
+          "id": "supply"
+        },
+        {
+          "templateId": "main_2p",
+          "id": "main"
+        },
+        {
+          "templateId": "rcd_30",
+          "id": "rcd"
+        },
+        {
+          "templateId": "mcb_b16",
+          "id": "brk"
+        },
+        {
+          "templateId": "socket_16",
+          "id": "soc"
+        }
+      ],
+      "wires": [
+        {
+          "from": {
+            "c": "supply",
+            "p": "L"
+          },
+          "to": {
+            "c": "main",
+            "p": "Lin"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "rcd",
+            "p": "Lin"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "rcd",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "brk",
+            "p": "in"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "soc",
+            "p": "L"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "N"
+          },
+          "to": {
+            "c": "main",
+            "p": "Nin"
+          },
+          "csa": 2.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "rcd",
+            "p": "Nin"
+          },
+          "csa": 2.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "rcd",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "soc",
+            "p": "N"
+          },
+          "csa": 2.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "PE"
+          },
+          "to": {
+            "c": "soc",
+            "p": "PE"
+          },
+          "csa": 2.5,
+          "color": "yellowGreen"
+        }
+      ]
+    },
+    "fault": {
+      "setFaultFlag": {
+        "soc": "missingRCD"
+      }
+    },
+    "fix": {
+      "clearFaultFlag": [
+        "soc"
+      ]
+    },
+    "xpReward": 150,
+    "cashReward": 180
+  },
+  {
+    "id": "fault_water_heater_leakage",
+    "georgianTitle": "წყლის გამაცხელებლის გაჟონვა",
+    "customerName": "ლევან აბაშიძე",
+    "location": "კერძო სახლი გორში",
+    "difficulty": 2,
+    "tier": "free",
+    "customerComplaint": "ბოილერის ჩართვისას ყველაფერი ითიშება.",
+    "symptoms": [
+      "RCD მაშინვე ითიშება",
+      "სხვა ხაზები მუშაობს",
+      "პრობლემა ბოილერზეა"
+    ],
+    "faultType": "earthLeakage",
+    "board": {
+      "components": [
+        {
+          "templateId": "supply_1ph",
+          "id": "supply"
+        },
+        {
+          "templateId": "main_2p",
+          "id": "main"
+        },
+        {
+          "templateId": "rcd_30",
+          "id": "rcd"
+        },
+        {
+          "templateId": "mcb_b16",
+          "id": "brk"
+        },
+        {
+          "templateId": "socket_16",
+          "id": "soc"
+        }
+      ],
+      "wires": [
+        {
+          "from": {
+            "c": "supply",
+            "p": "L"
+          },
+          "to": {
+            "c": "main",
+            "p": "Lin"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "rcd",
+            "p": "Lin"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "rcd",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "brk",
+            "p": "in"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "soc",
+            "p": "L"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "N"
+          },
+          "to": {
+            "c": "main",
+            "p": "Nin"
+          },
+          "csa": 2.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "rcd",
+            "p": "Nin"
+          },
+          "csa": 2.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "rcd",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "soc",
+            "p": "N"
+          },
+          "csa": 2.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "PE"
+          },
+          "to": {
+            "c": "soc",
+            "p": "PE"
+          },
+          "csa": 2.5,
+          "color": "yellowGreen"
+        }
+      ]
+    },
+    "fault": {
+      "setLeakageMa": {
+        "soc": 80
+      }
+    },
+    "fix": {
+      "setLeakageMa": {
+        "soc": 0
+      }
+    },
+    "xpReward": 180,
+    "cashReward": 220
+  },
+  {
+    "id": "fault_reversed_socket",
+    "georgianTitle": "არასწორი პოლარობა",
+    "customerName": "თამარ ბექაური",
+    "location": "ბინა ქუთაისში",
+    "difficulty": 2,
+    "tier": "free",
+    "customerComplaint": "ელექტრიკოსმა მითხრა, როზეტი არასწორად არის შეერთებულიო.",
+    "symptoms": [
+      "L და N შეცვლილია",
+      "მოწყობილობები მუშაობს",
+      "ტესტერი შეცდომას აფიქსირებს"
+    ],
+    "faultType": "reversedPolarity",
+    "board": {
+      "components": [
+        {
+          "templateId": "supply_1ph",
+          "id": "supply"
+        },
+        {
+          "templateId": "main_2p",
+          "id": "main"
+        },
+        {
+          "templateId": "mcb_b16",
+          "id": "brk"
+        },
+        {
+          "templateId": "lamp_60",
+          "id": "lamp"
+        }
+      ],
+      "wires": [
+        {
+          "from": {
+            "c": "supply",
+            "p": "L"
+          },
+          "to": {
+            "c": "main",
+            "p": "Lin"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "brk",
+            "p": "in"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "N"
+          },
+          "to": {
+            "c": "main",
+            "p": "Nin"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "N"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "PE"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "PE"
+          },
+          "csa": 1.5,
+          "color": "yellowGreen"
+        }
+      ]
+    },
+    "fault": {
+      "removeWires": [
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "csa": 1.5
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "N"
+          },
+          "csa": 1.5
+        }
+      ],
+      "addWires": [
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "N"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        }
+      ]
+    },
+    "fix": {
+      "removeWires": [
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "N"
+          },
+          "csa": 1.5
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "csa": 1.5
+        }
+      ],
+      "addWires": [
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "N"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        }
+      ]
+    },
+    "xpReward": 200,
+    "cashReward": 240
+  },
+  {
+    "id": "fault_shop_short_lpe",
+    "georgianTitle": "მაღაზიის ავარიული გამორთვა",
+    "customerName": "დავით ჩხეიძე",
+    "location": "მაღაზია რუსთავში",
+    "difficulty": 3,
+    "tier": "pro",
+    "customerComplaint": "ავტომატი ჩართვისთანავე ითიშება.",
+    "symptoms": [
+      "MCB მაშინვე ითიშება",
+      "ნაპერწკალი",
+      "ერთ ხაზზეა"
+    ],
+    "faultType": "shortCircuitLPE",
+    "board": {
+      "components": [
+        {
+          "templateId": "supply_1ph",
+          "id": "supply"
+        },
+        {
+          "templateId": "main_2p",
+          "id": "main"
+        },
+        {
+          "templateId": "mcb_b16",
+          "id": "brk"
+        },
+        {
+          "templateId": "lamp_60",
+          "id": "lamp"
+        }
+      ],
+      "wires": [
+        {
+          "from": {
+            "c": "supply",
+            "p": "L"
+          },
+          "to": {
+            "c": "main",
+            "p": "Lin"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "brk",
+            "p": "in"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "N"
+          },
+          "to": {
+            "c": "main",
+            "p": "Nin"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "N"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "PE"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "PE"
+          },
+          "csa": 1.5,
+          "color": "yellowGreen"
+        }
+      ]
+    },
+    "fault": {
+      "addWires": [
+        {
+          "from": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "PE"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        }
+      ]
+    },
+    "fix": {
+      "removeWires": [
+        {
+          "from": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "PE"
+          },
+          "csa": 1.5
+        }
+      ]
+    },
+    "xpReward": 260,
+    "cashReward": 320
+  },
+  {
+    "id": "fault_cafe_short_ln",
+    "georgianTitle": "კაფის მოკლე ჩართვა",
+    "customerName": "ანა გეგიძე",
+    "location": "კაფე ბათუმში",
+    "difficulty": 3,
+    "tier": "pro",
+    "customerComplaint": "ყოველ ჩართვაზე ავტომატი ვარდება.",
+    "symptoms": [
+      "MCB მყისიერად ითიშება",
+      "ხაზი არ იტვირთება"
+    ],
+    "faultType": "shortCircuitLN",
+    "board": {
+      "components": [
+        {
+          "templateId": "supply_1ph",
+          "id": "supply"
+        },
+        {
+          "templateId": "main_2p",
+          "id": "main"
+        },
+        {
+          "templateId": "mcb_b16",
+          "id": "brk"
+        },
+        {
+          "templateId": "lamp_60",
+          "id": "lamp"
+        }
+      ],
+      "wires": [
+        {
+          "from": {
+            "c": "supply",
+            "p": "L"
+          },
+          "to": {
+            "c": "main",
+            "p": "Lin"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "brk",
+            "p": "in"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "N"
+          },
+          "to": {
+            "c": "main",
+            "p": "Nin"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "N"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "PE"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "PE"
+          },
+          "csa": 1.5,
+          "color": "yellowGreen"
+        }
+      ]
+    },
+    "fault": {
+      "addWires": [
+        {
+          "from": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "N"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        }
+      ]
+    },
+    "fix": {
+      "removeWires": [
+        {
+          "from": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "N"
+          },
+          "csa": 1.5
+        }
+      ]
+    },
+    "xpReward": 280,
+    "cashReward": 350
+  },
+  {
+    "id": "fault_workshop_wrong_cable",
+    "georgianTitle": "კომპრესორის თხელი კაბელი",
+    "customerName": "ვახტანგ კვარაცხელია",
+    "location": "სახელოსნო დიდუბეში",
+    "difficulty": 3,
+    "tier": "pro",
+    "customerComplaint": "კომპრესორის კაბელი ძალიან ცხელდება.",
+    "symptoms": [
+      "ძაბვის ვარდნა",
+      "კაბელის გადახურება"
+    ],
+    "faultType": "wrongCableSize",
+    "board": {
+      "components": [
+        {
+          "templateId": "supply_1ph",
+          "id": "supply"
+        },
+        {
+          "templateId": "main_2p",
+          "id": "main"
+        },
+        {
+          "templateId": "mcb_b20",
+          "id": "brk"
+        },
+        {
+          "templateId": "lamp_60",
+          "id": "lamp"
+        }
+      ],
+      "wires": [
+        {
+          "from": {
+            "c": "supply",
+            "p": "L"
+          },
+          "to": {
+            "c": "main",
+            "p": "Lin"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "brk",
+            "p": "in"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "N"
+          },
+          "to": {
+            "c": "main",
+            "p": "Nin"
+          },
+          "csa": 2.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "N"
+          },
+          "csa": 2.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "PE"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "PE"
+          },
+          "csa": 2.5,
+          "color": "yellowGreen"
+        }
+      ]
+    },
+    "fault": {
+      "setAllCsaMm2": 1.5,
+      "setFaultFlag": {
+        "lamp": "wrongCableSize"
+      }
+    },
+    "fix": {
+      "setAllCsaMm2": 2.5,
+      "clearFaultFlag": [
+        "lamp"
+      ]
+    },
+    "xpReward": 300,
+    "cashReward": 380
+  },
+  {
+    "id": "fault_dual_neutral",
+    "georgianTitle": "საერთო ნეიტრალი",
+    "customerName": "ზურაბ კაკაბაძე",
+    "location": "ოფისი თბილისში",
+    "difficulty": 4,
+    "tier": "pro",
+    "customerComplaint": "ხან ერთი ხაზი ითიშება, ხან მეორე.",
+    "symptoms": [
+      "RCD შემთხვევით ითიშება",
+      "ორი ხაზი დამოკიდებულია"
+    ],
+    "faultType": "sharedNeutral",
+    "board": {
+      "components": [
+        {
+          "templateId": "supply_1ph",
+          "id": "supply"
+        },
+        {
+          "templateId": "main_2p",
+          "id": "main"
+        },
+        {
+          "templateId": "mcb_b16",
+          "id": "brk"
+        },
+        {
+          "templateId": "lamp_60",
+          "id": "lamp"
+        }
+      ],
+      "wires": [
+        {
+          "from": {
+            "c": "supply",
+            "p": "L"
+          },
+          "to": {
+            "c": "main",
+            "p": "Lin"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "brk",
+            "p": "in"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "N"
+          },
+          "to": {
+            "c": "main",
+            "p": "Nin"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "N"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "PE"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "PE"
+          },
+          "csa": 1.5,
+          "color": "yellowGreen"
+        }
+      ]
+    },
+    "fault": {
+      "setFaultFlag": {
+        "main": "sharedNeutral"
+      }
+    },
+    "fix": {
+      "clearFaultFlag": [
+        "main"
+      ]
+    },
+    "xpReward": 360,
+    "cashReward": 450
+  },
+  {
+    "id": "fault_office_rcd_trip",
+    "georgianTitle": "ოფისის მუდმივი გათიშვა",
+    "customerName": "ეკა გოგოლაძე",
+    "location": "ოფისი ვაკეში",
+    "difficulty": 4,
+    "tier": "pro",
+    "customerComplaint": "RCD დღეში რამდენჯერმე ითიშება.",
+    "symptoms": [
+      "დაზიანება არ ჩანს",
+      "ბევრი კომპიუტერი",
+      "შემთხვევითი გათიშვა"
+    ],
+    "faultType": "nuisanceRCDTrip",
+    "board": {
+      "components": [
+        {
+          "templateId": "supply_1ph",
+          "id": "supply"
+        },
+        {
+          "templateId": "main_2p",
+          "id": "main"
+        },
+        {
+          "templateId": "rcd_30",
+          "id": "rcd"
+        },
+        {
+          "templateId": "mcb_b16",
+          "id": "brk"
+        },
+        {
+          "templateId": "socket_16",
+          "id": "soc"
+        }
+      ],
+      "wires": [
+        {
+          "from": {
+            "c": "supply",
+            "p": "L"
+          },
+          "to": {
+            "c": "main",
+            "p": "Lin"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "rcd",
+            "p": "Lin"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "rcd",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "brk",
+            "p": "in"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "soc",
+            "p": "L"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "N"
+          },
+          "to": {
+            "c": "main",
+            "p": "Nin"
+          },
+          "csa": 2.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "rcd",
+            "p": "Nin"
+          },
+          "csa": 2.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "rcd",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "soc",
+            "p": "N"
+          },
+          "csa": 2.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "PE"
+          },
+          "to": {
+            "c": "soc",
+            "p": "PE"
+          },
+          "csa": 2.5,
+          "color": "yellowGreen"
+        }
+      ]
+    },
+    "fault": {
+      "setFaultFlag": {
+        "rcd": "nuisanceRCDTrip"
+      }
+    },
+    "fix": {
+      "clearFaultFlag": [
+        "rcd"
+      ]
+    },
+    "xpReward": 380,
+    "cashReward": 480
+  },
+  {
+    "id": "fault_hotel_spd_failed",
+    "georgianTitle": "მწყობრიდან გამოსული SPD",
+    "customerName": "მალხაზ ქავთარაძე",
+    "location": "სასტუმრო ბაკურიანში",
+    "difficulty": 4,
+    "tier": "pro",
+    "customerComplaint": "ელვის შემდეგ ინდიკატორი გაწითლდა.",
+    "symptoms": [
+      "SPD წითელია",
+      "სისტემა მუშაობს",
+      "დაცვა აღარ არსებობს"
+    ],
+    "faultType": "failedSPD",
+    "board": {
+      "components": [
+        {
+          "templateId": "supply_1ph",
+          "id": "supply"
+        },
+        {
+          "templateId": "main_2p",
+          "id": "main"
+        },
+        {
+          "templateId": "mcb_b16",
+          "id": "brk"
+        },
+        {
+          "templateId": "lamp_60",
+          "id": "lamp"
+        },
+        {
+          "templateId": "spd",
+          "id": "spd"
+        }
+      ],
+      "wires": [
+        {
+          "from": {
+            "c": "supply",
+            "p": "L"
+          },
+          "to": {
+            "c": "main",
+            "p": "Lin"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "brk",
+            "p": "in"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "N"
+          },
+          "to": {
+            "c": "main",
+            "p": "Nin"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "N"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "PE"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "PE"
+          },
+          "csa": 1.5,
+          "color": "yellowGreen"
+        },
+        {
+          "from": {
+            "c": "spd",
+            "p": "L"
+          },
+          "to": {
+            "c": "main",
+            "p": "Lout"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "spd",
+            "p": "PE"
+          },
+          "to": {
+            "c": "supply",
+            "p": "PE"
+          },
+          "csa": 1.5,
+          "color": "yellowGreen"
+        }
+      ]
+    },
+    "fault": {
+      "setFaultFlag": {
+        "spd": "failedSPD"
+      }
+    },
+    "fix": {
+      "clearFaultFlag": [
+        "spd"
+      ]
+    },
+    "xpReward": 420,
+    "cashReward": 520
+  },
+  {
+    "id": "fault_factory_phase_sequence",
+    "georgianTitle": "უკუღმა მბრუნავი ძრავა",
+    "customerName": "გია მელაძე",
+    "location": "მცირე საწარმო ზესტაფონში",
+    "difficulty": 5,
+    "tier": "pro",
+    "customerComplaint": "ძრავა საპირისპიროდ ტრიალებს.",
+    "symptoms": [
+      "ძრავა მუშაობს",
+      "ბრუნვა არასწორია"
+    ],
+    "faultType": "wrongPhaseSequence",
+    "phase": "three",
+    "board": {
+      "components": [
+        {
+          "templateId": "supply_1ph",
+          "id": "supply"
+        },
+        {
+          "templateId": "main_4p",
+          "id": "main"
+        }
+      ],
+      "wires": [
+        {
+          "from": {
+            "c": "supply",
+            "p": "L1"
+          },
+          "to": {
+            "c": "main",
+            "p": "L1in"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "L2"
+          },
+          "to": {
+            "c": "main",
+            "p": "L2in"
+          },
+          "csa": 2.5,
+          "color": "black"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "L3"
+          },
+          "to": {
+            "c": "main",
+            "p": "L3in"
+          },
+          "csa": 2.5,
+          "color": "grey"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "N"
+          },
+          "to": {
+            "c": "main",
+            "p": "Nin"
+          },
+          "csa": 2.5,
+          "color": "blue"
+        }
+      ]
+    },
+    "fault": {
+      "setFaultFlag": {
+        "main": "wrongPhaseSequence"
+      }
+    },
+    "fix": {
+      "clearFaultFlag": [
+        "main"
+      ]
+    },
+    "xpReward": 500,
+    "cashReward": 650
+  },
+  {
+    "id": "fault_warehouse_unbalanced",
+    "georgianTitle": "დაუბალანსებელი ფაზები",
+    "customerName": "რეზო ჭანტურია",
+    "location": "საწყობი ფოთში",
+    "difficulty": 5,
+    "tier": "pro",
+    "customerComplaint": "ერთი ავტომატი სულ იტვირთება.",
+    "symptoms": [
+      "L1 გადატვირთულია",
+      "L2 L3 მსუბუქად",
+      "ძაბვის სხვაობა"
+    ],
+    "faultType": "unbalanced3ph",
+    "phase": "three",
+    "board": {
+      "components": [
+        {
+          "templateId": "supply_1ph",
+          "id": "supply"
+        },
+        {
+          "templateId": "main_4p",
+          "id": "main"
+        }
+      ],
+      "wires": [
+        {
+          "from": {
+            "c": "supply",
+            "p": "L1"
+          },
+          "to": {
+            "c": "main",
+            "p": "L1in"
+          },
+          "csa": 2.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "L2"
+          },
+          "to": {
+            "c": "main",
+            "p": "L2in"
+          },
+          "csa": 2.5,
+          "color": "black"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "L3"
+          },
+          "to": {
+            "c": "main",
+            "p": "L3in"
+          },
+          "csa": 2.5,
+          "color": "grey"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "N"
+          },
+          "to": {
+            "c": "main",
+            "p": "Nin"
+          },
+          "csa": 2.5,
+          "color": "blue"
+        }
+      ]
+    },
+    "fault": {
+      "setFaultFlag": {
+        "main": "unbalanced3ph"
+      }
+    },
+    "fix": {
+      "clearFaultFlag": [
+        "main"
+      ]
+    },
+    "xpReward": 550,
+    "cashReward": 720
+  },
+  {
+    "id": "fault_apartment_loose_neutral",
+    "georgianTitle": "მოციმციმე განათება",
+    "customerName": "სოფო ნადირაძე",
+    "location": "ბინა ისანში",
+    "difficulty": 5,
+    "tier": "pro",
+    "customerComplaint": "ხან ნათდება, ხან ქრება, თითქოს ძაბვა თამაშობს.",
+    "symptoms": [
+      "განათება ციმციმებს",
+      "ძაბვა არასტაბილური",
+      "ნეიტრალი თბება"
+    ],
+    "faultType": "looseNeutral",
+    "board": {
+      "components": [
+        {
+          "templateId": "supply_1ph",
+          "id": "supply"
+        },
+        {
+          "templateId": "main_2p",
+          "id": "main"
+        },
+        {
+          "templateId": "mcb_b16",
+          "id": "brk"
+        },
+        {
+          "templateId": "lamp_60",
+          "id": "lamp"
+        }
+      ],
+      "wires": [
+        {
+          "from": {
+            "c": "supply",
+            "p": "L"
+          },
+          "to": {
+            "c": "main",
+            "p": "Lin"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Lout"
+          },
+          "to": {
+            "c": "brk",
+            "p": "in"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "brk",
+            "p": "out"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "L"
+          },
+          "csa": 1.5,
+          "color": "brown"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "N"
+          },
+          "to": {
+            "c": "main",
+            "p": "Nin"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "main",
+            "p": "Nout"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "N"
+          },
+          "csa": 1.5,
+          "color": "blue"
+        },
+        {
+          "from": {
+            "c": "supply",
+            "p": "PE"
+          },
+          "to": {
+            "c": "lamp",
+            "p": "PE"
+          },
+          "csa": 1.5,
+          "color": "yellowGreen"
+        }
+      ]
+    },
+    "fault": {
+      "setFaultFlag": {
+        "main": "looseNeutral"
+      }
+    },
+    "fix": {
+      "clearFaultFlag": [
+        "main"
+      ]
+    },
+    "xpReward": 600,
+    "cashReward": 800
   }
 ]

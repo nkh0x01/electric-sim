@@ -38,10 +38,13 @@
 `wrongCableSize`, `sharedNeutral`, `nuisanceRCDTrip`, `failedSPD`, `missingSPD`,
 `wrongPhaseSequence`, `unbalanced3ph`, `looseNeutral`.
 
-> Phase 1-ის დიაგნოსტიკის ძრავა საიმედოდ ცნობს solver-ით აღმოჩენად დეფექტებს
+> დიაგნოსტიკის ძრავა solver-ით აღმოჩენად დეფექტებს პირდაპირ ცნობს
 > (wrongBreakerSize, missingPE, earthLeakage, shortCircuitLN/LPE,
-> reversedPolarity, missingRCD, overloadedCable, unbalanced3ph). დანარჩენები
-> ჩამოთვლილია მოდელისთვის და დასრულდება მომდევნო ფაზებში.
+> reversedPolarity, missingRCD, overloadedCable, unbalanced3ph). solver-ით
+> აღმოუჩენელ დეფექტებს (sharedNeutral, nuisanceRCDTrip, failedSPD,
+> wrongPhaseSequence, looseNeutral, wrongCableSize) `setFaultFlag` მარკერი
+> წარმოადგენს — `diagnose` მათ უპირატესობას ანიჭებს, `boardPasses` კი
+> მარკერის გაწმენდას ითხოვს. ასე ყველა 15 batch-1 მისია გადის ტესტებს.
 
 ### `BoardEdit` (ინჟექცია/შესწორება)
 ცარიელი `{}` — არაფერს ცვლის. ველები:
@@ -52,6 +55,8 @@
 | `setAllCsaMm2` | double | ყველა სადენის კვეთა (mm²). |
 | `addWires` | [PrebuiltWire] | სადენების დამატება (მაგ. PE). |
 | `removeWires` | [PrebuiltWire] | სადენების წაშლა (ემთხვევა ფეხებით; `csa` სავალდებულოა decode-ისთვის, იგნორირდება). |
+| `setFaultFlag` | `{componentID: FaultType}` | არა-ელექტრული (solver-ით აღმოუჩენადი) დეფექტის მარკერი კომპონენტზე (მაგ. `looseNeutral`, `failedSPD`, `sharedNeutral`, `nuisanceRCDTrip`, `wrongPhaseSequence`, `wrongCableSize`). `FaultEngine.diagnose` მარკერს უპირატესობას ანიჭებს; `boardPasses` მოითხოვს მის გაწმენდას. |
+| `clearFaultFlag` | [componentID] | მითითებული კომპონენტების `setFaultFlag` მარკერის გაწმენდა (fix-ში). |
 
 `PrebuiltWire`: `{ "from": {"c":"<id>","p":"<port>"}, "to": {...}, "csa": 2.5, "color": "brown" }`
 (ფეხის სუფიქსები: `L/N/PE`, `Lin/Lout/Nin/Nout`, `in/out`).
@@ -60,17 +65,17 @@
 ავტომატი ≤ კაბელის ampacity (1.5→16A, 2.5→20A, 4→25A, 6→32A, 10→40A);
 30mA RCD როზეტებზე; ყველა ხაზს PE; პოლარობა სწორი.
 
-## სრული მაგალითი — არასწორი ნომინალის ავტომატი (free)
+## სრული მაგალითი — არასწორი ნომინალის ავტომატი (free, batch-1 #1)
 ```json
 {
-  "id": "fault_wrong_breaker",
-  "georgianTitle": "ნათურის ხაზი — გადახურებული ავტომატი",
-  "customerName": "ზურაბ ლომიძე",
-  "location": "ვაკე, თბილისი",
-  "difficulty": 2,
+  "id": "fault_bedroom_wrong_breaker",
+  "georgianTitle": "საძინებლის გადამეტებული ავტომატი",
+  "customerName": "გიორგი ლომიძე",
+  "location": "ბინა ვაკეში",
+  "difficulty": 1,
   "tier": "free",
-  "customerComplaint": "კაბელი თბება, მეშინია ხანძრის.",
-  "symptoms": ["კაბელი თბება დატვირთვისას", "ავტომატი არ იგდება"],
+  "customerComplaint": "ხაზზე არაფერი ითიშება, მაგრამ კედელი თბება.",
+  "symptoms": ["კაბელი თბება", "ავტომატი არ ითიშება", "განათება მუშაობს"],
   "faultType": "wrongBreakerSize",
   "phase": "single",
   "board": {
@@ -91,8 +96,8 @@
   },
   "fault": { "setRatingA": { "brk": 32 } },
   "fix":   { "setRatingA": { "brk": 16 } },
-  "xpReward": 80,
-  "cashReward": 70
+  "xpReward": 100,
+  "cashReward": 120
 }
 ```
 ეს ფარი: 32A ავტომატი 1.5mm² კაბელზე → `breakerExceedsCable` → დიაგნოზი

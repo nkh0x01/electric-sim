@@ -35,19 +35,20 @@ final class FaultTests: XCTestCase {
         XCTAssertEqual(s.cash, cash0 + m.cashReward)
     }
 
-    // ერთი free მისია, ორი pro (gating არსებული tier-ით).
+    // ექვსი free მისია, ცხრა pro (batch-1: 15 მისია, gating tier-ით).
     func testFaultTierSplit() throws {
         let missions = try GameData.loadFaults()
-        XCTAssertEqual(missions.filter { $0.tier == .free }.count, 1)
-        XCTAssertEqual(missions.filter { $0.tier == .pro }.count, 2)
+        XCTAssertEqual(missions.filter { $0.tier == .free }.count, 6)
+        XCTAssertEqual(missions.filter { $0.tier == .pro }.count, 9)
     }
 
     // faults.json იტვირთება
     func testFaultsJSONLoads() throws {
         let missions = try GameData.loadFaults()
-        XCTAssertEqual(missions.count, 3)
-        XCTAssertEqual(missions.filter { $0.tier == .free }.count, 1)
-        XCTAssertEqual(missions.filter { $0.tier == .pro }.count, 2)
+        XCTAssertEqual(missions.count, 15)
+        XCTAssertEqual(missions.filter { $0.tier == .free }.count, 6)
+        XCTAssertEqual(missions.filter { $0.tier == .pro }.count, 9)
+        XCTAssertEqual(Set(missions.map { $0.id }).count, missions.count, "id-ები უნიკალურია")
         XCTAssertTrue(missions.allSatisfy { !$0.georgianTitle.isEmpty && !$0.symptoms.isEmpty })
     }
 
@@ -86,7 +87,7 @@ final class FaultTests: XCTestCase {
     // არასწორი ნომინალი — ნაწილობრივი (ჯერ კიდევ დიდი) ავტომატი არ აგვარებს.
     func testWrongBreakerPartialFixFails() throws {
         let t = try templates()
-        let m = try XCTUnwrap(try GameData.loadFaults().first { $0.id == "fault_wrong_breaker" })
+        let m = try XCTUnwrap(try GameData.loadFaults().first { $0.id == "fault_bedroom_wrong_breaker" })
         let faulted = m.faultedBoard(templates: t)
         // 25A კვლავ > 16A (1.5mm²) → არ ჭრის; 16A → ჭრის
         XCTAssertFalse(FaultEngine.fixResolves(faulted: faulted, fix: BoardEdit(setRatingA: ["brk": 25])))
