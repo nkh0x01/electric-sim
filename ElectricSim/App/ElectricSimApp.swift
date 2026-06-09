@@ -47,6 +47,7 @@ struct RootView: View {
         case "learn":   LevelListView(path: $path)
         case "career":  CareerBoardView(path: $path)
         case "sandbox": SandboxListView(path: $path)
+        case "faults":  FaultListView(path: $path)
         default:
             if route.hasPrefix("job:") {
                 JobBriefingView(jobID: String(route.dropFirst("job:".count)), path: $path)
@@ -54,6 +55,8 @@ struct RootView: View {
                 if let job = game.job(byID: String(route.dropFirst("jobwork:".count))) {
                     WorkbenchView(job: job, path: $path)
                 }
+            } else if route.hasPrefix("fault:") {
+                FaultMissionView(missionID: String(route.dropFirst("fault:".count)), path: $path)
             } else if let level = game.level(byID: route) {
                 WorkbenchView(level: level, path: $path)
             }

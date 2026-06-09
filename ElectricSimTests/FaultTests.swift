@@ -14,6 +14,34 @@ final class FaultTests: XCTestCase {
         try GameData.loadTemplates()
     }
 
+    private func freshDefaults() -> UserDefaults {
+        let name = "fault.test.\(UUID().uuidString)"
+        let d = UserDefaults(suiteName: name)!
+        d.removePersistentDomain(forName: name)
+        return d
+    }
+
+    // მისიის დასრულება — XP/cash ერთხელ (replay არ ადუბლირებს).
+    func testCompleteFaultAwardsOnce() throws {
+        let m = try XCTUnwrap(try GameData.loadFaults().first)
+        let s = CareerState(defaults: freshDefaults())
+        let xp0 = s.totalXP, cash0 = s.cash
+        XCTAssertTrue(s.completeFault(m))
+        XCTAssertEqual(s.totalXP, xp0 + m.xpReward)
+        XCTAssertEqual(s.cash, cash0 + m.cashReward)
+        XCTAssertTrue(s.isCompleted(m.id))
+        XCTAssertFalse(s.completeFault(m), "ხელახლა დასრულება ჯილდოს არ ადუბლირებს")
+        XCTAssertEqual(s.totalXP, xp0 + m.xpReward)
+        XCTAssertEqual(s.cash, cash0 + m.cashReward)
+    }
+
+    // ერთი free მისია, ორი pro (gating არსებული tier-ით).
+    func testFaultTierSplit() throws {
+        let missions = try GameData.loadFaults()
+        XCTAssertEqual(missions.filter { $0.tier == .free }.count, 1)
+        XCTAssertEqual(missions.filter { $0.tier == .pro }.count, 2)
+    }
+
     // faults.json იტვირთება
     func testFaultsJSONLoads() throws {
         let missions = try GameData.loadFaults()

@@ -72,6 +72,21 @@ final class GameState: ObservableObject {
     func job(byID id: String) -> Job? { jobs.first { $0.id == id } }
     func isJobCompleted(_ id: String) -> Bool { career.isCompleted(id) }
 
+    func fault(byID id: String) -> FaultMission? { faults.first { $0.id == id } }
+
+    /// Fault-finding მისიის დასრულება — ჯილდო ერთხელ.
+    @discardableResult
+    func completeFault(_ m: FaultMission) -> CareerOutcome {
+        let before = career.currentRank
+        let awarded = career.completeFault(m)
+        let after = career.currentRank
+        objectWillChange.send()
+        return CareerOutcome(awarded: awarded,
+                             xp: awarded ? m.xpReward : 0,
+                             cash: awarded ? m.cashReward : 0,
+                             rankBefore: before, rankAfter: after)
+    }
+
     /// სამუშაოს დასრულება — ჯილდო ერთხელ (CareerState-ი იცავს დუბლირებას).
     /// აბრუნებს შედეგს UI-სთვის და ანახლებს ეკრანს.
     @discardableResult

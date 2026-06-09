@@ -50,6 +50,20 @@ final class ElectricSimUITests: XCTestCase {
         XCTAssertTrue(job.waitForExistence(timeout: 10), "კარიერის დაფაზე უნდა ჩანდეს სამუშაო")
     }
 
+    /// დიაგნოსტიკა (fault-finding) მისაწვდომია და მისიის ბრიფინგი იხსნება.
+    func testFaultFindingReachable() {
+        let app = launchApp()
+        let faults = app.buttons["menu-faults"]
+        XCTAssertTrue(faults.waitForExistence(timeout: 20), "მენიუში უნდა იყოს დიაგნოსტიკა")
+        faults.tap()
+        // free მისიის გახსნა → ბრიფინგის „დაიწყე დიაგნოსტიკა“ ღილაკი.
+        let mission = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "გადახურებული ავტომატი")).firstMatch
+        XCTAssertTrue(mission.waitForExistence(timeout: 10), "დიაგნოსტიკის სიაში უნდა ჩანდეს მისია")
+        mission.tap()
+        XCTAssertTrue(app.buttons["fault-start"].waitForExistence(timeout: 10),
+                      "მისიის ბრიფინგზე უნდა იყოს „დაიწყე დიაგნოსტიკა“")
+    }
+
     /// Sandbox რეჟიმი მისაწვდომია.
     func testSandboxReachable() {
         let app = launchApp()

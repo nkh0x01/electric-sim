@@ -21,6 +21,10 @@ struct MainMenuView: View {
                         subtitle: "შეასრულე სამუშაოები, აიწიე წოდებაში",
                         systemImage: "briefcase.fill", color: .orange,
                         id: "menu-career")
+                modeRow(route: "faults", title: "დიაგნოსტიკა",
+                        subtitle: "იპოვე და გაასწორე დეფექტი აწყობილ ფარში",
+                        systemImage: "stethoscope", color: .red,
+                        id: "menu-faults")
                 modeRow(route: "sandbox", title: "Sandbox",
                         subtitle: "თავისუფალი აწყობა შეზღუდვის გარეშე",
                         systemImage: "hammer.fill", color: .blue,

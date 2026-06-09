@@ -194,6 +194,17 @@ public final class CareerState {
         return job.tier == .pro
     }
 
+    /// Fault-finding მისიის დასრულება. ჯილდო ერთხელ (იზიარებს completedJobs-ს id-ით).
+    @discardableResult
+    public func completeFault(_ mission: FaultMission) -> Bool {
+        guard !completedJobs.contains(mission.id) else { return false }
+        completedJobs.insert(mission.id)
+        totalXP += mission.xpReward
+        cash += mission.cashReward
+        save()
+        return true
+    }
+
     public func resetProgress() {
         totalXP = 0; cash = Self.startingCash
         completedJobs = []; ownedTools = []; ownedComponents = []
