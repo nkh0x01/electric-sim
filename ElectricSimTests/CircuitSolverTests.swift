@@ -697,4 +697,157 @@ final class CircuitSolverTests: XCTestCase {
         XCTAssertEqual(WireColor.standard(for: .L2), .black)
         XCTAssertEqual(WireColor.standard(for: .L3), .grey)
     }
+
+    // MARK: - 14. უფასო დონეების სისრულე (Pro-ჩაკეტვის safeguard)
+
+    /// ყველა უფასო (non-Pro) დონის ყველა საჭირო კომპონენტი ხელმისაწვდომი უნდა იყოს
+    /// უფასო მომხმარებლისთვის — წინააღმდეგ შემთხვევაში დონე გაუვალია.
+    func testFreeLevelsAreCompletableByFreeUser() throws {
+        let templates = try GameData.loadTemplates()
+        let levels = try GameData.loadLevels()
+        let freeLevels = levels.filter { $0.resolvedTier == .free }
+        XCTAssertGreaterThanOrEqual(freeLevels.count, 5, "უფასო (Learn) ტიერი საკმარისად დიდი უნდა იყოს")
+        for level in freeLevels {
+            for entry in level.palette {
+                XCTAssertNotNil(templates[entry.templateId],
+                                "უფასო დონე \(level.id): უცნობი შაბლონი \(entry.templateId)")
+                XCTAssertTrue(ComponentGating.isPaletteEntryAvailableForFree(entry, templates: templates),
+                              "უფასო დონე \(level.id): \(entry.templateId) Pro-ჩაკეტილია — დონე ვერ გაივლება")
+            }
+            var availableKinds = Set(level.palette.compactMap { templates[$0.templateId]?.kind })
+            availableKinds.formUnion((level.prebuilt?.components ?? []).compactMap { templates[$0.templateId]?.kind })
+            for (kindStr, _) in level.goal.poweredLoads {
+                guard let kind = ComponentKind(rawValue: kindStr) else {
+                    XCTFail("უფასო დონე \(level.id): უცნობი kind \(kindStr)"); continue
+                }
+                XCTAssertTrue(availableKinds.contains(kind),
+                              "უფასო დონე \(level.id): საჭიროა \(kindStr), მაგრამ პალიტრაში/prebuilt-ში არ არის")
+            }
+        }
+    }
+
+    /// დონეები იტვირთება ახალი ველებით (category/tier/difficulty); უფასო ნაკრები ფიქსირებულია.
+    func testLevelCategoriesAndTiers() throws {
+        let levels = try GameData.loadLevels()
+        // უფასოა მხოლოდ Learn (tutorial) დონეები.
+        let freeIDs = Set(levels.filter { $0.resolvedTier == .free }.map { $0.id })
+        XCTAssertEqual(freeIDs, ["lvl_tutorial", "lvl_socket_rcd", "lvl_two_lamps",
+                                 "lvl_lamp_socket", "lvl_two_sockets", "lvl_lamp_two_sockets"])
+        XCTAssertTrue(levels.contains { $0.resolvedCategory == .panelAssembly })
+        for l in levels { XCTAssertTrue((1...5).contains(l.resolvedDifficulty)) }
+        // გაფართოებული კონტენტი — Pro.
+        XCTAssertEqual(levels.first { $0.id == "lvl_panel_intro" }?.resolvedTier, .pro)
+    }
+
+    /// ტარიფის მოდელი: Learn=უფასო (მხოლოდ ბაზისური კომპონენტებით), დანარჩენი=Pro.
+    func testTierModelLearnFreeRestPro() throws {
+        let templates = try GameData.loadTemplates()
+        let levels = try GameData.loadLevels()
+        var freeCount = 0
+        for level in levels {
+            if level.resolvedTier == .free {
+                freeCount += 1
+                // 1. უფასო დონე = Learn/tutorial კატეგორია
+                XCTAssertEqual(level.resolvedCategory, .tutorial,
+                               "უფასო დონე \(level.id) უნდა იყოს Learn/tutorial")
+                // 2. სრულდება მხოლოდ ბაზისური (უფასო) კომპონენტებით
+                for entry in level.palette {
+                    guard let kind = templates[entry.templateId]?.kind else {
+                        XCTFail("\(level.id): უცნობი შაბლონი \(entry.templateId)"); continue
+                    }
+                    XCTAssertTrue(ComponentGating.isBasicFree(kind),
+                                  "უფასო დონე \(level.id) იყენებს არა-ბაზისურ კომპონენტს \(entry.templateId) (\(kind))")
+                }
+                // 3. მიზნის ყველა დატვირთვა პალიტრაშია
+                let avail = Set(level.palette.compactMap { templates[$0.templateId]?.kind })
+                for (k, _) in level.goal.poweredLoads {
+                    XCTAssertTrue(ComponentKind(rawValue: k).map(avail.contains) ?? false,
+                                  "უფასო დონე \(level.id): მიზანი \(k) პალიტრაში არ არის")
+                }
+            } else {
+                // 4. დანარჩენი (panel/3ph/fault/advanced/sandbox) — Pro
+                XCTAssertEqual(level.resolvedTier, .pro, "\(level.id) უნდა იყოს Pro")
+            }
+        }
+        XCTAssertGreaterThanOrEqual(freeCount, 1, "უნდა არსებობდეს მინიმუმ ერთი უფასო Learn დონე")
+        // sandbox ყოველთვის Pro
+        for s in levels where s.resolvedMode == .sandbox {
+            XCTAssertEqual(s.resolvedTier, .pro, "sandbox უნდა იყოს Pro")
+        }
+        // panel-assembly / three-phase / fault-finding — ყველა Pro
+        for l in levels where [.panelAssembly, .threePhase, .faultFinding].contains(l.resolvedCategory) {
+            XCTAssertEqual(l.resolvedTier, .pro, "\(l.id) (\(l.resolvedCategory)) უნდა იყოს Pro")
+        }
+    }
+
+    // MARK: - 15. ფარის აწყობის ვალიდაცია (panel assembly)
+
+    /// სწორად აწყობილი ფარი: მთავარი → SPD → RCD → ავტომატები (ზოლით) → ხაზები.
+    private func makeCorrectPanel() -> Board {
+        var b = Board(phase: .single)
+        b.add(ComponentFactory.supply(id: "S"))
+        b.add(ComponentFactory.mainSwitch(id: "MS"))
+        b.add(ComponentFactory.spd(id: "SPD"))
+        b.add(ComponentFactory.rcd(id: "RCD"))
+        b.add(ComponentFactory.busbar(id: "BB", conductor: .L, slots: 4))
+        b.add(ComponentFactory.mcb(id: "B1", ratingA: 10))
+        b.add(ComponentFactory.mcb(id: "B2", ratingA: 16))
+        b.add(ComponentFactory.lamp(id: "LAMP"))
+        b.add(ComponentFactory.socket(id: "SOC"))
+        b.connect("S.L", "MS.Lin", csaMm2: 4, color: .brown)
+        b.connect("MS.Lout", "RCD.Lin", csaMm2: 4, color: .brown)
+        b.connect("RCD.Lout", "BB.0", csaMm2: 4, color: .brown)
+        b.connect("BB.1", "B1.in", csaMm2: 2.5, color: .brown)
+        b.connect("BB.2", "B2.in", csaMm2: 2.5, color: .brown)
+        b.connect("B1.out", "LAMP.L", csaMm2: 1.5, color: .brown)
+        b.connect("B2.out", "SOC.L", csaMm2: 2.5, color: .brown)
+        b.connect("SPD.L", "BB.3", csaMm2: 2.5, color: .brown)
+        b.connect("SPD.PE", "S.PE", csaMm2: 2.5, color: .yellowGreen)
+        b.connect("S.N", "MS.Nin", csaMm2: 4, color: .blue)
+        b.connect("MS.Nout", "RCD.Nin", csaMm2: 4, color: .blue)
+        b.connect("RCD.Nout", "LAMP.N", csaMm2: 1.5, color: .blue)
+        b.connect("RCD.Nout", "SOC.N", csaMm2: 2.5, color: .blue)
+        b.connect("S.PE", "LAMP.PE", csaMm2: 1.5, color: .yellowGreen)
+        b.connect("S.PE", "SOC.PE", csaMm2: 2.5, color: .yellowGreen)
+        return b
+    }
+
+    func testPanelAssemblyCorrectOrderPasses() {
+        let b = makeCorrectPanel()
+        XCTAssertTrue(PanelAssembly.validate(b).isEmpty,
+                      "სწორი ფარი ვერ უნდა აგენერირებდეს შეცდომას: \(PanelAssembly.validate(b).map(\.code))")
+        let r = solver.solve(b, energize: true)
+        XCTAssertTrue(r.passed, "სწორი ფარი უნდა გაიაროს: \(r.errors.map(\.code))")
+        XCTAssertTrue(r.state(for: "LAMP")?.isPowered == true)
+        XCTAssertTrue(r.state(for: "SOC")?.isPowered == true)
+    }
+
+    func testPanelRcdAfterMcbFails() {
+        var b = Board(phase: .single)
+        b.add(ComponentFactory.supply(id: "S"))
+        b.add(ComponentFactory.mainSwitch(id: "MS"))
+        b.add(ComponentFactory.mcb(id: "B1", ratingA: 10))   // ავტომატი RCD-მდე — შეცდომა
+        b.add(ComponentFactory.rcd(id: "RCD"))
+        b.add(ComponentFactory.busbar(id: "BB", conductor: .L, slots: 4))
+        XCTAssertTrue(PanelAssembly.validate(b).contains { $0.code == .panelRcdAfterMcb })
+    }
+
+    func testPanelMainNotFirstFails() {
+        var b = Board(phase: .single)
+        b.add(ComponentFactory.supply(id: "S"))
+        b.add(ComponentFactory.mcb(id: "B1", ratingA: 10))   // ავტომატი მთავარამდე — შეცდომა
+        b.add(ComponentFactory.mainSwitch(id: "MS"))
+        b.add(ComponentFactory.rcd(id: "RCD"))
+        XCTAssertTrue(PanelAssembly.validate(b).contains { $0.code == .panelMainNotFirst })
+    }
+
+    func testPanelBusbarFeedMissing() {
+        var b = Board(phase: .single)
+        b.add(ComponentFactory.supply(id: "S"))
+        b.add(ComponentFactory.mainSwitch(id: "MS"))
+        b.add(ComponentFactory.rcd(id: "RCD"))
+        b.add(ComponentFactory.mcb(id: "B1", ratingA: 10))
+        b.add(ComponentFactory.mcb(id: "B2", ratingA: 16))   // ორი ავტომატი ზოლის გარეშე
+        XCTAssertTrue(PanelAssembly.validate(b).contains { $0.code == .panelBusbarFeed })
+    }
 }

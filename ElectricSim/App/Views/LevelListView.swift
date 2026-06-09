@@ -38,12 +38,12 @@ struct LevelListView: View {
                 }
             }
 
-            Section {
-                ForEach(game.campaignLevels) { levelRow($0) }
-            } header: {
-                Text("დონეები")
-            } footer: {
-                Text("ააწყვე ფარი, დააკავშირე სადენები და ჩართე ძაბვა. შეცდომებზე მიიღებ ახსნას ქართულად.")
+            ForEach(game.groupedCampaign) { group in
+                Section {
+                    ForEach(group.levels) { levelRow($0) }
+                } header: {
+                    Text(group.category.georgian)
+                }
             }
 
             if !game.customLevels.isEmpty {
@@ -171,9 +171,23 @@ private struct LevelRowContent: View {
                     }
                 }
                 Text(level.brief).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                if level.resolvedMode != .sandbox {
+                    difficultyView
+                }
             }
         }
         .padding(.vertical, 4)
+    }
+
+    /// სირთულე — შევსებული/ცარიელი წერტილებით (1...5).
+    private var difficultyView: some View {
+        HStack(spacing: 3) {
+            ForEach(1...5, id: \.self) { i in
+                Circle()
+                    .fill(i <= level.resolvedDifficulty ? Color.orange : Color.gray.opacity(0.25))
+                    .frame(width: 6, height: 6)
+            }
+        }
     }
 
     private var iconName: String {

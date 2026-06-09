@@ -21,6 +21,10 @@ final class GameState: ObservableObject {
 
     @Published var sldExportCount: Int = 0
 
+    /// Career Mode-ის მდგომარეობა — იტვირთება გაშვებისას (Phase 1: მონაცემები/პერსისტენცია).
+    let career = CareerState()
+    @Published var jobs: [Job] = []
+
     private let progressKey = "completedLevelIDs.v1"
     private let customKey = "customLevels.v1"
     private let achKey = "achievements.v1"
@@ -42,6 +46,7 @@ final class GameState: ObservableObject {
         do {
             templates = try GameData.loadTemplates()
             levels = try GameData.loadLevels()
+            jobs = try GameData.loadJobs()
         } catch {
             loadError = "მონაცემების ჩატვირთვა ვერ მოხერხდა: \(error)"
         }
@@ -65,13 +70,11 @@ final class GameState: ObservableObject {
         levels.first { $0.id == id } ?? customLevels.first { $0.id == id }
     }
 
-    /// Pro-ჩაკეტილია? უფასო = პირველი 3 დონე (1 ფაზა). custom = თავისუფალი.
+    /// Pro-ჩაკეტილია? ფასიანობა დონის `tier`-ით განისაზღვრება. custom = თავისუფალი.
     func isProLocked(_ level: Level, isPro: Bool) -> Bool {
         if isPro { return false }
-        if level.resolvedMode == .sandbox { return true }
         if customLevels.contains(where: { $0.id == level.id }) { return false }
-        let free = level.resolvedMode == .build && level.phase == .single && level.index <= 3
-        return !free
+        return level.resolvedTier == .pro
     }
 
     // MARK: - პროგრესია
@@ -79,6 +82,18 @@ final class GameState: ObservableObject {
     /// პროგრესიის (numbered) დონეები — sandbox-ის გარეშე.
     var campaignLevels: [Level] { levels.filter { $0.resolvedMode != .sandbox } }
     var sandboxLevels: [Level] { levels.filter { $0.resolvedMode == .sandbox } }
+
+    /// კამპანიის დონეები კატეგორიებად დაჯგუფებული და დალაგებული (UI-სთვის).
+    struct CategoryGroup: Identifiable {
+        let category: LevelCategory
+        let levels: [Level]
+        var id: String { category.rawValue }
+    }
+    var groupedCampaign: [CategoryGroup] {
+        Dictionary(grouping: campaignLevels) { $0.resolvedCategory }
+            .map { CategoryGroup(category: $0.key, levels: $0.value.sorted { $0.index < $1.index }) }
+            .sorted { $0.category.order < $1.category.order }
+    }
 
     func isCompleted(_ level: Level) -> Bool { completedLevelIDs.contains(level.id) }
 

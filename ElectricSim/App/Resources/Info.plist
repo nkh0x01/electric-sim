@@ -19,11 +19,9 @@
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>2</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>თქვენი ნებართვა გამოიყენება უფასო ვერსიაში უფრო რელევანტური რეკლამის საჩვენებლად. უარის თქმის შემთხვევაშიც აპლიკაცია სრულად მუშაობს.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchScreen</key>

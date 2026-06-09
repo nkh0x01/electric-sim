@@ -1,0 +1,193 @@
+//
+//  Career.swift
+//  ElectricSim — Core
+//
+//  Career Mode — Phase 1: data model + persistence only (no UI).
+//  იყენებს არსებულ პატერნებს: JSON ჩატვირთვა GameData-ით (იგივე, რაც levels.json),
+//  ფასიანობა LevelTier-ით (free/pro) + EntitlementStore.isPro (gating არ იფორკება),
+//  ბაზისური კომპონენტების ნაკრები ComponentGating-იდან.
+//
+
+import Foundation
+
+// MARK: - Job category
+
+/// სამუშაოს კატეგორია (ka labels — UI-სთვის).
+public enum JobCategory: String, Codable, Sendable, CaseIterable {
+    case tutorial
+    case residential
+    case commercial
+    case industrial
+    case faultfinding
+    case renewable
+    case inspection
+
+    public var georgian: String {
+        switch self {
+        case .tutorial:     return "შესავალი"
+        case .residential:  return "საცხოვრებელი"
+        case .commercial:   return "კომერციული"
+        case .industrial:   return "სამრეწველო"
+        case .faultfinding: return "დეფექტის ძებნა"
+        case .renewable:    return "განახლებადი ენერგია"
+        case .inspection:   return "ინსპექცია"
+        }
+    }
+}
+
+// MARK: - Career rank (thresholds centralized here)
+
+/// კარიერული წოდება. XP-ის ზღვრები ერთ ადგილას — ადვილად რეგულირებადი.
+public enum CareerRank: String, Codable, Sendable, CaseIterable {
+    case apprentice
+    case residential
+    case commercial
+    case industrial
+    case renewable
+    case master
+
+    /// XP ზღვარი, რომლის მიღწევაც ხსნის ამ წოდებას.
+    public var xpThreshold: Int {
+        switch self {
+        case .apprentice:  return 0
+        case .residential: return 300
+        case .commercial:  return 900
+        case .industrial:  return 1800
+        case .renewable:   return 3000
+        case .master:      return 5000
+        }
+    }
+
+    /// ქართული იარლიყი (UI).
+    public var georgian: String {
+        switch self {
+        case .apprentice:  return "შეგირდი"
+        case .residential: return "საცხოვრებელი ობიექტების ელექტრიკოსი"
+        case .commercial:  return "კომერციული ობიექტების ელექტრიკოსი"
+        case .industrial:  return "სამრეწველო ელექტრიკოსი"
+        case .renewable:   return "განახლებადი ენერგიის სპეციალისტი"
+        case .master:      return "ოსტატი ელექტრიკოსი"
+        }
+    }
+
+    /// დალაგების რიგი (დაბალი → მაღალი).
+    public var order: Int {
+        switch self {
+        case .apprentice:  return 0
+        case .residential: return 1
+        case .commercial:  return 2
+        case .industrial:  return 3
+        case .renewable:   return 4
+        case .master:      return 5
+        }
+    }
+
+    /// მოცემული XP-ისთვის უმაღლესი მიღწეული წოდება.
+    public static func rank(forXP xp: Int) -> CareerRank {
+        allCases.filter { xp >= $0.xpThreshold }.max(by: { $0.order < $1.order }) ?? .apprentice
+    }
+}
+
+// MARK: - Job (jobs.json)
+
+public struct Job: Codable, Identifiable, Sendable {
+    public let id: String
+    public let georgianTitle: String
+    public let customerName: String
+    public let location: String
+    public let category: JobCategory
+    public let difficulty: Int            // 1...5
+    public let tier: LevelTier            // free / pro — არსებული gating-ის გასაღები
+    public let jobBrief: String           // ka
+    public let componentsAvailable: [String]  // templateId-ები (პალიტრა)
+    public let requiredComponents: [String]   // templateId-ები (გადასაჭრელად საჭირო)
+    public let xpReward: Int
+    public let cashReward: Int
+    public let unlocks: [String]          // რას ხსნის (კომპონენტი/ხელსაწყო id)
+
+    public var resolvedDifficulty: Int { min(5, max(1, difficulty)) }
+}
+
+// MARK: - Career state (persistent, UserDefaults — იგივე პატერნი, რაც GameState)
+
+/// კარიერის მდგომარეობა. Foundation-only და ტესტირებადი (UserDefaults ინჟექტირებადია).
+public final class CareerState {
+
+    public static let startingCash = 0
+    public static let progressKey = "career.v1"
+
+    private let defaults: UserDefaults
+
+    public private(set) var totalXP: Int
+    public private(set) var cash: Int
+    public private(set) var completedJobs: Set<String>
+    public private(set) var ownedTools: Set<String>
+    public private(set) var ownedComponents: Set<String>
+
+    /// მიმდინარე წოდება — გამოითვლება totalXP-დან (ცალკე შესანახი არ სჭირდება).
+    public var currentRank: CareerRank { CareerRank.rank(forXP: totalXP) }
+
+    public init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        if let data = defaults.data(forKey: Self.progressKey),
+           let s = try? JSONDecoder().decode(Persisted.self, from: data) {
+            totalXP = s.totalXP
+            cash = s.cash
+            completedJobs = Set(s.completedJobs)
+            ownedTools = Set(s.ownedTools)
+            ownedComponents = Set(s.ownedComponents)
+        } else {
+            // default ახალი კარიერა
+            totalXP = 0
+            cash = Self.startingCash
+            completedJobs = []
+            ownedTools = []
+            ownedComponents = []
+        }
+    }
+
+    public func isCompleted(_ jobID: String) -> Bool { completedJobs.contains(jobID) }
+
+    /// სამუშაოს დასრულება. ჯილდო ერთხელ — ხელახლა გავლა XP/cash-ს არ ადუბლირებს.
+    /// აბრუნებს true-ს, თუ ეს იყო პირველი დასრულება (ჯილდო გაიცა).
+    @discardableResult
+    public func completeJob(_ job: Job) -> Bool {
+        guard !completedJobs.contains(job.id) else { return false }
+        completedJobs.insert(job.id)
+        totalXP += job.xpReward
+        cash += job.cashReward
+        for u in job.unlocks { ownedComponents.insert(u) }  // unlocks → ხელმისაწვდომი კომპონენტები
+        save()
+        return true
+    }
+
+    /// gating — არსებული isPro-ით (არ იფორკება). Pro-სამუშაო ჩაკეტილია უფასო მომხმარებლისთვის.
+    public func isProLocked(_ job: Job, isPro: Bool) -> Bool {
+        if isPro { return false }
+        return job.tier == .pro
+    }
+
+    public func resetProgress() {
+        totalXP = 0; cash = Self.startingCash
+        completedJobs = []; ownedTools = []; ownedComponents = []
+        defaults.removeObject(forKey: Self.progressKey)
+    }
+
+    private func save() {
+        let s = Persisted(totalXP: totalXP, cash: cash,
+                          completedJobs: Array(completedJobs),
+                          ownedTools: Array(ownedTools),
+                          ownedComponents: Array(ownedComponents))
+        if let data = try? JSONEncoder().encode(s) {
+            defaults.set(data, forKey: Self.progressKey)
+        }
+    }
+
+    private struct Persisted: Codable {
+        let totalXP: Int
+        let cash: Int
+        let completedJobs: [String]
+        let ownedTools: [String]
+        let ownedComponents: [String]
+    }
+}

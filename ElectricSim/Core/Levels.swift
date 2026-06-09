@@ -105,6 +105,48 @@ public enum LevelMode: String, Codable, Sendable {
     case sandbox     // თავისუფალი აწყობა — შეზღუდვების/მიზნის გარეშე
 }
 
+// MARK: - Level category & tier (დაჯგუფება/ფასიანობა)
+
+/// დონის კატეგორია — UI-ში დასაჯგუფებლად და დასალაგებლად.
+public enum LevelCategory: String, Codable, Sendable, CaseIterable {
+    case tutorial        // გაკვეთილები
+    case singlePhase     // ერთფაზიანი
+    case panelAssembly   // ფარის აწყობა
+    case faultFinding     // დეფექტის ძებნა
+    case threePhase      // სამფაზიანი
+    case sandbox         // ხელსაწყოები / თავისუფალი
+
+    /// ჩვენების რიგი (მცირე → ზევით).
+    public var order: Int {
+        switch self {
+        case .tutorial:      return 0
+        case .singlePhase:   return 1
+        case .panelAssembly: return 2
+        case .faultFinding:  return 3
+        case .threePhase:    return 4
+        case .sandbox:       return 5
+        }
+    }
+
+    /// ქართული სათაური სექციისთვის.
+    public var georgian: String {
+        switch self {
+        case .tutorial:      return "გაკვეთილები"
+        case .singlePhase:   return "ერთფაზიანი მონტაჟი"
+        case .panelAssembly: return "ფარის აწყობა"
+        case .faultFinding:  return "დეფექტის ძებნა"
+        case .threePhase:    return "სამფაზიანი"
+        case .sandbox:       return "ხელსაწყოები"
+        }
+    }
+}
+
+/// დონის ფასიანობა (free/Pro).
+public enum LevelTier: String, Codable, Sendable {
+    case free
+    case pro
+}
+
 // MARK: - Pre-built board (fault-finding დონეებისთვის)
 
 /// ფეხის მისამართი წინასწარ აწყობილ ფარში: კომპონენტის id + ფეხის სუფიქსი
@@ -145,8 +187,54 @@ public struct Level: Codable, Identifiable, Sendable {
     public let goal: LevelGoal
     public let mode: LevelMode?    // nil → .build
     public let prebuilt: PrebuiltBoard?
+    public let category: LevelCategory?   // nil → გამოითვლება
+    public let difficulty: Int?           // 1...5 (nil → 1)
+    public let tier: LevelTier?           // nil → გამოითვლება (heuristic)
+
+    public init(id: String, index: Int, title: String, brief: String, hint: String,
+                phase: Phase, palette: [PaletteEntry], goal: LevelGoal,
+                mode: LevelMode? = nil, prebuilt: PrebuiltBoard? = nil,
+                category: LevelCategory? = nil, difficulty: Int? = nil, tier: LevelTier? = nil) {
+        self.id = id
+        self.index = index
+        self.title = title
+        self.brief = brief
+        self.hint = hint
+        self.phase = phase
+        self.palette = palette
+        self.goal = goal
+        self.mode = mode
+        self.prebuilt = prebuilt
+        self.category = category
+        self.difficulty = difficulty
+        self.tier = tier
+    }
 
     public var resolvedMode: LevelMode { mode ?? .build }
+
+    /// ფასიანობა: explicit `tier` ან heuristic (build+single+index≤3 → free; დანარჩენი → pro).
+    public var resolvedTier: LevelTier {
+        if let tier { return tier }
+        if resolvedMode == .build && phase == .single && index <= 3 { return .free }
+        return .pro
+    }
+
+    /// კატეგორია: explicit `category` ან რეჟიმიდან/ფაზიდან გამოთვლილი.
+    public var resolvedCategory: LevelCategory {
+        if let category { return category }
+        switch resolvedMode {
+        case .sandbox:   return .sandbox
+        case .faultFind: return .faultFinding
+        case .build:     return phase == .three ? .threePhase
+                                                 : (index == 1 ? .tutorial : .singlePhase)
+        }
+    }
+
+    /// სირთულე 1...5.
+    public var resolvedDifficulty: Int { min(5, max(1, difficulty ?? 1)) }
+
+    /// ფარის-აწყობის დონეა? (ააწყობ სრულ consumer unit-ს სწორი თანმიმდევრობით)
+    public var isPanelAssembly: Bool { resolvedCategory == .panelAssembly }
 
     /// დონის საწყისი ფარი: ან წინასწარ აწყობილი (faultFind), ან მხოლოდ კვება (build).
     public func initialBoard(templates: [String: ComponentTemplate]) -> Board {
@@ -217,5 +305,12 @@ public enum GameData {
         let data = try loadJSON("levels")
         let levels = try JSONDecoder().decode([Level].self, from: data)
         return levels.sorted { $0.index < $1.index }
+    }
+
+    /// Career Mode-ის სამუშაოები (jobs.json) — იგივე პატერნი, რაც loadLevels.
+    public static func loadJobs() throws -> [Job] {
+        let data = try loadJSON("jobs")
+        let jobs = try JSONDecoder().decode([Job].self, from: data)
+        return jobs.sorted { $0.difficulty < $1.difficulty }
     }
 }

@@ -193,7 +193,8 @@ final class WorkbenchModel: ObservableObject {
     }
 
     func check() {
-        let r = solver.solve(board, energize: false)
+        var r = solver.solve(board, energize: false)
+        if level.isPanelAssembly { r.issues.append(contentsOf: PanelAssembly.validate(board)) }
         if !r.passed { mistakes += 1 }
         result = r
         liveAnalysis = nil
@@ -201,7 +202,8 @@ final class WorkbenchModel: ObservableObject {
     }
 
     func powerOn(game: GameState) {
-        let r = solver.solve(board, energize: true)
+        var r = solver.solve(board, energize: true)
+        if level.isPanelAssembly { r.issues.append(contentsOf: PanelAssembly.validate(board)) }
         result = r
         liveAnalysis = solver.analyze(board)
         showResult = true
@@ -285,12 +287,11 @@ struct WorkbenchView: View {
     @State private var dragCurrent: CGPoint = .zero
     @State private var isZooming = false
 
-    /// უფასოში ბაზისური ნაკრები (main switch, MCB, RCD, ნათურა, როზეტი + კაბელი).
+    /// პალიტრის ელემენტი ჩაკეტილია თუ არა. ფასიანობა იმართება დონის tier-ით —
+    /// გახსნილი დონის მთელი პალიტრა ხელმისაწვდომია (იხ. ComponentGating).
     private func isPaletteLocked(_ e: PaletteEntry) -> Bool {
         guard !store.isPro else { return false }
-        let basic: Set<ComponentKind> = [.mainSwitch, .mcb, .rcd, .lamp, .socket]
-        guard let kind = model.templates[e.templateId]?.kind else { return false }
-        return !basic.contains(kind)
+        return !ComponentGating.isPaletteEntryAvailableForFree(e, templates: model.templates)
     }
     @State private var zoom: CGFloat = 1.0
     @GestureState private var pinch: CGFloat = 1.0
@@ -475,6 +476,12 @@ struct WorkbenchView: View {
                 Label("დეფექტის ძებნა — იპოვე და გაასწორე ხარვეზი", systemImage: "magnifyingglass")
                     .font(.caption.bold())
                     .foregroundStyle(.orange)
+            }
+            if model.level.isPanelAssembly {
+                Label("ფარის აწყობა — დაიცავი თანმიმდევრობა: მთავარი → SPD → RCD → ავტომატები (ზოლით)",
+                      systemImage: "rectangle.3.group")
+                    .font(.caption.bold())
+                    .foregroundStyle(.blue)
             }
             Text(model.level.brief)
                 .font(.footnote)

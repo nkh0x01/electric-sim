@@ -6,6 +6,9 @@
     "brief": "დააკავშირე 1 ფაზიანი ხაზი: მთავარი ამომრთველი + ავტომატი B10 + 1 ნათურა. შეაერთე ფაზა (ყავისფერი), ნული (ლურჯი) და მიწა (ყვითელ-მწვანე).",
     "hint": "კვებიდან: L → მთავარი ამომრთველი → ავტომატი B10 → ნათურის L. N → მთავარი ამომრთველი → ნათურის N. PE → ნათურის PE. გამოიყენე 1.5mm² კაბელი განათებაზე.",
     "phase": "single",
+    "category": "tutorial",
+    "difficulty": 1,
+    "tier": "free",
     "palette": [
       {
         "templateId": "main_2p",
@@ -38,6 +41,9 @@
     "brief": "დააკავშირე როზეტის ხაზი. როზეტი ვალდებულია იყოს RCD-ის (30mA) ქვემოთ. გამოიყენე 2.5mm² კაბელი და ავტომატი B16.",
     "hint": "L → მთავარი → RCD → ავტომატი B16 → როზეტი. N → მთავარი → RCD → როზეტი. PE პირდაპირ მიწის ზოლიდან როზეტამდე. RCD-ის გარეშე როზეტი დაუშვებელია.",
     "phase": "single",
+    "category": "tutorial",
+    "difficulty": 1,
+    "tier": "free",
     "palette": [
       {
         "templateId": "main_2p",
@@ -69,12 +75,193 @@
     }
   },
   {
-    "id": "lvl_full_board",
+    "id": "lvl_two_lamps",
     "index": 3,
+    "title": "ორი ნათურა",
+    "brief": "დააკავშირე ორი ნათურა, თითო ცალკე ავტომატით (B10, 1.5mm²).",
+    "hint": "თითო ნათურა — თითო ავტომატი. L → მთავარი → ავტომატი → ნათურა. N და PE ორივეს.",
+    "phase": "single",
+    "category": "tutorial",
+    "difficulty": 1,
+    "tier": "free",
+    "palette": [
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b10",
+        "max": 2,
+        "csaOptions": [
+          1.5,
+          2.5
+        ]
+      },
+      {
+        "templateId": "lamp_60",
+        "max": 2
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "lamp": 2
+      },
+      "description": "ორივე ნათურა უნდა აანთდეს."
+    }
+  },
+  {
+    "id": "lvl_lamp_socket",
+    "index": 4,
+    "title": "ნათურა და როზეტი",
+    "brief": "ერთ ფარში დააკავშირე განათების ხაზი და როზეტი. როზეტი RCD-ის ქვემოთ.",
+    "hint": "განათება: მთავარი → B10 → ნათურა. როზეტი: მთავარი → RCD → B16 → როზეტი. PE ყველგან.",
+    "phase": "single",
+    "category": "tutorial",
+    "difficulty": 2,
+    "tier": "free",
+    "palette": [
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "rcd_30",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b10",
+        "max": 1,
+        "csaOptions": [
+          1.5,
+          2.5
+        ]
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 1,
+        "csaOptions": [
+          2.5,
+          4
+        ]
+      },
+      {
+        "templateId": "lamp_60",
+        "max": 1
+      },
+      {
+        "templateId": "socket_16",
+        "max": 1
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "lamp": 1,
+        "socket": 1
+      },
+      "description": "ნათურაც და როზეტიც უნდა მუშაობდეს."
+    }
+  },
+  {
+    "id": "lvl_two_sockets",
+    "index": 5,
+    "title": "ორი როზეტი",
+    "brief": "დააკავშირე ორი როზეტი RCD-ის დაცვით (2.5mm²).",
+    "hint": "ორივე როზეტი RCD-ის ქვემოთ, თითო ავტომატით. PE სავალდებულოა.",
+    "phase": "single",
+    "category": "tutorial",
+    "difficulty": 2,
+    "tier": "free",
+    "palette": [
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "rcd_30",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 2,
+        "csaOptions": [
+          2.5,
+          4
+        ]
+      },
+      {
+        "templateId": "socket_16",
+        "max": 2
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "socket": 2
+      },
+      "description": "ორივე როზეტი უნდა მუშაობდეს RCD-ით."
+    }
+  },
+  {
+    "id": "lvl_lamp_two_sockets",
+    "index": 6,
+    "title": "განათება + ორი როზეტი",
+    "brief": "პატარა ბინის საფუძველი: ერთი განათების ხაზი და ორი როზეტი (RCD-ით).",
+    "hint": "განათება B10-ით (RCD-ის გარეშეც შეიძლება), ორი როზეტი B16-ით RCD-ის ქვემოთ. PE ყველას.",
+    "phase": "single",
+    "category": "tutorial",
+    "difficulty": 2,
+    "tier": "free",
+    "palette": [
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "rcd_30",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b10",
+        "max": 1,
+        "csaOptions": [
+          1.5,
+          2.5
+        ]
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 2,
+        "csaOptions": [
+          2.5,
+          4
+        ]
+      },
+      {
+        "templateId": "lamp_60",
+        "max": 1
+      },
+      {
+        "templateId": "socket_16",
+        "max": 2
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "lamp": 1,
+        "socket": 2
+      },
+      "description": "განათება და ორივე როზეტი უნდა მუშაობდეს."
+    }
+  },
+  {
+    "id": "lvl_full_board",
+    "index": 7,
     "title": "გაკვეთილი 3 — სრული ფარი",
     "brief": "ააწყვე სრული ფარი: მთავარი ამომრთველი, SPD, RCD, ორი ხაზი — განათება (B10) და როზეტი (B16). გამოიყენე სავარცხელი ზოლი ავტომატების კვებისთვის.",
     "hint": "სტანდარტული თანმიმდევრობა: მთავარი → SPD → RCD → ავტომატები (busbar-ით) → ხაზები. განათება 1.5mm², როზეტი 2.5mm².",
     "phase": "single",
+    "category": "singlePhase",
+    "difficulty": 2,
+    "tier": "pro",
     "palette": [
       {
         "templateId": "main_2p",
@@ -127,11 +314,14 @@
   },
   {
     "id": "lvl_fault_open",
-    "index": 4,
+    "index": 8,
     "title": "დეფექტი 1 — ნათურა არ ანათებს",
     "brief": "ფარი აწყობილია, მაგრამ ნათურა არ ანათებს. იპოვე რა აკლია და დააკავშირე გამოტოვებული სადენი.",
     "hint": "გამოიყენე მულტიმეტრი ან ფაზის ინდიკატორი. შეამოწმე — ფაზაც და ნულიც აღწევს თუ არა ნათურამდე? ნული (ლურჯი) აკლია მთავარი ამომრთველიდან ნათურამდე.",
     "phase": "single",
+    "category": "faultFinding",
+    "difficulty": 2,
+    "tier": "pro",
     "mode": "faultFind",
     "palette": [],
     "prebuilt": {
@@ -224,12 +414,149 @@
     }
   },
   {
+    "id": "lvl_panel_intro",
+    "index": 9,
+    "title": "ფარის აწყობა — შესავალი",
+    "brief": "ააწყვე სრული ფარი სწორი თანმიმდევრობით: მთავარი ამომრთველი → SPD → RCD → ავტომატები სავარცხელი ზოლით → 2 ხაზი (განათება + როზეტი). რელსზე თანმიმდევრობა მნიშვნელოვანია!",
+    "hint": "მარცხნიდან მარჯვნივ: მთავარი, SPD, RCD, შემდეგ ავტომატები. ავტომატები ჩართე სავარცხელ ზოლზე, ზოლი კი — RCD-ის L OUT-ზე. კომპონენტს გადააადგილებ გრძელი დაჭერის შემდეგ გადათრევით.",
+    "phase": "single",
+    "category": "panelAssembly",
+    "difficulty": 2,
+    "tier": "pro",
+    "palette": [
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "spd",
+        "max": 1
+      },
+      {
+        "templateId": "rcd_30",
+        "max": 1
+      },
+      {
+        "templateId": "busbar_l",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b10",
+        "max": 1,
+        "csaOptions": [
+          1.5,
+          2.5
+        ]
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 1,
+        "csaOptions": [
+          2.5,
+          4
+        ]
+      },
+      {
+        "templateId": "lamp_60",
+        "max": 1
+      },
+      {
+        "templateId": "socket_16",
+        "max": 1
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "lamp": 1,
+        "socket": 1
+      },
+      "description": "ორივე ხაზი უნდა მუშაობდეს და ფარი სწორი თანმიმდევრობით იყოს აწყობილი."
+    }
+  },
+  {
+    "id": "lvl_ac_unit",
+    "index": 10,
+    "title": "კონდიციონერის ხაზი",
+    "brief": "დააკავშირე კონდიციონერი (1500W) ცალკე ხაზით. ავტომატი B16, კაბელი 2.5mm², მიწა სავალდებულოა.",
+    "hint": "L → მთავარი → ავტომატი B16 → კონდიციონერის L. N და PE აუცილებელია. სურვილისამებრ დაამატე RCD დაცვისთვის.",
+    "phase": "single",
+    "category": "singlePhase",
+    "difficulty": 2,
+    "tier": "pro",
+    "palette": [
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "rcd_30",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 1,
+        "csaOptions": [
+          1.5,
+          2.5
+        ]
+      },
+      {
+        "templateId": "ac_1500",
+        "max": 1
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "airConditioner": 1
+      },
+      "description": "კონდიციონერი უნდა ამუშავდეს მიწითა და სწორი ავტომატით."
+    }
+  },
+  {
+    "id": "lvl_dimmer_light",
+    "index": 11,
+    "title": "დიმერით განათება",
+    "brief": "დააკავშირე დიმერით სამართავი განათება ცალკე ხაზზე (B10, 1.5mm²).",
+    "hint": "L → მთავარი → ავტომატი B10 → დიმერი-განათების L. N და PE დააკავშირე. დიმერი როზეტი არ არის — RCD სავალდებულო არ არის, თუმცა რეკომენდებულია.",
+    "phase": "single",
+    "category": "singlePhase",
+    "difficulty": 2,
+    "tier": "pro",
+    "palette": [
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b10",
+        "max": 1,
+        "csaOptions": [
+          1.5,
+          2.5
+        ]
+      },
+      {
+        "templateId": "dimmer_lamp",
+        "max": 1
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "dimmer": 1
+      },
+      "description": "დიმერით განათება უნდა აანთდეს."
+    }
+  },
+  {
     "id": "lvl_fault_short",
-    "index": 5,
+    "index": 12,
     "title": "დეფექტი 2 — ავტომატი მყისვე იგდება",
     "brief": "ძაბვის ჩართვისთანავე ავტომატი მყისიერად იგდება. იპოვე მოკლე ჩართვა და მოაშორე ზედმეტი სადენი.",
     "hint": "მაგნიტური (მყისიერი) გაგდება = მოკლე ჩართვა. მულტიმეტრით L–N აჩვენებს 0V-ს იქ, სადაც 230V უნდა იყოს. გახსენი „სადენების სია“ და წაშალე ფაზა-ნულის შემაერთებელი ზედმეტი სადენი.",
     "phase": "single",
+    "category": "faultFinding",
+    "difficulty": 3,
+    "tier": "pro",
     "mode": "faultFind",
     "palette": [],
     "prebuilt": {
@@ -347,11 +674,14 @@
   },
   {
     "id": "lvl_fault_leakage",
-    "index": 6,
+    "index": 13,
     "title": "დეფექტი 3 — RCD ხშირად იგდება",
     "brief": "ხაზი დაცულია RCD-ით, მაგრამ ძაბვის ჩართვისას RCD იგდება. როზეტში ჩართული მოწყობილობა დენს აჟონავს. შეცვალე გაუმართავი როზეტი ახლით.",
     "hint": "RCD გაგდება = დენის გაჟონვა (>30mA). RCD სწორად მუშაობს — პრობლემა დატვირთვაშია. წაშალე გაუმართავი როზეტი (− ღილაკით) და დაამატე ახალი პალიტრიდან, შემდეგ დააკავშირე L, N და PE (2.5mm²).",
     "phase": "single",
+    "category": "faultFinding",
+    "difficulty": 3,
+    "tier": "pro",
     "mode": "faultFind",
     "palette": [
       {
@@ -493,12 +823,166 @@
     }
   },
   {
+    "id": "lvl_boiler_line",
+    "index": 14,
+    "title": "ბოილერის ხაზი",
+    "brief": "დააკავშირე ბოილერი (2000W) ცალკე ხაზით RCD-ის დაცვით. ავტომატი B16, კაბელი 2.5mm².",
+    "hint": "L → მთავარი → RCD → ავტომატი B16 → ბოილერი. N გაატარე RCD-ში. PE სავალდებულოა — წყალთან კონტაქტის გამო განსაკუთრებით მნიშვნელოვანია.",
+    "phase": "single",
+    "category": "singlePhase",
+    "difficulty": 3,
+    "tier": "pro",
+    "palette": [
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "rcd_30",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 1,
+        "csaOptions": [
+          2.5,
+          4
+        ]
+      },
+      {
+        "templateId": "boiler_2000",
+        "max": 1
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "boiler": 1
+      },
+      "description": "ბოილერი უნდა ამუშავდეს RCD-ით, მიწითა და სწორი კაბელით."
+    }
+  },
+  {
+    "id": "lvl_oven_line",
+    "index": 15,
+    "title": "ღუმელის ხაზი",
+    "brief": "დააკავშირე ელექტრო-ღუმელი (3500W) — მძლავრი დატვირთვა. შეარჩიე ავტომატი და კაბელი ისე, რომ ampacity დაცული იყოს.",
+    "hint": "ღუმელი ≈15A. B16 + 2.5mm² საკმარისია. L → მთავარი → RCD → B16 → ღუმელი. ყურადღება: ავტომატი არ უნდა აღემატებოდეს კაბელის დასაშვებ დენს.",
+    "phase": "single",
+    "category": "singlePhase",
+    "difficulty": 3,
+    "tier": "pro",
+    "palette": [
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "rcd_30",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 1,
+        "csaOptions": [
+          2.5,
+          4
+        ]
+      },
+      {
+        "templateId": "oven_3500",
+        "max": 1
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "oven": 1
+      },
+      "description": "ღუმელი უნდა ამუშავდეს გადახურების გარეშე, სწორი ავტომატით."
+    }
+  },
+  {
+    "id": "lvl_panel_full",
+    "index": 16,
+    "title": "ფარის აწყობა — სამი ხაზი",
+    "brief": "ააწყვე ფარი სამი ხაზით სწორი თანმიმდევრობით: მთავარი → SPD → RCD → ავტომატები (ზოლით) → განათება + როზეტი + ბოილერი.",
+    "hint": "დაიცავი წყობა: მთავარი, SPD, RCD, შემდეგ სამი ავტომატი სავარცხელ ზოლზე. ზოლი იკვებება RCD-ის L OUT-დან. თითო ავტომატი — თითო ხაზი.",
+    "phase": "single",
+    "category": "panelAssembly",
+    "difficulty": 3,
+    "tier": "pro",
+    "palette": [
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "spd",
+        "max": 1
+      },
+      {
+        "templateId": "rcd_30",
+        "max": 1
+      },
+      {
+        "templateId": "busbar_l",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b10",
+        "max": 1,
+        "csaOptions": [
+          1.5,
+          2.5
+        ]
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 1,
+        "csaOptions": [
+          2.5,
+          4
+        ]
+      },
+      {
+        "templateId": "mcb_b20",
+        "max": 1,
+        "csaOptions": [
+          2.5,
+          4
+        ]
+      },
+      {
+        "templateId": "lamp_60",
+        "max": 1
+      },
+      {
+        "templateId": "socket_16",
+        "max": 1
+      },
+      {
+        "templateId": "boiler_2000",
+        "max": 1
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "lamp": 1,
+        "socket": 1,
+        "boiler": 1
+      },
+      "description": "სამივე ხაზი უნდა მუშაობდეს და ფარი სწორი თანმიმდევრობით იყოს აწყობილი."
+    }
+  },
+  {
     "id": "lvl_three_phase",
-    "index": 7,
+    "index": 17,
     "title": "3 ფაზა — ფაზების განაწილება",
     "brief": "სამფაზიანი ფარი: 4-პოლუსიანი მთავარი ამომრთველი და 3 ნათურა. გაანაწილე დატვირთვა — თითო ნათურა თითო ფაზაზე (L1/L2/L3), რომ ფაზები დაბალანსდეს.",
     "hint": "L1 (ყავისფერი) → ნათურა 1, L2 (შავი) → ნათურა 2, L3 (ნაცრისფერი) → ნათურა 3. ნული საერთოა მთავარიდან. ყველა ნათურა ერთ ფაზაზე → დისბალანსი.",
     "phase": "three",
+    "category": "threePhase",
+    "difficulty": 3,
+    "tier": "pro",
     "palette": [
       {
         "templateId": "main_4p",
@@ -526,12 +1010,212 @@
     }
   },
   {
+    "id": "lvl_kitchen",
+    "index": 18,
+    "title": "სამზარეულო — ორი როზეტი + ღუმელი",
+    "brief": "ააწყვე სამზარეულოს ფარი: ორი როზეტის ხაზი და ღუმელი, ყველა RCD-ის დაცვით.",
+    "hint": "გამოიყენე სავარცხელი ზოლი ავტომატების კვებისთვის. ორი როზეტი + ღუმელი ცალ-ცალკე ავტომატით. ყველა RCD-ის ქვემოთ. PE ყველგან.",
+    "phase": "single",
+    "category": "singlePhase",
+    "difficulty": 4,
+    "tier": "pro",
+    "palette": [
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "spd",
+        "max": 1
+      },
+      {
+        "templateId": "rcd_30",
+        "max": 1
+      },
+      {
+        "templateId": "busbar_l",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 3,
+        "csaOptions": [
+          2.5,
+          4
+        ]
+      },
+      {
+        "templateId": "socket_16",
+        "max": 2
+      },
+      {
+        "templateId": "oven_3500",
+        "max": 1
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "socket": 2,
+        "oven": 1
+      },
+      "description": "ორივე როზეტი და ღუმელი უნდა მუშაობდეს RCD-ით."
+    }
+  },
+  {
+    "id": "lvl_panel_three",
+    "index": 19,
+    "title": "ფარის აწყობა — გაფართოებული",
+    "brief": "ააწყვე ფარი ოთხი ხაზით სწორი თანმიმდევრობით: მთავარი → SPD → RCD → ავტომატები (ზოლით) → 1 განათება + 2 როზეტი + 1 ბოილერი.",
+    "hint": "ყველა ავტომატი სავარცხელ ზოლზე, ზოლი RCD-ის გამოსასვლელიდან. დაიცავი თანმიმდევრობა — შეცდომის შემთხვევაში მიიღებ ქართულ ახსნას.",
+    "phase": "single",
+    "category": "panelAssembly",
+    "difficulty": 4,
+    "tier": "pro",
+    "palette": [
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "spd",
+        "max": 1
+      },
+      {
+        "templateId": "rcd_30",
+        "max": 1
+      },
+      {
+        "templateId": "busbar_l",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b10",
+        "max": 1,
+        "csaOptions": [
+          1.5,
+          2.5
+        ]
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 2,
+        "csaOptions": [
+          2.5,
+          4
+        ]
+      },
+      {
+        "templateId": "mcb_b20",
+        "max": 1,
+        "csaOptions": [
+          2.5,
+          4
+        ]
+      },
+      {
+        "templateId": "lamp_60",
+        "max": 1
+      },
+      {
+        "templateId": "socket_16",
+        "max": 2
+      },
+      {
+        "templateId": "boiler_2000",
+        "max": 1
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "lamp": 1,
+        "socket": 2,
+        "boiler": 1
+      },
+      "description": "ოთხივე ხაზი უნდა მუშაობდეს და ფარი სწორი თანმიმდევრობით იყოს აწყობილი."
+    }
+  },
+  {
+    "id": "lvl_3ph_balanced6",
+    "index": 20,
+    "title": "3 ფაზა — ექვსი ნათურის ბალანსი",
+    "brief": "6 ნათურა სამ ფაზაზე. გაანაწილე ისე, რომ თითო ფაზაზე ორ-ორი მოვიდეს და ფარი დაბალანსდეს.",
+    "hint": "L1 → 2 ნათურა, L2 → 2 ნათურა, L3 → 2 ნათურა. ნული საერთო. დისბალანსი = ვერ გაივლი დონეს.",
+    "phase": "three",
+    "category": "threePhase",
+    "difficulty": 4,
+    "tier": "pro",
+    "palette": [
+      {
+        "templateId": "main_4p",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 6,
+        "csaOptions": [
+          1.5,
+          2.5
+        ]
+      },
+      {
+        "templateId": "lamp_60",
+        "max": 6
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "lamp": 6
+      },
+      "description": "ექვსივე ნათურა უნდა აანთდეს და სამი ფაზა დაბალანსებული იყოს.",
+      "requireBalanced": true
+    }
+  },
+  {
+    "id": "lvl_heater_3",
+    "index": 21,
+    "title": "3 ფაზა — გამახურებლების ბალანსი",
+    "brief": "სამი გამახურებელი (2000W თითო) გაანაწილე სამ ფაზაზე თანაბრად.",
+    "hint": "თითო გამახურებელი — თითო ფაზაზე (L1/L2/L3), ცალკე ავტომატით. PE ყველას. ერთ ფაზაზე თავმოყრა → დისბალანსი.",
+    "phase": "three",
+    "category": "threePhase",
+    "difficulty": 4,
+    "tier": "pro",
+    "palette": [
+      {
+        "templateId": "main_4p",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 3,
+        "csaOptions": [
+          2.5,
+          4
+        ]
+      },
+      {
+        "templateId": "heater_2000",
+        "max": 3
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "heater": 3
+      },
+      "description": "სამივე გამახურებელი უნდა მუშაობდეს და ფაზები დაბალანსებული იყოს.",
+      "requireBalanced": true
+    }
+  },
+  {
     "id": "lvl_motor",
-    "index": 8,
+    "index": 22,
     "title": "3-ფაზიანი მოტორი",
     "brief": "დააკავშირე 3-ფაზიანი მოტორი: 4-პოლუსიანი მთავარი, C-ტიპის ავტომატ(ებ)ი და მოტორი. სამივე ფაზა (L1/L2/L3) + მიწა (PE).",
     "hint": "მოტორი ინდუქციურია — გამოიყენე C მახასიათებლის ავტომატი (C16). სამივე ფაზა უნდა მიუვიდეს მოტორს, PE სავალდებულოა. 2.5mm² კაბელი საკმარისია.",
     "phase": "three",
+    "category": "threePhase",
+    "difficulty": 4,
+    "tier": "pro",
     "palette": [
       {
         "templateId": "main_4p",
@@ -558,12 +1242,150 @@
     }
   },
   {
+    "id": "lvl_motor_mpcb",
+    "index": 23,
+    "title": "მოტორი MPCB-ით",
+    "brief": "დააკავშირე 3-ფაზიანი მოტორი მოტორის დამცავი ამომრთველით (MPCB) — ერთი 3-პოლუსიანი მოწყობილობა სამივე ფაზაზე.",
+    "hint": "MPCB-ს აქვს L1/L2/L3 შესასვლელი და გამოსასვლელი. მთავარი → MPCB → მოტორი. PE პირდაპირ. 2.5mm² საკმარისია.",
+    "phase": "three",
+    "category": "threePhase",
+    "difficulty": 4,
+    "tier": "pro",
+    "palette": [
+      {
+        "templateId": "main_4p",
+        "max": 1
+      },
+      {
+        "templateId": "mpcb_16",
+        "max": 1,
+        "csaOptions": [
+          2.5,
+          4
+        ]
+      },
+      {
+        "templateId": "motor_3ph",
+        "max": 1
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "motor": 1
+      },
+      "description": "მოტორი უნდა ამუშავდეს MPCB-ით დაცული, სამივე ფაზითა და მიწით."
+    }
+  },
+  {
+    "id": "lvl_full_house",
+    "index": 24,
+    "title": "სრული ბინა",
+    "brief": "ააწყვე ბინის სრული ფარი: 2 განათების ხაზი, 2 როზეტის ხაზი და ბოილერი — ყველა სათანადო დაცვით.",
+    "hint": "გამოიყენე SPD, RCD და სავარცხელი ზოლი. განათება B10/1.5mm², როზეტები B16/2.5mm², ბოილერი B16/2.5mm². ყველა როზეტი RCD-ის ქვემოთ.",
+    "phase": "single",
+    "category": "singlePhase",
+    "difficulty": 5,
+    "tier": "pro",
+    "palette": [
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "spd",
+        "max": 1
+      },
+      {
+        "templateId": "rcd_30",
+        "max": 1
+      },
+      {
+        "templateId": "busbar_l",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b10",
+        "max": 2,
+        "csaOptions": [
+          1.5,
+          2.5
+        ]
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 3,
+        "csaOptions": [
+          2.5,
+          4
+        ]
+      },
+      {
+        "templateId": "lamp_60",
+        "max": 2
+      },
+      {
+        "templateId": "socket_16",
+        "max": 2
+      },
+      {
+        "templateId": "boiler_2000",
+        "max": 1
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "lamp": 2,
+        "socket": 2,
+        "boiler": 1
+      },
+      "description": "ყველა ხუთი დატვირთვა უნდა მუშაობდეს სათანადო დაცვით."
+    }
+  },
+  {
+    "id": "lvl_two_motors",
+    "index": 25,
+    "title": "ორი მოტორი",
+    "brief": "დააკავშირე ორი 3-ფაზიანი მოტორი, თითო C-ტიპის ავტომატებით. ყურადღება მიაქციე ფაზებს და მიწას.",
+    "hint": "თითო მოტორს სამივე ფაზა სჭირდება — გამოიყენე C16 ავტომატები თითო ფაზაზე. PE ორივე მოტორს. 2.5mm² კაბელი.",
+    "phase": "three",
+    "category": "threePhase",
+    "difficulty": 5,
+    "tier": "pro",
+    "palette": [
+      {
+        "templateId": "main_4p",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_c16",
+        "max": 6,
+        "csaOptions": [
+          2.5,
+          4
+        ]
+      },
+      {
+        "templateId": "motor_3ph",
+        "max": 2
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "motor": 2
+      },
+      "description": "ორივე მოტორი უნდა ამუშავდეს სამივე ფაზითა და მიწით."
+    }
+  },
+  {
     "id": "lvl_sandbox_1ph",
     "index": 90,
     "title": "Sandbox — 1 ფაზა",
     "brief": "თავისუფალი აწყობა შეზღუდვების გარეშე. ააწყვე ნებისმიერი ერთფაზიანი წრედი და ექსპერიმენტი ჩაატარე.",
     "hint": "ყველა კომპონენტი ხელმისაწვდომია. მიზანი არ არის — უბრალოდ ისწავლე და სცადე.",
     "phase": "single",
+    "category": "sandbox",
+    "difficulty": 1,
+    "tier": "pro",
     "mode": "sandbox",
     "palette": [
       {
@@ -761,6 +1583,9 @@
     "brief": "თავისუფალი აწყობა სამფაზიან ფარზე. ექსპერიმენტი ჩაატარე ფაზებით, ბალანსით და მოტორით.",
     "hint": "ყველა სამფაზიანი კომპონენტი ხელმისაწვდომია. მიზანი არ არის.",
     "phase": "three",
+    "category": "sandbox",
+    "difficulty": 2,
+    "tier": "pro",
     "mode": "sandbox",
     "palette": [
       {

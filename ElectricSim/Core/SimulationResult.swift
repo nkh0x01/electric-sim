@@ -50,6 +50,11 @@ public enum IssueCode: String, Sendable {
     case leakageTrip            // გაჟონვა → RCD გაიგდო
     case shockRisk              // შოკის რისკი (მიწის გარეშე გაჟონვა)
     case noSupply               // კვება არ არის მიერთებული
+    // ფარის აწყობა (panel assembly) — რელსზე თანმიმდევრობა/კვება
+    case panelMainNotFirst      // მთავარი ამომრთველი არ არის ფარის თავში
+    case panelSpdOrder          // SPD არასწორ ადგილასაა (main-სა და RCD-ს შორის უნდა იყოს)
+    case panelRcdAfterMcb       // RCD ავტომატების ქვემოთაა (უნდა იყოს მათ წინ)
+    case panelBusbarFeed        // ავტომატები სავარცხელი ზოლით არ იკვებება RCD-დან
 
     public var defaultSeverity: IssueSeverity {
         switch self {
@@ -158,6 +163,14 @@ public enum IssueMessages {
             return "შოკის რისკი! დენი იჟონება, მაგრამ მიწა (PE) მიერთებული არ არის და RCD ვერ ცნობს გაჟონვას."
         case .noSupply:
             return "კვება (230V) მიერთებული არ არის. დააკავშირე შემომავალი L და N."
+        case .panelMainNotFirst:
+            return "ფარის თავში (პირველი რელსზე) უნდა იყოს მთავარი ამომრთველი. დაამატე ან გადაიტანე ის ყველაზე მარცხნივ."
+        case .panelSpdOrder:
+            return "SPD (ზეძაბვის დამცავი) უნდა იყოს მთავარ ამომრთველსა და RCD-ს შორის. გადააადგილე ის სწორ ადგილას."
+        case .panelRcdAfterMcb:
+            return "RCD უნდა იყოს ავტომატების (MCB) წინ — ზემოთ რელსზე, რომ მათ დაცვა უზრუნველყოს. გადაიტანე RCD ავტომატებამდე."
+        case .panelBusbarFeed:
+            return "ავტომატები სავარცხელი ზოლით (busbar) უნდა იკვებებოდეს RCD-ის გამოსასვლელიდან. დააკავშირე ზოლი RCD-ის L OUT-თან და ავტომატების შესასვლელები ზოლზე."
         }
     }
 }
