@@ -236,6 +236,9 @@ public struct Component: Identifiable, Hashable, Codable, Sendable {
     public var leakageMa: Double?    // დეფექტი: გაჟონვის დენი (mA)
     public var faultShortToN: Bool   // დეფექტი: შიდა მოკლე ჩართვა L→N
     public var priceGEL: Double?     // ერთეულის ფასი (₾) — BOM-ისთვის
+    /// fault-finding მარკერი: არა-ელექტრული დეფექტის ნიშანი (FaultType rawValue),
+    /// მაგ. looseNeutral/failedSPD/sharedNeutral, რომელსაც solver ვერ აღმოაჩენს.
+    public var faultFlag: String?
     public var ports: [Port]
 
     public init(id: String,
@@ -250,6 +253,7 @@ public struct Component: Identifiable, Hashable, Codable, Sendable {
                 leakageMa: Double? = nil,
                 faultShortToN: Bool = false,
                 priceGEL: Double? = nil,
+                faultFlag: String? = nil,
                 ports: [Port]) {
         self.id = id
         self.kind = kind
@@ -259,6 +263,7 @@ public struct Component: Identifiable, Hashable, Codable, Sendable {
         self.curve = curve
         self.mAtrip = mAtrip
         self.powerW = powerW
+        self.faultFlag = faultFlag
         self.requiresPE = requiresPE
         self.leakageMa = leakageMa
         self.faultShortToN = faultShortToN

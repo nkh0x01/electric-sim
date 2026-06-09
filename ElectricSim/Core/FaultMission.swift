@@ -66,17 +66,23 @@ public struct BoardEdit: Codable, Sendable {
     public var setAllCsaMm2: Double?             // ყველა სადენის კვეთა (mm²)
     public var addWires: [PrebuiltWire]?         // დასამატებელი სადენები (მაგ. PE)
     public var removeWires: [PrebuiltWire]?      // წასაშლელი სადენები (ემთხვევა ფეხებით)
+    public var setFaultFlag: [String: FaultType]? // componentID → არა-ელექტრული დეფექტის მარკერი
+    public var clearFaultFlag: [String]?          // componentID-ები, რომელთა მარკერი იშლება
 
     public init(setRatingA: [String: Double]? = nil,
                 setLeakageMa: [String: Double]? = nil,
                 setAllCsaMm2: Double? = nil,
                 addWires: [PrebuiltWire]? = nil,
-                removeWires: [PrebuiltWire]? = nil) {
+                removeWires: [PrebuiltWire]? = nil,
+                setFaultFlag: [String: FaultType]? = nil,
+                clearFaultFlag: [String]? = nil) {
         self.setRatingA = setRatingA
         self.setLeakageMa = setLeakageMa
         self.setAllCsaMm2 = setAllCsaMm2
         self.addWires = addWires
         self.removeWires = removeWires
+        self.setFaultFlag = setFaultFlag
+        self.clearFaultFlag = clearFaultFlag
     }
 
     /// ცვლილებების გამოყენება Board-ზე.
@@ -101,6 +107,12 @@ public struct BoardEdit: Codable, Sendable {
                     ?? WireColor.standard(for: board.port(w.from.portID)?.conductor ?? .L)
                 board.connect(w.from.portID, w.to.portID, csaMm2: w.csa, color: color)
             }
+        }
+        if let flags = setFaultFlag {
+            for (id, t) in flags { mutate(id, &board) { $0.faultFlag = t.rawValue } }
+        }
+        if let clr = clearFaultFlag {
+            for id in clr { mutate(id, &board) { $0.faultFlag = nil } }
         }
     }
 
@@ -162,14 +174,24 @@ public struct FaultMission: Codable, Identifiable, Sendable {
 public enum FaultEngine {
     private static let solver = CircuitSolver()
 
-    /// ფარი ელექტრულად გამართულია? (Test რეჟიმი — გაგდებებიც ფასდება).
+    /// არა-ელექტრული (solver-ით აღმოუჩენადი) დეფექტის მარკერი ფარზე, თუ არსებობს.
+    private static func flaggedFault(_ board: Board) -> FaultType? {
+        for c in board.components {
+            if let raw = c.faultFlag, let t = FaultType(rawValue: raw) { return t }
+        }
+        return nil
+    }
+
+    /// ფარი ელექტრულად გამართულია? (Test რეჟიმი — გაგდებებიც ფასდება; + მარკერი წმინდაა).
     public static func boardPasses(_ board: Board) -> Bool {
-        solver.solve(board, energize: true).passed
+        flaggedFault(board) == nil && solver.solve(board, energize: true).passed
     }
 
     /// დეფექტიანი ფარის ელექტრულად-სწორი დიაგნოზი (faultType) ან nil.
     /// IEC: ავტომატი ≤ კაბელის ampacity, როზეტს სჭირდება RCD, ყველა ხაზს PE და ა.შ.
+    /// explicit მარკერი (looseNeutral/failedSPD/sharedNeutral/… — solver ვერ ცნობს) უპირატესია.
     public static func diagnose(_ board: Board) -> FaultType? {
+        if let flagged = flaggedFault(board) { return flagged }
         let r = solver.solve(board, energize: true)
         if r.contains(.shortPhasePhase)       { return .shortCircuitLN }
         if r.contains(.shortLN)               { return .shortCircuitLN }

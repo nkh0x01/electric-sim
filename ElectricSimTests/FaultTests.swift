@@ -112,4 +112,50 @@ final class FaultTests: XCTestCase {
         BoardEdit(setLeakageMa: ["soc": 0]).apply(to: &b)
         XCTAssertNil(b.components.first { $0.id == "soc" }?.leakageMa)
     }
+
+    // MARK: - Batch-1 fault types (Part A)
+
+    private func healthyLampBoard(breakerA: Double = 10, csa: Double = 1.5) -> Board {
+        var b = Board(phase: .single)
+        b.add(ComponentFactory.supply(id: "S"))
+        b.add(ComponentFactory.mainSwitch(id: "MS"))
+        b.add(ComponentFactory.mcb(id: "brk", ratingA: breakerA))
+        b.add(ComponentFactory.lamp(id: "L"))
+        b.connect("S.L", "MS.Lin", csaMm2: csa, color: .brown)
+        b.connect("MS.Lout", "brk.in", csaMm2: csa, color: .brown)
+        b.connect("brk.out", "L.L", csaMm2: csa, color: .brown)
+        b.connect("S.N", "MS.Nin", csaMm2: csa, color: .blue)
+        b.connect("MS.Nout", "L.N", csaMm2: csa, color: .blue)
+        b.connect("S.PE", "L.PE", csaMm2: csa, color: .yellowGreen)
+        return b
+    }
+
+    // explicit-მარკერით წარმოდგენილი (solver-ით აღმოუჩენადი) ტიპები: inject → diagnose → fix.
+    func testFlagFaultTypesEndToEnd() {
+        let flagTypes: [FaultType] = [.sharedNeutral, .nuisanceRCDTrip, .failedSPD,
+                                      .wrongPhaseSequence, .looseNeutral]
+        for ft in flagTypes {
+            var faulted = healthyLampBoard()
+            BoardEdit(setFaultFlag: ["MS": ft]).apply(to: &faulted)
+            XCTAssertFalse(FaultEngine.boardPasses(faulted), "\(ft): დეფექტიანი უნდა ჩავარდეს")
+            XCTAssertEqual(FaultEngine.diagnose(faulted), ft, "\(ft): დიაგნოზი")
+            XCTAssertTrue(FaultEngine.fixResolves(faulted: faulted, fix: BoardEdit(clearFaultFlag: ["MS"])),
+                          "\(ft): სწორმა fix-მა უნდა გადაჭრას")
+            XCTAssertFalse(FaultEngine.fixResolves(faulted: faulted, fix: BoardEdit()),
+                           "\(ft): ცარიელი fix არ უნდა ჭრიდეს")
+        }
+    }
+
+    // wrongCableSize: ნამდვილი breakerExceedsCable + მარკერი; fix = კაბელის გასქელება.
+    func testWrongCableSizeEndToEnd() {
+        var faulted = healthyLampBoard(breakerA: 20, csa: 1.5)   // B20 1.5mm²-ზე → გადახურდება
+        BoardEdit(setFaultFlag: ["L": .wrongCableSize]).apply(to: &faulted)
+        XCTAssertFalse(FaultEngine.boardPasses(faulted))
+        XCTAssertEqual(FaultEngine.diagnose(faulted), .wrongCableSize)
+        // სწორი: სქელი კაბელი + მარკერის გაწმენდა
+        XCTAssertTrue(FaultEngine.fixResolves(faulted: faulted,
+                       fix: BoardEdit(setAllCsaMm2: 2.5, clearFaultFlag: ["L"])))
+        // არასწორი: ავტომატის შემცირება — ampacity ვარდება, მაგრამ მარკერი რჩება
+        XCTAssertFalse(FaultEngine.fixResolves(faulted: faulted, fix: BoardEdit(setRatingA: ["brk": 10])))
+    }
 }

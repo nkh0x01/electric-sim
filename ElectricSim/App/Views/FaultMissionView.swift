@@ -132,10 +132,16 @@ struct FaultMissionView: View {
     private func candidates(for correct: FaultType) -> [FaultType] {
         let pool: [FaultType]
         switch correct {
-        case .wrongBreakerSize: pool = [.overloadedCable, .wrongCableSize, .shortCircuitLN]
-        case .missingPE:        pool = [.earthLeakage, .reversedPolarity, .missingRCD]
-        case .earthLeakage:     pool = [.missingRCD, .missingPE, .nuisanceRCDTrip]
-        default:                pool = [.missingPE, .earthLeakage, .wrongBreakerSize]
+        case .wrongBreakerSize:   pool = [.overloadedCable, .wrongCableSize, .shortCircuitLN]
+        case .missingPE:          pool = [.earthLeakage, .reversedPolarity, .missingRCD]
+        case .earthLeakage:       pool = [.missingRCD, .missingPE, .nuisanceRCDTrip]
+        case .wrongCableSize:     pool = [.wrongBreakerSize, .overloadedCable, .looseNeutral]
+        case .sharedNeutral:      pool = [.looseNeutral, .reversedPolarity, .missingRCD]
+        case .nuisanceRCDTrip:    pool = [.earthLeakage, .missingRCD, .sharedNeutral]
+        case .failedSPD:          pool = [.missingSPD, .looseNeutral, .nuisanceRCDTrip]
+        case .wrongPhaseSequence: pool = [.unbalanced3ph, .looseNeutral, .sharedNeutral]
+        case .looseNeutral:       pool = [.sharedNeutral, .nuisanceRCDTrip, .reversedPolarity]
+        default:                  pool = [.missingPE, .earthLeakage, .wrongBreakerSize]
         }
         var set = [correct] + pool.filter { $0 != correct }.prefix(3)
         set = Array(Set(set))
@@ -172,7 +178,7 @@ struct FaultMissionView: View {
 
     private func repairOptions(_ m: FaultMission) -> [(label: String, edit: BoardEdit)] {
         let brk = faultedBoard(m).components.first { $0.kind == .mcb }?.id
-        var opts: [(String, BoardEdit)] = [(describeFix(m.fix), m.fix)]
+        var opts: [(String, BoardEdit)] = [(correctRepairLabel(m), m.fix)]
         switch m.faultType {
         case .wrongBreakerSize:
             if let brk { opts.append(("ავტომატის შეცვლა 25A-ით", BoardEdit(setRatingA: [brk: 25]))) }
@@ -183,16 +189,36 @@ struct FaultMissionView: View {
         case .earthLeakage:
             if let brk { opts.append(("ავტომატის გაზრდა 40A-მდე", BoardEdit(setRatingA: [brk: 40]))) }
             opts.append(("მხოლოდ RCD-ის ხელახლა ჩართვა", BoardEdit()))
+        case .wrongCableSize:
+            if let brk { opts.append(("ავტომატის შემცირება კაბელის ნაცვლად", BoardEdit(setRatingA: [brk: 10]))) }
+            opts.append(("მხოლოდ კონტაქტების დათვალიერება", BoardEdit()))
         default:
-            opts.append(("სხვა ქმედება", BoardEdit()))
+            // sharedNeutral / nuisanceRCDTrip / failedSPD / wrongPhaseSequence / looseNeutral
+            opts.append(("მხოლოდ ვიზუალური დათვალიერება", BoardEdit()))
+            opts.append(("RCD-ის გადატესტვა", BoardEdit()))
         }
         return opts
+    }
+
+    /// სწორი შესწორების ქართული იარლიყი (ტიპის მიხედვით; flag-ფიქსებისთვის აღწერითი).
+    private func correctRepairLabel(_ m: FaultMission) -> String {
+        switch m.faultType {
+        case .wrongCableSize:     return "კაბელის გამსხვილება (სქელი კვეთა)"
+        case .sharedNeutral:      return "თითო ხაზს ცალკე ნული"
+        case .nuisanceRCDTrip:    return "დატვირთვის გადანაწილება მეორე RCD-ზე"
+        case .failedSPD:          return "SPD-ის გამოცვლა"
+        case .wrongPhaseSequence: return "ფაზების გადართვა (L2 ↔ L3)"
+        case .looseNeutral:       return "ნულის კონტაქტის დამაგრება"
+        default:                  return describeFix(m.fix)
+        }
     }
 
     private func describeFix(_ fix: BoardEdit) -> String {
         if let r = fix.setRatingA?.values.first { return "ავტომატის შეცვლა \(Int(r))A-ით" }
         if fix.addWires != nil { return "დამცავი მიწის (PE) სადენის დამატება" }
         if let l = fix.setLeakageMa, l.values.contains(0) { return "გაუმართავი მოწყობილობის გამოცვლა" }
+        if fix.setAllCsaMm2 != nil { return "კაბელის გამსხვილება" }
+        if fix.clearFaultFlag != nil { return "გაუმართაობის აღმოფხვრა" }
         return "შესწორების გამოყენება"
     }
 
