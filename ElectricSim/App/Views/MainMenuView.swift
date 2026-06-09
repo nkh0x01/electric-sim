@@ -8,7 +8,10 @@
 import SwiftUI
 
 struct MainMenuView: View {
+    @EnvironmentObject var store: EntitlementStore
+    @EnvironmentObject var game: GameState
     @Binding var path: [String]
+    @State private var showSettings = false
 
     var body: some View {
         List {
@@ -35,7 +38,7 @@ struct MainMenuView: View {
 
             // ტექსტური კრედიტი (ბმულის გარეშე — არ არის რეკლამა). ბმულები მხოლოდ „შესახებ“-ში.
             Section {
-                Text("შექმნილია Gadget-ის მიერ · სპონსორი Tsili.ge")
+                Text("Tsili.ge — იყიდე ქართული წარმოება")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -44,6 +47,15 @@ struct MainMenuView: View {
         }
         .navigationTitle("ელექტრიკოსის სიმულატორი")
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button { showSettings = true } label: { Image(systemName: "gearshape") }
+                    .accessibilityIdentifier("settings")
+            }
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView().environmentObject(store).environmentObject(game)
+        }
     }
 
     private func modeRow(route: String, title: String, subtitle: String,

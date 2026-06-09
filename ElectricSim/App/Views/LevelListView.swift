@@ -105,7 +105,14 @@ struct LevelListView: View {
         .safeAreaInset(edge: .bottom) { AdBannerView() }
         .sheet(isPresented: $showPaywall) { PaywallView().environmentObject(store) }
         .sheet(isPresented: $showAbout) {
-            AboutView().environmentObject(store).environmentObject(game)
+            NavigationStack {
+                AboutView()
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("დახურვა") { showAbout = false }
+                        }
+                    }
+            }
         }
     }
 

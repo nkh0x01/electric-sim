@@ -118,4 +118,17 @@ final class ElectricSimUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["gadget.ge"].waitForExistence(timeout: 10),
                       "„შესახებ“ ეკრანზე უნდა ეწეროს gadget.ge")
     }
+
+    /// მთავარი მენიუს ⚙️ → პარამეტრები → „შესახებ“ → ბრენდი gadget.ge.
+    func testSettingsFromMainMenuOpensAbout() {
+        let app = launchApp()
+        let settings = app.buttons["settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 20), "მთავარ მენიუში უნდა იყოს პარამეტრები")
+        settings.tap()
+        let about = app.buttons["settings-about"]
+        XCTAssertTrue(about.waitForExistence(timeout: 10), "პარამეტრებში უნდა იყოს „შესახებ“")
+        about.tap()
+        XCTAssertTrue(app.staticTexts["gadget.ge"].waitForExistence(timeout: 10),
+                      "„შესახებ“ ეკრანზე უნდა ეწეროს gadget.ge")
+    }
 }

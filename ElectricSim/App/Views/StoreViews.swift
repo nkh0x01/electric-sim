@@ -147,13 +147,21 @@ struct PaywallView: View {
     }
 }
 
-// MARK: - About / Settings
+// MARK: - Settings (პარამეტრები)
 
-struct AboutView: View {
+/// მთავარი პარამეტრების ეკრანი: ხმა, შესყიდვების აღდგენა, „შესახებ", ვერსია
+/// (დამალული დემო-Pro ჟესტით) და პროგრესის განულება. იხსნება მთავარი მენიუს
+/// ⚙️ ღილაკიდან.
+struct SettingsView: View {
     @EnvironmentObject var store: EntitlementStore
     @EnvironmentObject var game: GameState
     @Environment(\.dismiss) private var dismiss
+
+    // ხმის პარამეტრი (placeholder — შენახული პრეფერენცია; ხმის ძრავა მოგვიანებით).
+    @AppStorage("pref.soundEnabled") private var soundEnabled = true
+
     @State private var showPaywall = false
+    @State private var restoreMessage: String?
     // დამალული QA/დემო Pro-გადართვა: ვერსიაზე 7-ჯერ შეხება (Release-ზეც მუშაობს).
     @State private var versionTaps = 0
     @State private var demoMessage: String?
@@ -167,20 +175,12 @@ struct AboutView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section {
-                    HStack(spacing: 14) {
-                        Image(systemName: "bolt.fill")
-                            .font(.largeTitle).foregroundStyle(.yellow)
-                            .frame(width: 54, height: 54)
-                            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
-                        VStack(alignment: .leading) {
-                            Text("ელექტრიკოსის სიმულატორი").font(.headline)
-                            Text("ვერსია \(appVersion)")
-                                .font(.caption).foregroundStyle(.secondary)
-                                .contentShape(Rectangle())
-                                .onTapGesture { registerVersionTap() }   // 7× → დემო Pro
-                        }
+                Section("ხმა") {
+                    Toggle(isOn: $soundEnabled) {
+                        Label("ხმოვანი ეფექტები",
+                              systemImage: soundEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
                     }
+                    .accessibilityIdentifier("settings-sound")
                 }
 
                 Section("Pro") {
@@ -194,35 +194,30 @@ struct AboutView: View {
                             Label("განბლოკე ელექტრიკი Pro", systemImage: "bolt.shield.fill")
                         }
                     }
-                    Button("შესყიდვების აღდგენა") {
-                        Task { await store.restorePurchases() }
+                    Button {
+                        Task {
+                            await store.restorePurchases()
+                            restoreMessage = store.isPro
+                                ? "შესყიდვა აღდგენილია."
+                                : "აღსადგენი შესყიდვა ვერ მოიძებნა."
+                        }
+                    } label: {
+                        Label("შესყიდვების აღდგენა", systemImage: "arrow.clockwise")
                     }
-                }
-
-                Section("შემქმნელი") {
-                    Link(destination: URL(string: "https://gadget.ge")!) {
-                        Label("gadget.ge", systemImage: "globe")
-                    }
-                    Link(destination: URL(string: "mailto:info@gadget.ge")!) {
-                        Label("info@gadget.ge", systemImage: "envelope")
+                    .accessibilityIdentifier("settings-restore")
+                    if let restoreMessage {
+                        Text(restoreMessage).font(.caption)
+                            .foregroundStyle(store.isPro ? .green : .secondary)
                     }
                 }
 
                 Section {
-                    Link(destination: URL(string: "https://tsili.ge")!) {
-                        Label("სპონსორი: Tsili.ge", systemImage: "heart.fill")
-                            .foregroundStyle(.pink)
+                    NavigationLink {
+                        AboutView()
+                    } label: {
+                        Label("შესახებ", systemImage: "info.circle")
                     }
-                } header: {
-                    Text("მხარდაჭერა")
-                } footer: {
-                    Text("პროექტი ვითარდება gadget.ge-ს მიერ (gadget.ge). სპონსორი: Tsili.ge — შენი წვლილი ეხმარება ახალი დონეებისა და ფუნქციების შექმნას.")
-                }
-
-                Section("სამართლებრივი") {
-                    Link(destination: URL(string: "https://gadget.ge/privacy")!) {
-                        Label("კონფიდენციალურობის პოლიტიკა", systemImage: "hand.raised.fill")
-                    }
+                    .accessibilityIdentifier("settings-about")
                 }
 
                 Section {
@@ -241,8 +236,18 @@ struct AboutView: View {
                     ))
                 }
                 #endif
+
+                Section {
+                    Text("ვერსია \(appVersion)")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .contentShape(Rectangle())
+                        .onTapGesture { registerVersionTap() }   // 7× → დემო Pro
+                        .listRowBackground(Color.clear)
+                        .accessibilityIdentifier("settings-version")
+                }
             }
-            .navigationTitle("შესახებ")
+            .navigationTitle("პარამეტრები")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -267,5 +272,90 @@ struct AboutView: View {
         versionTaps = 0
         store.toggleDemoPro()
         demoMessage = store.demoProEnabled ? "Pro ჩართულია (დემო)" : "Pro გამორთულია"
+    }
+}
+
+// MARK: - About (ბრენდი + ლოგოები + ბმულები)
+
+/// „შესახებ" ეკრანი — აპის სახელი/აღწერა, შემქმნელი (Gadget) და სპონსორი
+/// (Tsili) ლოგოებითა და ბმულებით, კონფიდენციალურობის პოლიტიკა. Content-only:
+/// ნავიგაცია მშობელი stack-იდან (Settings-ის NavigationLink ან sheet wrapper).
+struct AboutView: View {
+    private var appVersion: String {
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        return "\(v) (\(b))"
+    }
+
+    var body: some View {
+        List {
+            Section {
+                VStack(spacing: 10) {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 44)).foregroundStyle(.yellow)
+                        .frame(width: 72, height: 72)
+                        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+                    Text("ელექტრიკოსის სიმულატორი").font(.title3.bold())
+                    Text("ისწავლე ელექტრომონტაჟი (IEC / TN-C-S) — ფარის აწყობა, შემოწმება და დეფექტის ძებნა, მთლიანად ქართულად.")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .listRowBackground(Color.clear)
+            }
+
+            Section("შემქმნელი") {
+                HStack(spacing: 12) {
+                    brandLogo("GadgetLogo", fallback: "wrench.and.screwdriver.fill", tint: .brand)
+                    Text("შექმნილია Gadget-ის მიერ").font(.callout)
+                }
+                Link(destination: URL(string: "https://gadget.ge")!) {
+                    Label("gadget.ge", systemImage: "globe")
+                }
+                Link(destination: URL(string: "mailto:info@gadget.ge")!) {
+                    Label("info@gadget.ge", systemImage: "envelope")
+                }
+            }
+
+            Section("მხარდაჭერა") {
+                HStack(spacing: 12) {
+                    brandLogo("TsiliLogo", fallback: "heart.fill", tint: .pink)
+                    Text("Tsili.ge — იყიდე ქართული წარმოება").font(.callout)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Link(destination: URL(string: "https://tsili.ge")!) {
+                    Label("tsili.ge", systemImage: "globe")
+                }
+            }
+
+            Section("სამართლებრივი") {
+                Link(destination: URL(string: "https://gadget.ge/privacy")!) {
+                    Label("კონფიდენციალურობის პოლიტიკა", systemImage: "hand.raised.fill")
+                }
+            }
+
+            Section {
+                Text("ვერსია \(appVersion)")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .listRowBackground(Color.clear)
+            }
+        }
+        .navigationTitle("შესახებ")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    /// ბრენდის ლოგო asset-იდან. სანამ რეალურ PNG-ს ჩასვამ, asset ცარიელია →
+    /// ზედა Image არაფერს ხატავs და ქვედა SF-სიმბოლო ჩანს (build არ ფუჭდება).
+    private func brandLogo(_ name: String, fallback: String, tint: Color) -> some View {
+        ZStack {
+            Image(systemName: fallback).resizable().scaledToFit()
+                .foregroundStyle(tint).padding(9)
+            Image(name).resizable().scaledToFit()   // ცარიელ asset-ზე უხილავია
+        }
+        .frame(width: 44, height: 44)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
     }
 }
