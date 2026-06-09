@@ -124,6 +124,19 @@ public struct SimulationResult: Sendable {
     public func state(for componentID: String) -> LoadState? {
         loadStates.first { $0.id == componentID }
     }
+
+    // MARK: - Diagnostic signals (fault-finding)
+
+    /// შეიცავს თუ არა შედეგი მოცემული კოდის შენიშვნას.
+    public func contains(_ code: IssueCode) -> Bool {
+        issues.contains { $0.code == code }
+    }
+
+    /// რომელიმე დამცავი გაიგდო (მაგნიტური/თერმული/RCD).
+    public var anyTrip: Bool { loadStates.contains { $0.trip != nil } }
+
+    /// რომელიმე დატვირთვაზე შოკის რისკია.
+    public var anyShockRisk: Bool { loadStates.contains { $0.shockRisk } }
 }
 
 // MARK: - Georgian messages

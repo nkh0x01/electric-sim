@@ -1,0 +1,121 @@
+[
+  {
+    "id": "fault_wrong_breaker",
+    "georgianTitle": "ნათურის ხაზი — გადახურებული ავტომატი",
+    "customerName": "ზურაბ ლომიძე",
+    "location": "ვაკე, თბილისი",
+    "difficulty": 2,
+    "tier": "free",
+    "customerComplaint": "ახალი ელექტრიკოსის შემდეგ ხშირად ვგრძნობ ცხელ კაბელს და მეშინია ხანძრის.",
+    "symptoms": [
+      "კაბელი თბება დატვირთვისას",
+      "ავტომატი არ იგდება გადატვირთვაზე"
+    ],
+    "faultType": "wrongBreakerSize",
+    "phase": "single",
+    "board": {
+      "components": [
+        { "templateId": "supply_1ph", "id": "supply" },
+        { "templateId": "main_2p", "id": "main" },
+        { "templateId": "mcb_b16", "id": "brk" },
+        { "templateId": "lamp_60", "id": "lamp" }
+      ],
+      "wires": [
+        { "from": { "c": "supply", "p": "L" }, "to": { "c": "main", "p": "Lin" }, "csa": 1.5, "color": "brown" },
+        { "from": { "c": "main", "p": "Lout" }, "to": { "c": "brk", "p": "in" }, "csa": 1.5, "color": "brown" },
+        { "from": { "c": "brk", "p": "out" }, "to": { "c": "lamp", "p": "L" }, "csa": 1.5, "color": "brown" },
+        { "from": { "c": "supply", "p": "N" }, "to": { "c": "main", "p": "Nin" }, "csa": 1.5, "color": "blue" },
+        { "from": { "c": "main", "p": "Nout" }, "to": { "c": "lamp", "p": "N" }, "csa": 1.5, "color": "blue" },
+        { "from": { "c": "supply", "p": "PE" }, "to": { "c": "lamp", "p": "PE" }, "csa": 1.5, "color": "yellowGreen" }
+      ]
+    },
+    "fault": { "setRatingA": { "brk": 32 } },
+    "fix": { "setRatingA": { "brk": 16 } },
+    "xpReward": 80,
+    "cashReward": 70
+  },
+  {
+    "id": "fault_missing_pe",
+    "georgianTitle": "როზეტის ხაზი — დაკარგული მიწა",
+    "customerName": "ეკა ნოზაძე",
+    "location": "საბურთალო, თბილისი",
+    "difficulty": 3,
+    "tier": "pro",
+    "customerComplaint": "მაცივრის კორპუსი „კბენს“ — სუსტი დარტყმა ვიგრძენი შეხებისას.",
+    "symptoms": [
+      "ლითონის კორპუსი დენიანია",
+      "PE-ფეხი არსად არ არის მიერთებული"
+    ],
+    "faultType": "missingPE",
+    "phase": "single",
+    "board": {
+      "components": [
+        { "templateId": "supply_1ph", "id": "supply" },
+        { "templateId": "main_2p", "id": "main" },
+        { "templateId": "rcd_30", "id": "rcd" },
+        { "templateId": "mcb_b16", "id": "brk" },
+        { "templateId": "socket_16", "id": "soc" }
+      ],
+      "wires": [
+        { "from": { "c": "supply", "p": "L" }, "to": { "c": "main", "p": "Lin" }, "csa": 2.5, "color": "brown" },
+        { "from": { "c": "main", "p": "Lout" }, "to": { "c": "rcd", "p": "Lin" }, "csa": 2.5, "color": "brown" },
+        { "from": { "c": "rcd", "p": "Lout" }, "to": { "c": "brk", "p": "in" }, "csa": 2.5, "color": "brown" },
+        { "from": { "c": "brk", "p": "out" }, "to": { "c": "soc", "p": "L" }, "csa": 2.5, "color": "brown" },
+        { "from": { "c": "supply", "p": "N" }, "to": { "c": "main", "p": "Nin" }, "csa": 2.5, "color": "blue" },
+        { "from": { "c": "main", "p": "Nout" }, "to": { "c": "rcd", "p": "Nin" }, "csa": 2.5, "color": "blue" },
+        { "from": { "c": "rcd", "p": "Nout" }, "to": { "c": "soc", "p": "N" }, "csa": 2.5, "color": "blue" },
+        { "from": { "c": "supply", "p": "PE" }, "to": { "c": "soc", "p": "PE" }, "csa": 2.5, "color": "yellowGreen" }
+      ]
+    },
+    "fault": {
+      "removeWires": [
+        { "from": { "c": "supply", "p": "PE" }, "to": { "c": "soc", "p": "PE" }, "csa": 2.5 }
+      ]
+    },
+    "fix": {
+      "addWires": [
+        { "from": { "c": "supply", "p": "PE" }, "to": { "c": "soc", "p": "PE" }, "csa": 2.5, "color": "yellowGreen" }
+      ]
+    },
+    "xpReward": 110,
+    "cashReward": 120
+  },
+  {
+    "id": "fault_earth_leakage",
+    "georgianTitle": "30mA RCD ხშირად იგდება",
+    "customerName": "ირაკლი ფხაკაძე",
+    "location": "გლდანი, თბილისი",
+    "difficulty": 3,
+    "tier": "pro",
+    "customerComplaint": "სამზარეულოს RCD წუთ-წუთ იგდება, დენი ქრება. ვერ ვხვდები რა ხდება.",
+    "symptoms": [
+      "RCD ჩართვისთანავე იგდება",
+      "კონკრეტული როზეტის ჩართვისას ქრება დენი"
+    ],
+    "faultType": "earthLeakage",
+    "phase": "single",
+    "board": {
+      "components": [
+        { "templateId": "supply_1ph", "id": "supply" },
+        { "templateId": "main_2p", "id": "main" },
+        { "templateId": "rcd_30", "id": "rcd" },
+        { "templateId": "mcb_b16", "id": "brk" },
+        { "templateId": "socket_16", "id": "soc" }
+      ],
+      "wires": [
+        { "from": { "c": "supply", "p": "L" }, "to": { "c": "main", "p": "Lin" }, "csa": 2.5, "color": "brown" },
+        { "from": { "c": "main", "p": "Lout" }, "to": { "c": "rcd", "p": "Lin" }, "csa": 2.5, "color": "brown" },
+        { "from": { "c": "rcd", "p": "Lout" }, "to": { "c": "brk", "p": "in" }, "csa": 2.5, "color": "brown" },
+        { "from": { "c": "brk", "p": "out" }, "to": { "c": "soc", "p": "L" }, "csa": 2.5, "color": "brown" },
+        { "from": { "c": "supply", "p": "N" }, "to": { "c": "main", "p": "Nin" }, "csa": 2.5, "color": "blue" },
+        { "from": { "c": "main", "p": "Nout" }, "to": { "c": "rcd", "p": "Nin" }, "csa": 2.5, "color": "blue" },
+        { "from": { "c": "rcd", "p": "Nout" }, "to": { "c": "soc", "p": "N" }, "csa": 2.5, "color": "blue" },
+        { "from": { "c": "supply", "p": "PE" }, "to": { "c": "soc", "p": "PE" }, "csa": 2.5, "color": "yellowGreen" }
+      ]
+    },
+    "fault": { "setLeakageMa": { "soc": 80 } },
+    "fix": { "setLeakageMa": { "soc": 0 } },
+    "xpReward": 120,
+    "cashReward": 130
+  }
+]

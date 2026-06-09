@@ -224,6 +224,27 @@ public struct PrebuiltComponent: Codable, Sendable {
 public struct PrebuiltBoard: Codable, Sendable {
     public let components: [PrebuiltComponent]
     public let wires: [PrebuiltWire]
+
+    /// წინასწარ აწყობილი ფარის აგება Board-ად (იყენებენ Level და FaultMission).
+    public func build(phase: Phase, templates: [String: ComponentTemplate]) -> Board {
+        var board = Board(phase: phase)
+        for pc in components {
+            guard let t = templates[pc.templateId] else { continue }
+            var comp = t.makeComponent(instanceID: pc.id, phase: phase)
+            if let leak = pc.leakageMa { comp.leakageMa = leak }
+            if let short = pc.faultShortToN { comp.faultShortToN = short }
+            board.add(comp)
+        }
+        if board.supply == nil {
+            board.add(ComponentFactory.supply(id: "supply", phase: phase))
+        }
+        for w in wires {
+            let color = w.color.flatMap { WireColor(rawValue: $0) }
+                ?? WireColor.standard(for: board.port(w.from.portID)?.conductor ?? .L)
+            board.connect(w.from.portID, w.to.portID, csaMm2: w.csa, color: color)
+        }
+        return board
+    }
 }
 
 public struct Level: Codable, Identifiable, Sendable {
@@ -288,27 +309,12 @@ public struct Level: Codable, Identifiable, Sendable {
 
     /// დონის საწყისი ფარი: ან წინასწარ აწყობილი (faultFind), ან მხოლოდ კვება (build).
     public func initialBoard(templates: [String: ComponentTemplate]) -> Board {
-        var board = Board(phase: phase)
         guard let pre = prebuilt else {
+            var board = Board(phase: phase)
             board.add(ComponentFactory.supply(id: "supply", phase: phase))
             return board
         }
-        for pc in pre.components {
-            guard let t = templates[pc.templateId] else { continue }
-            var comp = t.makeComponent(instanceID: pc.id, phase: phase)
-            if let leak = pc.leakageMa { comp.leakageMa = leak }
-            if let short = pc.faultShortToN { comp.faultShortToN = short }
-            board.add(comp)
-        }
-        if board.supply == nil {
-            board.add(ComponentFactory.supply(id: "supply", phase: phase))
-        }
-        for w in pre.wires {
-            let color = w.color.flatMap { WireColor(rawValue: $0) }
-                ?? WireColor.standard(for: board.port(w.from.portID)?.conductor ?? .L)
-            board.connect(w.from.portID, w.to.portID, csaMm2: w.csa, color: color)
-        }
-        return board
+        return pre.build(phase: phase, templates: templates)
     }
 }
 
@@ -362,5 +368,12 @@ public enum GameData {
         let data = try loadJSON("jobs")
         let jobs = try JSONDecoder().decode([Job].self, from: data)
         return jobs.sorted { $0.difficulty < $1.difficulty }
+    }
+
+    /// Fault-finding მისიები (faults.json) — იგივე პატერნი, რაც loadLevels/loadJobs.
+    public static func loadFaults() throws -> [FaultMission] {
+        let data = try loadJSON("faults")
+        let missions = try JSONDecoder().decode([FaultMission].self, from: data)
+        return missions.sorted { $0.difficulty < $1.difficulty }
     }
 }
