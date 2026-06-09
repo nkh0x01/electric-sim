@@ -154,6 +154,9 @@ struct AboutView: View {
     @EnvironmentObject var game: GameState
     @Environment(\.dismiss) private var dismiss
     @State private var showPaywall = false
+    // დამალული QA/დემო Pro-გადართვა: ვერსიაზე 7-ჯერ შეხება (Release-ზეც მუშაობს).
+    @State private var versionTaps = 0
+    @State private var demoMessage: String?
 
     private var appVersion: String {
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -172,7 +175,10 @@ struct AboutView: View {
                             .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
                         VStack(alignment: .leading) {
                             Text("ელექტრიკის სიმულატორი").font(.headline)
-                            Text("ვერსია \(appVersion)").font(.caption).foregroundStyle(.secondary)
+                            Text("ვერსია \(appVersion)")
+                                .font(.caption).foregroundStyle(.secondary)
+                                .contentShape(Rectangle())
+                                .onTapGesture { registerVersionTap() }   // 7× → დემო Pro
                         }
                     }
                 }
@@ -244,6 +250,22 @@ struct AboutView: View {
                 }
             }
             .sheet(isPresented: $showPaywall) { PaywallView().environmentObject(store) }
+            .alert(demoMessage ?? "", isPresented: Binding(
+                get: { demoMessage != nil },
+                set: { if !$0 { demoMessage = nil } }
+            )) {
+                Button("კარგი", role: .cancel) { demoMessage = nil }
+            }
         }
+    }
+
+    /// ვერსიაზე 7-ჯერ შეხება → ლოკალური (დემო) Pro-ს გადართვა. დამალულია,
+    /// ხილული ღილაკი არ არსებობს; რეალურ IAP-ს არ ცვლის.
+    private func registerVersionTap() {
+        versionTaps += 1
+        guard versionTaps >= 7 else { return }
+        versionTaps = 0
+        store.toggleDemoPro()
+        demoMessage = store.demoProEnabled ? "Pro ჩართულია (დემო)" : "Pro გამორთულია"
     }
 }

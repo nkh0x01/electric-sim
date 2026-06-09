@@ -14,6 +14,7 @@ struct ResultPanelView: View {
     var hasNext: Bool = false
     var onNext: (() -> Void)?
     var onBackToMenu: (() -> Void)?
+    var careerReward: CareerOutcome? = nil      // Career-სამუშაო: ჯილდო
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -56,12 +57,29 @@ struct ResultPanelView: View {
                     }
                 }
 
+                if passed, let reward = careerReward {
+                    Section("ჯილდო") {
+                        Label("გამოიმუშავე +\(reward.xp) XP", systemImage: "star.fill")
+                            .foregroundStyle(.orange)
+                        Label("გამოიმუშავე +\(reward.cash) ₾", systemImage: "banknote")
+                            .foregroundStyle(.green)
+                        if reward.rankedUp {
+                            Label("ახალი წოდება: \(reward.rankAfter.georgian)", systemImage: "rosette")
+                                .foregroundStyle(.brand)
+                        }
+                        if !reward.awarded {
+                            Text("ეს სამუშაო უკვე დასრულებული იყო — ჯილდო აღარ მეორდება.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
                 if passed {
                     Section {
                         Button {
                             if hasNext { onNext?() } else { onBackToMenu?() }
                         } label: {
-                            Label(hasNext ? "next_level" : "back_to_menu",
+                            Label(nextButtonTitle,
                                   systemImage: hasNext ? "arrow.right.circle.fill" : "house.fill")
                                 .frame(maxWidth: .infinity)
                                 .font(.headline)
@@ -101,6 +119,11 @@ struct ResultPanelView: View {
                 }
             }
         }
+    }
+
+    private var nextButtonTitle: LocalizedStringKey {
+        if careerReward != nil { return hasNext ? "შემდეგი სამუშაო →" : "დასრულება" }
+        return hasNext ? "next_level" : "back_to_menu"
     }
 
     private var headerIcon: String {

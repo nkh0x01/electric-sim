@@ -26,11 +26,16 @@ final class EntitlementStore: ObservableObject {
     @Published var lastError: String?
 
     private var updatesTask: Task<Void, Never>?
-    private let proKey = "entitlement.pro.v1"
+    private let proKey = "entitlement.pro.v1"        // რეალური (StoreKit) entitlement-ის ქეში
+    private let demoKey = "entitlement.demoPro.v1"   // QA/დემო override (Release-ზეც)
+
+    /// რეალური StoreKit entitlement (override-ის გარეშე).
+    private var realPro = false
 
     init() {
         // ლოკალური ქეში — ოფლაინ გამოცდილებისთვის; დადასტურდება StoreKit-ით.
-        isPro = UserDefaults.standard.bool(forKey: proKey)
+        realPro = UserDefaults.standard.bool(forKey: proKey)
+        isPro = realPro || UserDefaults.standard.bool(forKey: demoKey)
         updatesTask = listenForTransactions()
         Task {
             await loadProducts()
@@ -110,9 +115,31 @@ final class EntitlementStore: ObservableObject {
         }
     }
 
+    /// რეალური entitlement-ის დაყენება (StoreKit-იდან) + isPro-ს გადათვლა.
     private func setPro(_ value: Bool) {
-        isPro = value
+        realPro = value
         UserDefaults.standard.set(value, forKey: proKey)
+        recomputeIsPro()
+    }
+
+    private func recomputeIsPro() {
+        isPro = realPro || UserDefaults.standard.bool(forKey: demoKey)
+    }
+
+    // MARK: - QA / დემო override (მუშაობს Release/TestFlight-ზეც)
+
+    /// დემო-Pro ჩართულია თუ არა (ლოკალური override).
+    var demoProEnabled: Bool { UserDefaults.standard.bool(forKey: demoKey) }
+
+    /// QA/დემო: ლოკალური Pro-ს გადართვა. **არ** ცვლის რეალურ StoreKit შესყიდვას —
+    /// მხოლოდ ლოკალურ `isPro` დროშას QA/ჩვენებისთვის. შენახულია (სესია რჩება Pro).
+    /// დამალულია ჟესტის უკან (7-ჯერ შეხება ვერსიაზე) — ხილული ღილაკი არ არსებობს.
+    @discardableResult
+    func toggleDemoPro() -> Bool {
+        let newValue = !UserDefaults.standard.bool(forKey: demoKey)
+        UserDefaults.standard.set(newValue, forKey: demoKey)
+        recomputeIsPro()
+        return isPro
     }
 
     #if DEBUG

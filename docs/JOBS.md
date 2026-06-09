@@ -24,6 +24,7 @@ Career Mode-ის სამუშაოები აღწერილია **
 | `xpReward` | int | ✅ | XP ჯილდო (ერთხელ, პირველ დასრულებაზე). |
 | `cashReward` | int | ✅ | ფულადი ჯილდო (ერთხელ). |
 | `unlocks` | [string] | ✅ | რას ხსნის დასრულება (კომპონენტის/ხელსაწყოს id; ცარიელი `[]` თუ არაფერს). |
+| `goal` | LevelGoal | ✅ | წარმატების კრიტერიუმი — იგივე ფორმატი, რაც დონეებში (`poweredLoads`, `description`). მაგ.: `{"poweredLoads":{"socket":2},"description":"..."}`. სამუშაო „გადაჭრილია“, როცა ეს მიზანი დაკმაყოფილდება (workbench-ის იგივე solver-ით). |
 
 ### `JobCategory` (ნებადართული მნიშვნელობები)
 `tutorial`, `residential`, `commercial`, `industrial`, `faultfinding`,
@@ -84,7 +85,8 @@ Career Mode-ის სამუშაოები აღწერილია **
   "requiredComponents": ["main_2p", "rcd_30", "mcb_b16", "socket_16"],
   "xpReward": 80,
   "cashReward": 80,
-  "unlocks": []
+  "unlocks": [],
+  "goal": { "poweredLoads": { "socket": 1 }, "description": "როზეტი უნდა მუშაობდეს RCD-ით." }
 }
 ```
 

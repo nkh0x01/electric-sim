@@ -62,7 +62,7 @@ struct LevelListView: View {
             }
 
             Section("ხელსაწყოები") {
-                ForEach(game.sandboxLevels) { levelRow($0) }
+                // Sandbox გადავიდა მთავარ მენიუში (ცალკე რეჟიმად).
 
                 // Level editor — Pro
                 if store.isPro {

@@ -65,6 +65,25 @@ final class GameState: ObservableObject {
 
     func template(_ id: String) -> ComponentTemplate? { templates[id] }
 
+    // MARK: - Career Mode
+
+    func job(byID id: String) -> Job? { jobs.first { $0.id == id } }
+    func isJobCompleted(_ id: String) -> Bool { career.isCompleted(id) }
+
+    /// სამუშაოს დასრულება — ჯილდო ერთხელ (CareerState-ი იცავს დუბლირებას).
+    /// აბრუნებს შედეგს UI-სთვის და ანახლებს ეკრანს.
+    @discardableResult
+    func completeJob(_ job: Job) -> CareerOutcome {
+        let before = career.currentRank
+        let awarded = career.completeJob(job)
+        let after = career.currentRank
+        objectWillChange.send()
+        return CareerOutcome(awarded: awarded,
+                             xp: awarded ? job.xpReward : 0,
+                             cash: awarded ? job.cashReward : 0,
+                             rankBefore: before, rankAfter: after)
+    }
+
     /// დონის პოვნა id-ით (ჩაშენებული + custom) — ნავიგაციისთვის.
     func level(byID id: String) -> Level? {
         levels.first { $0.id == id } ?? customLevels.first { $0.id == id }

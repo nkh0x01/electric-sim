@@ -66,11 +66,14 @@ final class WorkbenchModel: ObservableObject {
     @Published var measurement: String?
     @Published var liveAnalysis: NetAnalysis?
     @Published var showWires = false
+    @Published var careerOutcome: CareerOutcome?   // career-job: ჯილდო შედეგისთვის
+    let careerJob: Job?                              // nil → ჩვეულებრივი Learn დონე
     private var didConfigure = false
 
-    init(level: Level, templates: [String: ComponentTemplate]) {
+    init(level: Level, templates: [String: ComponentTemplate], careerJob: Job? = nil) {
         self.level = level
         self.templates = templates
+        self.careerJob = careerJob
         var b = Board(phase: level.phase)
         b.add(ComponentFactory.supply(id: "supply", phase: level.phase))
         self.board = b
@@ -210,9 +213,14 @@ final class WorkbenchModel: ObservableObject {
         game.noteSimulation(level: level, result: r)
         if level.resolvedMode != .sandbox && goalMet(r) {
             levelPassed = true
-            game.markCompleted(level)
-            let seconds = Int(Date().timeIntervalSince(startedAt))
-            GameCenterManager.shared.recordCompletion(level: level, seconds: seconds, mistakes: mistakes)
+            if let job = careerJob {
+                // Career: ჯილდო ერთხელ (CareerState იცავს დუბლირებას) — markCompleted/GameCenter არა.
+                careerOutcome = game.completeJob(job)
+            } else {
+                game.markCompleted(level)
+                let seconds = Int(Date().timeIntervalSince(startedAt))
+                GameCenterManager.shared.recordCompletion(level: level, seconds: seconds, mistakes: mistakes)
+            }
         } else if !r.passed {
             mistakes += 1
         }
@@ -301,6 +309,13 @@ struct WorkbenchView: View {
     init(level: Level, path: Binding<[String]>) {
         _path = path
         _model = StateObject(wrappedValue: WorkbenchModel(level: level, templates: [:]))
+    }
+
+    /// Career-სამუშაო: workbench იხსნება job-ის დონით (componentsAvailable + goal).
+    init(job: Job, path: Binding<[String]>) {
+        _path = path
+        _model = StateObject(wrappedValue: WorkbenchModel(level: job.makeLevel(),
+                                                          templates: [:], careerJob: job))
     }
 
     // MARK: კოორდინატები (screen/container → board, scale/offset-ის გათვალისწინებით)
@@ -401,24 +416,39 @@ struct WorkbenchView: View {
             .onEnded { v in zoom = min(max(zoom * v, 0.3), 3.0); isZooming = false }
     }
 
-    // MARK: next level
+    // MARK: next destination (Learn დონე ან Career სამუშაო) + Pro gating
     private var nextLevelID: String? {
         let camp = game.campaignLevels
         guard let idx = camp.firstIndex(where: { $0.id == model.level.id }) else { return nil }
         let n = idx + 1
         return n < camp.count ? camp[n].id : nil
     }
-    private func goNext() {
-        if model.levelPassed { game.markCompleted(model.level) }   // პროგრესი შენახული
-        model.showResult = false
-        guard let nid = nextLevelID, let next = game.level(byID: nid) else { path = []; return }
-        if game.isProLocked(next, isPro: store.isPro) { showPaywall = true; return }
-        if path.isEmpty { path = [nid] } else { path[path.count - 1] = nid }
+    /// (route, locked) — route ემატება/ანაცვლებს path-ის ბოლოს.
+    private func nextDestination() -> (route: String, locked: Bool)? {
+        if let job = model.careerJob {
+            let jobs = game.jobs
+            guard let idx = jobs.firstIndex(where: { $0.id == job.id }), idx + 1 < jobs.count else { return nil }
+            let nj = jobs[idx + 1]
+            return ("jobwork:\(nj.id)", game.career.isProLocked(nj, isPro: store.isPro))
+        } else {
+            guard let nid = nextLevelID, let next = game.level(byID: nid) else { return nil }
+            return (nid, game.isProLocked(next, isPro: store.isPro))
+        }
     }
-    private func backToMenu() {
-        if model.levelPassed { game.markCompleted(model.level) }   // პროგრესი შენახული
+    private var hasNext: Bool { nextDestination() != nil }
+
+    private func goNext() {
         model.showResult = false
-        path = []
+        guard let dest = nextDestination() else { backToMenu(); return }
+        if dest.locked { showPaywall = true; return }
+        if path.isEmpty { path = [dest.route] } else { path[path.count - 1] = dest.route }
+    }
+    /// უკან სიაში/ბორდზე დაბრუნება (workbench-ის pop). მენიუ ახლა root-ია.
+    private func backToMenu() {
+        // Learn: პროგრესის უსაფრთხო შენახვა (career-ს markCompleted არ სჭირდება).
+        if model.careerJob == nil, model.levelPassed { game.markCompleted(model.level) }
+        model.showResult = false
+        if !path.isEmpty { path.removeLast() }
     }
 
     var body: some View {
@@ -456,9 +486,10 @@ struct WorkbenchView: View {
         .sheet(isPresented: $model.showResult) {
             if let r = model.result {
                 ResultPanelView(result: r, passed: model.levelPassed, level: model.level,
-                                hasNext: nextLevelID != nil,
+                                hasNext: hasNext,
                                 onNext: { goNext() },
-                                onBackToMenu: { backToMenu() })
+                                onBackToMenu: { backToMenu() },
+                                careerReward: model.careerOutcome)
             }
         }
         .sheet(isPresented: $model.showWires) {

@@ -104,8 +104,35 @@ public struct Job: Codable, Identifiable, Sendable {
     public let xpReward: Int
     public let cashReward: Int
     public let unlocks: [String]          // რას ხსნის (კომპონენტი/ხელსაწყო id)
+    public let goal: LevelGoal            // წარმატების კრიტერიუმი — იგივე, რაც დონეებში
 
     public var resolvedDifficulty: Int { min(5, max(1, difficulty)) }
+
+    /// სამუშაოდან workbench-ის დონის აგება (იყენებს არსებულ Level/solver-ს — არ იფორკება).
+    public func makeLevel() -> Level {
+        let palette = componentsAvailable.map {
+            PaletteEntry(templateId: $0, max: 3, csaOptions: [1.5, 2.5, 4])
+        }
+        return Level(id: "career_\(id)", index: 0, title: georgianTitle,
+                     brief: jobBrief, hint: "", phase: .single,
+                     palette: palette, goal: goal, mode: .build,
+                     category: .tutorial, difficulty: difficulty, tier: tier)
+    }
+}
+
+/// სამუშაოს დასრულების შედეგი (UI-ს ჯილდოს საჩვენებლად).
+public struct CareerOutcome: Sendable {
+    public let awarded: Bool        // პირველად დასრულდა (ჯილდო გაიცა)?
+    public let xp: Int
+    public let cash: Int
+    public let rankBefore: CareerRank
+    public let rankAfter: CareerRank
+    public var rankedUp: Bool { rankAfter != rankBefore }
+
+    public init(awarded: Bool, xp: Int, cash: Int, rankBefore: CareerRank, rankAfter: CareerRank) {
+        self.awarded = awarded; self.xp = xp; self.cash = cash
+        self.rankBefore = rankBefore; self.rankAfter = rankAfter
+    }
 }
 
 // MARK: - Career state (persistent, UserDefaults — იგივე პატერნი, რაც GameState)

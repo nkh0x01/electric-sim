@@ -23,9 +23,10 @@ final class CareerTests: XCTestCase {
                            unlocks: [String] = []) -> Job {
         Job(id: id, georgianTitle: "ტესტ-სამუშაო", customerName: "ტესტი",
             location: "თბილისი", category: .tutorial, difficulty: 1, tier: tier,
-            jobBrief: "ტესტი", componentsAvailable: ["main_2p", "lamp_60"],
-            requiredComponents: ["main_2p", "lamp_60"],
-            xpReward: xp, cashReward: cash, unlocks: unlocks)
+            jobBrief: "ტესტი", componentsAvailable: ["main_2p", "mcb_b10", "lamp_60"],
+            requiredComponents: ["main_2p", "mcb_b10", "lamp_60"],
+            xpReward: xp, cashReward: cash, unlocks: unlocks,
+            goal: LevelGoal(poweredLoads: ["lamp": 1], description: "ტესტი", requireBalanced: nil))
     }
 
     // 1) დასრულება ანიჭებს XP-სა და cash-ს
@@ -127,6 +128,44 @@ final class CareerTests: XCTestCase {
         let proJob = sampleJob(id: "job_pro", tier: .pro)
         XCTAssertTrue(s.isProLocked(proJob, isPro: false))
         XCTAssertFalse(s.isProLocked(proJob, isPro: true))
+    }
+
+    // Phase 2 — job → level bridge solvable + completion wiring (award once)
+    func testJobLevelSolvableAndCompletesOnce() throws {
+        let templates = try GameData.loadTemplates()
+        let job = try XCTUnwrap(try GameData.loadJobs().first { $0.id == "job_first_lamp" })
+        // job → Level (იგივე solver/success-check, რასაც დონეები იყენებენ)
+        let level = job.makeLevel()
+        XCTAssertEqual(level.goal.poweredLoads["lamp"], 1)
+        var b = level.initialBoard(templates: templates)   // supply only
+        b.add(ComponentFactory.mainSwitch(id: "MS"))
+        b.add(ComponentFactory.mcb(id: "B", ratingA: 10))
+        b.add(ComponentFactory.lamp(id: "L"))
+        b.connect("supply.L", "MS.Lin", csaMm2: 1.5, color: .brown)
+        b.connect("MS.Lout", "B.in", csaMm2: 1.5, color: .brown)
+        b.connect("B.out", "L.L", csaMm2: 1.5, color: .brown)
+        b.connect("supply.N", "MS.Nin", csaMm2: 1.5, color: .blue)
+        b.connect("MS.Nout", "L.N", csaMm2: 1.5, color: .blue)
+        b.connect("supply.PE", "L.PE", csaMm2: 1.5, color: .yellowGreen)
+        let r = CircuitSolver().solve(b, energize: true)
+        XCTAssertTrue(r.passed, "job-level უნდა გაიჭრას: \(r.errors.map(\.code))")
+        XCTAssertTrue(r.state(for: "L")?.isPowered == true)
+
+        // success → completeJob ერთხელ
+        let s = CareerState(defaults: freshDefaults())
+        XCTAssertTrue(s.completeJob(job))
+        let xp = s.totalXP, cash = s.cash
+        XCTAssertFalse(s.completeJob(job), "გადაჭრის გამეორება ჯილდოს არ ადუბლირებს")
+        XCTAssertEqual(s.totalXP, xp)
+        XCTAssertEqual(s.cash, cash)
+    }
+
+    // Phase 2 — rank/HUD სტატუსი completion-ის შემდეგ
+    func testRankReflectsStateAfterCompletion() {
+        let s = CareerState(defaults: freshDefaults())
+        XCTAssertEqual(s.currentRank, .apprentice)
+        s.completeJob(sampleJob(id: "rankup", xp: 300, cash: 0))
+        XCTAssertEqual(s.currentRank, .residential)
     }
 
     // 9) არსებული დონეები/გაკვეთილი კვლავ იტვირთება (რეგრესია)

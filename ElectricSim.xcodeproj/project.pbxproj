@@ -19,6 +19,10 @@
 		E1EC0000000000000000020A /* LevelListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000FA /* LevelListView.swift */; };
 		E1EC0000000000000000020B /* WorkbenchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000FB /* WorkbenchView.swift */; };
 		E1EC0000000000000000020C /* ResultPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000FC /* ResultPanelView.swift */; };
+		E1EC000000000000000002A5 /* MainMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000001A5 /* MainMenuView.swift */; };
+		E1EC000000000000000002A6 /* CareerBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000001A6 /* CareerBoardView.swift */; };
+		E1EC000000000000000002A7 /* JobBriefingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000001A7 /* JobBriefingView.swift */; };
+		E1EC000000000000000002A8 /* SandboxListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000001A8 /* SandboxListView.swift */; };
 		E1EC0000000000000000020D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000FD /* Assets.xcassets */; };
 		E1EC0000000000000000020E /* components.json in Resources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000FE /* components.json */; };
 		E1EC0000000000000000020F /* levels.json in Resources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000000FF /* levels.json */; };
@@ -53,6 +57,10 @@
 		E1EC000000000000000000FA /* LevelListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelListView.swift; sourceTree = "<group>"; };
 		E1EC000000000000000000FB /* WorkbenchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkbenchView.swift; sourceTree = "<group>"; };
 		E1EC000000000000000000FC /* ResultPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultPanelView.swift; sourceTree = "<group>"; };
+		E1EC000000000000000001A5 /* MainMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMenuView.swift; sourceTree = "<group>"; };
+		E1EC000000000000000001A6 /* CareerBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareerBoardView.swift; sourceTree = "<group>"; };
+		E1EC000000000000000001A7 /* JobBriefingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobBriefingView.swift; sourceTree = "<group>"; };
+		E1EC000000000000000001A8 /* SandboxListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxListView.swift; sourceTree = "<group>"; };
 		E1EC000000000000000000FD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E1EC000000000000000000FE /* components.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = components.json; sourceTree = "<group>"; };
 		E1EC000000000000000000FF /* levels.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = levels.json; sourceTree = "<group>"; };
@@ -176,6 +184,10 @@
 				E1EC000000000000000000FA /* LevelListView.swift */,
 				E1EC000000000000000000FB /* WorkbenchView.swift */,
 				E1EC000000000000000000FC /* ResultPanelView.swift */,
+				E1EC000000000000000001A5 /* MainMenuView.swift */,
+				E1EC000000000000000001A6 /* CareerBoardView.swift */,
+				E1EC000000000000000001A7 /* JobBriefingView.swift */,
+				E1EC000000000000000001A8 /* SandboxListView.swift */,
 				E1EC00000000000000000111 /* StoreViews.swift */,
 				E1EC00000000000000000114 /* LevelEditorView.swift */,
 				E1EC00000000000000000116 /* ReportsView.swift */,
@@ -326,6 +338,10 @@
 				E1EC0000000000000000020A /* LevelListView.swift in Sources */,
 				E1EC0000000000000000020B /* WorkbenchView.swift in Sources */,
 				E1EC0000000000000000020C /* ResultPanelView.swift in Sources */,
+				E1EC000000000000000002A5 /* MainMenuView.swift in Sources */,
+				E1EC000000000000000002A6 /* CareerBoardView.swift in Sources */,
+				E1EC000000000000000002A7 /* JobBriefingView.swift in Sources */,
+				E1EC000000000000000002A8 /* SandboxListView.swift in Sources */,
 				E1EC00000000000000000210 /* Monetization.swift in Sources */,
 				E1EC00000000000000000211 /* StoreViews.swift in Sources */,
 				E1EC00000000000000000213 /* Achievements.swift in Sources */,

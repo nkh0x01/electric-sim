@@ -8,11 +8,25 @@
     "difficulty": 1,
     "tier": "free",
     "jobBrief": "კლიენტს სჭირდება ერთი ნათურის დაკავშირება. ჩართე მთავარი ამომრთველი, ავტომატი B10 და ნათურა. გამოიყენე 1.5mm² კაბელი.",
-    "componentsAvailable": ["main_2p", "mcb_b10", "lamp_60"],
-    "requiredComponents": ["main_2p", "mcb_b10", "lamp_60"],
+    "componentsAvailable": [
+      "main_2p",
+      "mcb_b10",
+      "lamp_60"
+    ],
+    "requiredComponents": [
+      "main_2p",
+      "mcb_b10",
+      "lamp_60"
+    ],
     "xpReward": 50,
     "cashReward": 40,
-    "unlocks": []
+    "unlocks": [],
+    "goal": {
+      "poweredLoads": {
+        "lamp": 1
+      },
+      "description": "ნათურა უნდა აანთდეს, შეცდომების გარეშე."
+    }
   },
   {
     "id": "job_bedroom_socket",
@@ -23,11 +37,27 @@
     "difficulty": 1,
     "tier": "free",
     "jobBrief": "დააკავშირე ერთი როზეტი. როზეტი ვალდებულია იყოს RCD-ის (30mA) დაცვის ქვემოთ. გამოიყენე 2.5mm² კაბელი და ავტომატი B16.",
-    "componentsAvailable": ["main_2p", "rcd_30", "mcb_b16", "socket_16"],
-    "requiredComponents": ["main_2p", "rcd_30", "mcb_b16", "socket_16"],
+    "componentsAvailable": [
+      "main_2p",
+      "rcd_30",
+      "mcb_b16",
+      "socket_16"
+    ],
+    "requiredComponents": [
+      "main_2p",
+      "rcd_30",
+      "mcb_b16",
+      "socket_16"
+    ],
     "xpReward": 60,
     "cashReward": 60,
-    "unlocks": []
+    "unlocks": [],
+    "goal": {
+      "poweredLoads": {
+        "socket": 1
+      },
+      "description": "როზეტი უნდა მუშაობდეს RCD-ის დაცვით."
+    }
   },
   {
     "id": "job_hallway_two_lamps",
@@ -38,11 +68,25 @@
     "difficulty": 1,
     "tier": "free",
     "jobBrief": "დააკავშირე ორი ნათურა, თითო ცალკე ავტომატით (B10). ფაზა, ნული და მიწა ორივეს.",
-    "componentsAvailable": ["main_2p", "mcb_b10", "lamp_60"],
-    "requiredComponents": ["main_2p", "mcb_b10", "lamp_60"],
+    "componentsAvailable": [
+      "main_2p",
+      "mcb_b10",
+      "lamp_60"
+    ],
+    "requiredComponents": [
+      "main_2p",
+      "mcb_b10",
+      "lamp_60"
+    ],
     "xpReward": 70,
     "cashReward": 70,
-    "unlocks": []
+    "unlocks": [],
+    "goal": {
+      "poweredLoads": {
+        "lamp": 2
+      },
+      "description": "ორივე ნათურა უნდა აანთდეს."
+    }
   },
   {
     "id": "job_kitchen_socket",
@@ -53,11 +97,27 @@
     "difficulty": 2,
     "tier": "free",
     "jobBrief": "სამზარეულოში დააკავშირე როზეტი RCD-ის დაცვით. ყურადღება მიაქციე კაბელის კვეთას (2.5mm²) და ავტომატის ნომინალს.",
-    "componentsAvailable": ["main_2p", "rcd_30", "mcb_b16", "socket_16"],
-    "requiredComponents": ["main_2p", "rcd_30", "mcb_b16", "socket_16"],
+    "componentsAvailable": [
+      "main_2p",
+      "rcd_30",
+      "mcb_b16",
+      "socket_16"
+    ],
+    "requiredComponents": [
+      "main_2p",
+      "rcd_30",
+      "mcb_b16",
+      "socket_16"
+    ],
     "xpReward": 80,
     "cashReward": 80,
-    "unlocks": []
+    "unlocks": [],
+    "goal": {
+      "poweredLoads": {
+        "socket": 1
+      },
+      "description": "როზეტი უნდა მუშაობდეს RCD-ით, სწორი კაბელით."
+    }
   },
   {
     "id": "job_studio_lamp_socket",
@@ -68,11 +128,32 @@
     "difficulty": 2,
     "tier": "free",
     "jobBrief": "პატარა სტუდიაში დააკავშირე ერთი განათების ხაზი და ერთი როზეტი. როზეტი RCD-ის ქვემოთ, განათება ცალკე ავტომატით.",
-    "componentsAvailable": ["main_2p", "rcd_30", "mcb_b10", "mcb_b16", "lamp_60", "socket_16"],
-    "requiredComponents": ["main_2p", "rcd_30", "mcb_b10", "mcb_b16", "lamp_60", "socket_16"],
+    "componentsAvailable": [
+      "main_2p",
+      "rcd_30",
+      "mcb_b10",
+      "mcb_b16",
+      "lamp_60",
+      "socket_16"
+    ],
+    "requiredComponents": [
+      "main_2p",
+      "rcd_30",
+      "mcb_b10",
+      "mcb_b16",
+      "lamp_60",
+      "socket_16"
+    ],
     "xpReward": 90,
     "cashReward": 100,
-    "unlocks": []
+    "unlocks": [],
+    "goal": {
+      "poweredLoads": {
+        "lamp": 1,
+        "socket": 1
+      },
+      "description": "ნათურაც და როზეტიც უნდა მუშაობდეს."
+    }
   },
   {
     "id": "job_office_two_sockets",
@@ -83,11 +164,27 @@
     "difficulty": 2,
     "tier": "free",
     "jobBrief": "დააკავშირე ორი როზეტი RCD-ის დაცვით, თითო ცალკე ავტომატით (B16, 2.5mm²). მიწა ორივეს.",
-    "componentsAvailable": ["main_2p", "rcd_30", "mcb_b16", "socket_16"],
-    "requiredComponents": ["main_2p", "rcd_30", "mcb_b16", "socket_16"],
+    "componentsAvailable": [
+      "main_2p",
+      "rcd_30",
+      "mcb_b16",
+      "socket_16"
+    ],
+    "requiredComponents": [
+      "main_2p",
+      "rcd_30",
+      "mcb_b16",
+      "socket_16"
+    ],
     "xpReward": 100,
     "cashReward": 110,
-    "unlocks": []
+    "unlocks": [],
+    "goal": {
+      "poweredLoads": {
+        "socket": 2
+      },
+      "description": "ორივე როზეტი უნდა მუშაობდეს RCD-ით."
+    }
   },
   {
     "id": "job_small_apartment",
@@ -98,10 +195,31 @@
     "difficulty": 2,
     "tier": "free",
     "jobBrief": "ააწყვე პატარა ბინის ხაზები: ერთი განათება და ორი როზეტი (RCD-ით). თითო დატვირთვა — ცალკე ავტომატით.",
-    "componentsAvailable": ["main_2p", "rcd_30", "mcb_b10", "mcb_b16", "lamp_60", "socket_16"],
-    "requiredComponents": ["main_2p", "rcd_30", "mcb_b10", "mcb_b16", "lamp_60", "socket_16"],
+    "componentsAvailable": [
+      "main_2p",
+      "rcd_30",
+      "mcb_b10",
+      "mcb_b16",
+      "lamp_60",
+      "socket_16"
+    ],
+    "requiredComponents": [
+      "main_2p",
+      "rcd_30",
+      "mcb_b10",
+      "mcb_b16",
+      "lamp_60",
+      "socket_16"
+    ],
     "xpReward": 120,
     "cashReward": 140,
-    "unlocks": []
+    "unlocks": [],
+    "goal": {
+      "poweredLoads": {
+        "lamp": 1,
+        "socket": 2
+      },
+      "description": "განათება და ორივე როზეტი უნდა მუშაობდეს."
+    }
   }
 ]
