@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  core-tests:
+    name: Core solver tests
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run swift tests
+        run: swift test
+
+  build-app:
+    name: Build SwiftUI app (iOS Simulator)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+      - name: Build
+        run: |
+          xcodebuild build \
+            -project ElectricSim.xcodeproj \
+            -scheme ElectricSim \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            CODE_SIGNING_ALLOWED=NO
+
+  ui-tests:
+    name: UI tests (XCUITest)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+      - name: Run UI tests
+        run: |
+          xcodebuild test \
+            -project ElectricSim.xcodeproj \
+            -scheme ElectricSim \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            CODE_SIGNING_ALLOWED=NO
