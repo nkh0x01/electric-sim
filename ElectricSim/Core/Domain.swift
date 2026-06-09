@@ -316,7 +316,7 @@ public enum ComponentFactory {
             Port(id: pid(id, "out"), conductor: conductor, side: .output, name: "OUT")
         ]
         return Component(id: id, kind: .mcb,
-                         name: "ავტომატი \(curve.rawValue)\(Int(ratingA))",
+                         name: "ავტომატი (MCB) \(curve.rawValue)\(Int(ratingA))",
                          poles: 1, ratingA: ratingA, curve: curve, ports: ports)
     }
 
@@ -326,7 +326,7 @@ public enum ComponentFactory {
             Port(id: pid(id, "out"), conductor: .L, side: .output, name: "L OUT")
         ]
         return Component(id: id, kind: .rcbo,
-                         name: "RCBO \(curve.rawValue)\(Int(ratingA)) \(Int(mAtrip))mA",
+                         name: "დიფ-ავტომატი (RCBO) \(curve.rawValue)\(Int(ratingA)) \(Int(mAtrip))mA",
                          poles: 1, ratingA: ratingA, curve: curve, mAtrip: mAtrip, ports: ports)
     }
 
@@ -338,7 +338,7 @@ public enum ComponentFactory {
             Port(id: pid(id, "Nout"), conductor: .N, side: .output, name: "N OUT")
         ]
         return Component(id: id, kind: .rcd,
-                         name: "RCD \(Int(ratingA))A \(Int(mAtrip))mA",
+                         name: "დიფ. დამცავი (RCD) \(Int(ratingA))A \(Int(mAtrip))mA",
                          poles: 2, ratingA: ratingA, mAtrip: mAtrip, ports: ports)
     }
 
@@ -347,7 +347,7 @@ public enum ComponentFactory {
             Port(id: pid(id, "L"), conductor: .L, side: .input, name: "L"),
             Port(id: pid(id, "PE"), conductor: .PE, side: .input, name: "PE")
         ]
-        return Component(id: id, kind: .spd, name: "SPD ზეძაბვის დამცავი", poles: 1, ports: ports)
+        return Component(id: id, kind: .spd, name: "ზეძაბვის დამცავი (SPD)", poles: 1, ports: ports)
     }
 
     /// ზოლი (busbar / ნულის ან მიწის შინა). `slots` ფეხი, ყველა ერთ კვანძში.
@@ -357,9 +357,9 @@ public enum ComponentFactory {
         }
         let title: String
         switch conductor {
-        case .N: title = "ნულის ზოლი"
-        case .PE: title = "მიწის ზოლი"
-        default: title = "სავარცხელი ზოლი"
+        case .N: title = "ნულის შინა"
+        case .PE: title = "მიწის შინა"
+        default: title = "შინა (busbar)"
         }
         return Component(id: id, kind: .busbar, name: title, poles: slots, ports: ports)
     }
@@ -382,7 +382,7 @@ public enum ComponentFactory {
             Port(id: pid(id, "N"), conductor: .N, side: .single, name: "N"),
             Port(id: pid(id, "PE"), conductor: .PE, side: .single, name: "PE")
         ]
-        return Component(id: id, kind: .motor, name: "3-ფაზიანი მოტორი \(Int(powerW))W",
+        return Component(id: id, kind: .motor, name: "ძრავა (3-ფაზიანი) \(Int(powerW))W",
                          poles: 3, powerW: powerW, requiresPE: true, ports: ports)
     }
 
@@ -435,7 +435,7 @@ public enum ComponentFactory {
 
     /// მოტორის დამცავი ამომრთველი (MPCB), 3-პოლუსიანი.
     public static func mpcb(id: String, ratingA: Double, curve: BreakerCurve = .D) -> Component {
-        seriesDevice(id: id, kind: .mpcb, name: "MPCB \(Int(ratingA))A",
+        seriesDevice(id: id, kind: .mpcb, name: "ძრავის დამცავი (MPCB) \(Int(ratingA))A",
                      conductors: [.L1, .L2, .L3], ratingA: ratingA, curve: curve)
     }
 
