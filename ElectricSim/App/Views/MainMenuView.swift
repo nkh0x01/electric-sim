@@ -28,8 +28,17 @@ struct MainMenuView: View {
             } header: {
                 Text("აირჩიე რეჟიმი")
             }
+
+            // ტექსტური კრედიტი (ბმულის გარეშე — არ არის რეკლამა). ბმულები მხოლოდ „შესახებ“-ში.
+            Section {
+                Text("შექმნილია Gadget-ის მიერ · სპონსორი Tsili.ge")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .listRowBackground(Color.clear)
+            }
         }
-        .navigationTitle("ელექტრიკის სიმულატორი")
+        .navigationTitle("ელექტრიკოსის სიმულატორი")
         .navigationBarTitleDisplayMode(.large)
     }
 

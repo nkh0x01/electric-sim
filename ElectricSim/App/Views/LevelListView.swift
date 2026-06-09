@@ -94,7 +94,7 @@ struct LevelListView: View {
                 Text("შექმნილია gadget.ge-ს მიერ")
             }
         }
-        .navigationTitle("ელექტრიკის სიმულატორი")
+        .navigationTitle("ელექტრიკოსის სიმულატორი")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {

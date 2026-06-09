@@ -195,6 +195,20 @@ final class WorkbenchModel: ObservableObject {
         resetResult()
     }
 
+    /// ერთი კომპონენტის გადატანა სხვა პოზიციაზე/რიგზე — მოთავსდება `anchorID`-ის
+    /// წინ/შემდეგ board.components-ში (რიგები ამ რიგიდან გამოითვლება wrapping-ით).
+    func moveComponent(_ id: String, relativeTo anchorID: String, after: Bool) {
+        guard id != anchorID,
+              let comp = board.components.first(where: { $0.id == id }) else { return }
+        var comps = board.components
+        comps.removeAll { $0.id == id }
+        guard let aIdx = comps.firstIndex(where: { $0.id == anchorID }) else { return }
+        let target = max(0, min(comps.count, after ? aIdx + 1 : aIdx))
+        comps.insert(comp, at: target)
+        board.components = comps
+        resetResult()
+    }
+
     func check() {
         var r = solver.solve(board, energize: false)
         if level.isPanelAssembly { r.issues.append(contentsOf: PanelAssembly.validate(board)) }
@@ -294,6 +308,33 @@ struct WorkbenchView: View {
     @State private var moveID: String?
     @State private var dragCurrent: CGPoint = .zero
     @State private var isZooming = false
+    @State private var railWidth: CGFloat = 0   // ეკრანის სიგანე — რიგზე ბარათების რაოდენობისთვის
+
+    // MARK: მრავალრიგიანი DIN რელსი
+    /// რამდენი ბარათი ეტევა ერთ რიგზე (ადაპტირდება სიგანეზე; ცარიელ ფარზე 4).
+    private var cardsPerRow: Int {
+        let cellW: CGFloat = 132
+        guard railWidth > 0 else { return 4 }
+        return max(3, min(8, Int((railWidth - 80) / cellW)))
+    }
+    /// board.components დაყოფილი რიგებად (wrapping).
+    private var rows: [[Component]] {
+        let comps = model.board.components
+        let n = max(1, cardsPerRow)
+        return stride(from: 0, to: comps.count, by: n).map {
+            Array(comps[$0 ..< min($0 + n, comps.count)])
+        }
+    }
+    /// drop წერტილთან უახლოესი (სხვა) ბარათი + მისი წინ/შემდეგ — რიგზე/რიგებს შორის გადასატანად.
+    private func dropAnchor(for id: String, at p: CGPoint) -> (anchor: String, after: Bool)? {
+        var best: String?; var bestD = CGFloat.greatestFiniteMagnitude; var bestMidX: CGFloat = 0
+        for (cid, f) in componentFrames where cid != id {
+            let d = hypot(f.midX - p.x, f.midY - p.y)
+            if d < bestD { bestD = d; best = cid; bestMidX = f.midX }
+        }
+        guard let anchor = best else { return nil }
+        return (anchor, p.x > bestMidX)
+    }
 
     /// პალიტრის ელემენტი ჩაკეტილია თუ არა. ფასიანობა იმართება დონის tier-ით —
     /// გახსნილი დონის მთელი პალიტრა ხელმისაწვდომია (იხ. ComponentGating).
@@ -395,10 +436,14 @@ struct WorkbenchView: View {
                     }
                 case .move:
                     if let id = moveID {
-                        let shift = Int((v.translation.width / (140 * max(zoom, 0.01))).rounded())
-                        let ids: Set<String> = (model.selection.contains(id) && !model.selection.isEmpty)
-                            ? model.selection : [id]
-                        model.moveComponents(ids, by: shift)
+                        if model.selection.contains(id) && model.selection.count > 1 {
+                            // ჯგუფი — ჰორიზონტალური shift (არსებული ქცევა)
+                            let shift = Int((v.translation.width / (140 * max(zoom, 0.01))).rounded())
+                            model.moveComponents(model.selection, by: shift)
+                        } else if let drop = dropAnchor(for: id, at: toBoard(v.location)) {
+                            // ერთი კომპონენტი — ნებისმიერ რიგზე/პოზიციაზე (drop-თან უახლოეს ბარათთან).
+                            model.moveComponent(id, relativeTo: drop.anchor, after: drop.after)
+                        }
                     }
                 case .pan:
                     pan.width += v.translation.width; pan.height += v.translation.height
@@ -532,6 +577,11 @@ struct WorkbenchView: View {
                 .offset(x: pan.width + panLive.width, y: pan.height + panLive.height)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(GeometryReader { g in
+            Color.clear
+                .onAppear { railWidth = g.size.width }
+                .onChange(of: g.size.width) { railWidth = $0 }
+        })
         .contentShape(Rectangle())
         .clipped()
         // ერთიანი drag (wire/move/pan) + pinch zoom — ორივე simultaneous, არ ეჯახება.
@@ -541,18 +591,25 @@ struct WorkbenchView: View {
     }
 
     private var boardContent: some View {
-        HStack(alignment: .top, spacing: 28) {
-            ForEach(model.board.components) { comp in
-                ComponentCardView(
-                    component: comp,
-                    selectedPort: model.selectedPort,
-                    loadState: model.result?.state(for: comp.id),
-                    isSelected: model.selection.contains(comp.id),
-                    isLive: { model.isLive($0) },
-                    onTapPort: { model.tapPort($0) },
-                    onLongPress: { model.toggleSelect(comp.id) },
-                    onDelete: comp.id == "supply" ? nil : { model.removeComponent(comp.id) }
-                )
+        VStack(alignment: .leading, spacing: 22) {
+            let layout = rows
+            ForEach(layout.indices, id: \.self) { r in
+                HStack(alignment: .top, spacing: 28) {
+                    ForEach(layout[r]) { comp in
+                        ComponentCardView(
+                            component: comp,
+                            selectedPort: model.selectedPort,
+                            loadState: model.result?.state(for: comp.id),
+                            isSelected: model.selection.contains(comp.id),
+                            isLive: { model.isLive($0) },
+                            onTapPort: { model.tapPort($0) },
+                            onLongPress: { model.toggleSelect(comp.id) },
+                            onDelete: comp.id == "supply" ? nil : { model.removeComponent(comp.id) }
+                        )
+                    }
+                }
+                .padding(.horizontal, 12).padding(.vertical, 12)
+                .background(dinRailBackground)
             }
         }
         .padding(40)
@@ -560,6 +617,15 @@ struct WorkbenchView: View {
         .overlay { wireOverlay }
         .onPreferenceChange(PortFrameKey.self) { portPoints = $0 }
         .onPreferenceChange(CardFrameKey.self) { componentFrames = $0 }
+    }
+
+    /// DIN რელსის ვიზუალი (თითო რიგის ფონი + ცენტრალური ლითონის ზოლი).
+    private var dinRailBackground: some View {
+        RoundedRectangle(cornerRadius: 10)
+            .fill(Color.gray.opacity(0.10))
+            .overlay(alignment: .center) {
+                Rectangle().fill(Color.gray.opacity(0.28)).frame(height: 3)
+            }
     }
 
     private var wireOverlay: some View {

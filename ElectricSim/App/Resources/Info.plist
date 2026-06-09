@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>ka</string>
 	<key>CFBundleDisplayName</key>
-	<string>ელექტრიკის სიმულატორი</string>
+	<string>ელექტრიკოსის სიმულატორი</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

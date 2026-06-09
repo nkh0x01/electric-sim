@@ -164,48 +164,9 @@
   {
     "id": "lvl_two_sockets",
     "index": 5,
-    "title": "ორი როზეტი",
-    "brief": "დააკავშირე ორი როზეტი RCD-ის დაცვით (2.5mm²).",
-    "hint": "ორივე როზეტი RCD-ის ქვემოთ, თითო ავტომატით. PE სავალდებულოა.",
-    "phase": "single",
-    "category": "tutorial",
-    "difficulty": 2,
-    "tier": "free",
-    "palette": [
-      {
-        "templateId": "main_2p",
-        "max": 1
-      },
-      {
-        "templateId": "rcd_30",
-        "max": 1
-      },
-      {
-        "templateId": "mcb_b16",
-        "max": 2,
-        "csaOptions": [
-          2.5,
-          4
-        ]
-      },
-      {
-        "templateId": "socket_16",
-        "max": 2
-      }
-    ],
-    "goal": {
-      "poweredLoads": {
-        "socket": 2
-      },
-      "description": "ორივე როზეტი უნდა მუშაობდეს RCD-ით."
-    }
-  },
-  {
-    "id": "lvl_lamp_two_sockets",
-    "index": 6,
-    "title": "განათება + ორი როზეტი",
-    "brief": "პატარა ბინის საფუძველი: ერთი განათების ხაზი და ორი როზეტი (RCD-ით).",
-    "hint": "განათება B10-ით (RCD-ის გარეშეც შეიძლება), ორი როზეტი B16-ით RCD-ის ქვემოთ. PE ყველას.",
+    "title": "აბაზანის ხაზი — 30mA RCD",
+    "brief": "აბაზანა სველი წერტილია — სიცოცხლისთვის საშიში. ააწყვე განათება და როზეტი ისე, რომ ორივე 30mA RCD-ის დაცვის ქვემოთ იყოს. PE სავალდებულოა.",
+    "hint": "მთავარი → RCD (30mA) → ავტომატები → ნათურა და როზეტი. სველ წერტილში ყველაფერი RCD-ის ქვემოთ. განათება B10/1.5mm², როზეტი B16/2.5mm².",
     "phase": "single",
     "category": "tutorial",
     "difficulty": 2,
@@ -229,7 +190,7 @@
       },
       {
         "templateId": "mcb_b16",
-        "max": 2,
+        "max": 1,
         "csaOptions": [
           2.5,
           4
@@ -241,15 +202,67 @@
       },
       {
         "templateId": "socket_16",
-        "max": 2
+        "max": 1
       }
     ],
     "goal": {
       "poweredLoads": {
         "lamp": 1,
+        "socket": 1
+      },
+      "description": "ნათურაც და როზეტიც უნდა მუშაობდეს 30mA RCD-ის დაცვით."
+    }
+  },
+  {
+    "id": "lvl_lamp_two_sockets",
+    "index": 6,
+    "title": "ბინის ფარი — სრული მონტაჟი",
+    "brief": "ააწყვე პატარა ბინის სრული ფარი: მთავარი ამომრთველი, RCD და ოთხი ხაზი — ორი განათება (B10) და ორი როზეტი (B16). როზეტები RCD-ის ქვემოთ, PE ყველგან.",
+    "hint": "მთავარი → RCD → ოთხი ავტომატი (თითო ხაზზე). განათება 1.5mm², როზეტები 2.5mm². ყველა ფეხი (L/N/PE) დააკავშირე — ეს უკვე ნამდვილი ფარია.",
+    "phase": "single",
+    "category": "tutorial",
+    "difficulty": 3,
+    "tier": "free",
+    "palette": [
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "rcd_30",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b10",
+        "max": 2,
+        "csaOptions": [
+          1.5,
+          2.5
+        ]
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 2,
+        "csaOptions": [
+          2.5,
+          4
+        ]
+      },
+      {
+        "templateId": "lamp_60",
+        "max": 2
+      },
+      {
+        "templateId": "socket_16",
+        "max": 2
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "lamp": 2,
         "socket": 2
       },
-      "description": "განათება და ორივე როზეტი უნდა მუშაობდეს."
+      "description": "ოთხივე ხაზი უნდა მუშაობდეს — სრული, უსაფრთხო ბინის ფარი."
     }
   },
   {

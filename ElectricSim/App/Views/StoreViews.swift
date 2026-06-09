@@ -174,7 +174,7 @@ struct AboutView: View {
                             .frame(width: 54, height: 54)
                             .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
                         VStack(alignment: .leading) {
-                            Text("ელექტრიკის სიმულატორი").font(.headline)
+                            Text("ელექტრიკოსის სიმულატორი").font(.headline)
                             Text("ვერსია \(appVersion)")
                                 .font(.caption).foregroundStyle(.secondary)
                                 .contentShape(Rectangle())
