@@ -60,6 +60,21 @@ final class CareerTests: XCTestCase {
         XCTAssertEqual(s.cash, cashAfterFirst)
     }
 
+    // 3b) Live-wire შოკის ჯარიმა — აკლებს cash-ს თითო შოკზე, floor 0.
+    func testShockPenaltyDeductsCashFloorZero() {
+        let s = CareerState(defaults: freshDefaults())
+        s.completeJob(sampleJob(id: "paid", xp: 0, cash: 100))   // cash = 100
+        XCTAssertEqual(s.cash, 100)
+        XCTAssertEqual(s.penalizeShock(10), 10)                  // ერთი შოკი → -10
+        XCTAssertEqual(s.cash, 90)
+        XCTAssertEqual(s.penalizeShock(10), 10)                  // მეორე შოკი → -10
+        XCTAssertEqual(s.cash, 80)
+        XCTAssertEqual(s.penalizeShock(1000), 80, "floor: მხოლოდ დარჩენილი ჩამოიჭრება")
+        XCTAssertEqual(s.cash, 0)
+        XCTAssertEqual(s.penalizeShock(5), 0, "0-ზე → აღარაფერი ჩამოიჭრება")
+        XCTAssertEqual(s.cash, 0)
+    }
+
     // 4) წოდება იზრდება, როცა XP ზღვარს მიაღწევს
     func testRankAdvancesAtThreshold() {
         XCTAssertEqual(CareerRank.rank(forXP: 0), .apprentice)

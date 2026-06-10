@@ -101,6 +101,15 @@ final class GameState: ObservableObject {
                              rankBefore: before, rankAfter: after)
     }
 
+    /// Live-wire შოკის ჯარიმა — Career cash-ს აკლებს (floor 0). აბრუნებს
+    /// ჩამოჭრილ თანხას და ანახლებს ეკრანს (HUD-ში cash ჩანს).
+    @discardableResult
+    func penalizeShock(_ amount: Int) -> Int {
+        let deducted = career.penalizeShock(amount)
+        if deducted > 0 { objectWillChange.send() }
+        return deducted
+    }
+
     /// დონის პოვნა id-ით (ჩაშენებული + custom) — ნავიგაციისთვის.
     func level(byID id: String) -> Level? {
         levels.first { $0.id == id } ?? customLevels.first { $0.id == id }

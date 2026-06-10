@@ -205,6 +205,17 @@ public final class CareerState {
         return true
     }
 
+    /// Live-wire შოკის ჯარიმა — აკლებს cash-ს (floor 0). აბრუნებს რეალურად
+    /// ჩამოჭრილ თანხას (cash 0-ზე ქვემოთ არ ჩამოდის).
+    @discardableResult
+    public func penalizeShock(_ amount: Int) -> Int {
+        let deducted = max(0, min(cash, amount))
+        guard deducted > 0 else { return 0 }
+        cash -= deducted
+        save()
+        return deducted
+    }
+
     public func resetProgress() {
         totalXP = 0; cash = Self.startingCash
         completedJobs = []; ownedTools = []; ownedComponents = []

@@ -89,3 +89,34 @@ extension CircuitSolver {
         (analyze(board).portConductors[port] ?? []).contains { $0.isHot }
     }
 }
+
+// MARK: - Live-wire safety
+
+/// Live-wire უსაფრთხოების ლოგიკა — ცოცხალ (energized) ფარზე რედაქტირების შემოწმება
+/// და შოკის ჯარიმის დათვლა. სუფთა, Foundation-only და ტესტირებადი (UI-ს გარეშე).
+public enum LiveWire {
+
+    /// პორტი „ცოცხალია" (ფაზაზეა) NetAnalysis-ის მიხედვით.
+    public static func isPortLive(_ analysis: NetAnalysis, _ portID: String) -> Bool {
+        (analysis.portConductors[portID] ?? []).contains { $0.isHot }
+    }
+
+    /// კომპონენტი ცოცხალია — რომელიმე ფეხი ფაზაზეა.
+    public static func isComponentLive(_ analysis: NetAnalysis, _ component: Component) -> Bool {
+        component.ports.contains { isPortLive(analysis, $0.id) }
+    }
+
+    /// რედაქტირება დაბლოკილია? მხოლოდ მაშინ, თუ ფარი ჩართულია (energized) და
+    /// რომელიმე შესახები ფეხი ცოცხალია. გამორთულ ფარზე / nil ანალიზზე — false.
+    public static func isEditBlocked(energized: Bool,
+                                     analysis: NetAnalysis?,
+                                     touchingPorts ports: [String]) -> Bool {
+        guard energized, let analysis else { return false }
+        return ports.contains { isPortLive(analysis, $0) }
+    }
+
+    /// შოკის ჯარიმის ოდენობა ჯილდოს მიხედვით (default 10%, დამრგვალებული, floor 0).
+    public static func shockPenalty(reward: Int, fraction: Double = 0.10) -> Int {
+        max(0, Int((Double(reward) * fraction).rounded()))
+    }
+}

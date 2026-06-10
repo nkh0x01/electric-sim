@@ -7,6 +7,9 @@
 //
 
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 // MARK: - Tools
 
@@ -67,6 +70,12 @@ final class WorkbenchModel: ObservableObject {
     @Published var liveAnalysis: NetAnalysis?
     @Published var showWires = false
     @Published var careerOutcome: CareerOutcome?   // career-job: ჯილდო შედეგისთვის
+    // MARK: Live-wire safety
+    @Published var energized = false               // ფარის კვება — სამუშაო სესიის ნაგულისხმევი OFF
+    @Published var shockCount = 0                  // ამ სესიის შოკების რაოდენობა
+    @Published var shockFlash = false              // წითელი ფლეში (transient)
+    @Published var inspectNotice: String?          // „ჩართე კვება…" შეტყობინება (alert)
+    private weak var gameRef: GameState?           // ჯარიმისთვის (Career cash)
     let careerJob: Job?                              // nil → ჩვეულებრივი Learn დონე
     private var didConfigure = false
 
@@ -85,8 +94,9 @@ final class WorkbenchModel: ObservableObject {
     private var startedAt = Date()
     private(set) var mistakes = 0
 
-    func configure(_ t: [String: ComponentTemplate]) {
+    func configure(_ t: [String: ComponentTemplate], game: GameState) {
         templates = t
+        gameRef = game
         guard !didConfigure else { return }
         didConfigure = true
         board = level.initialBoard(templates: t)
@@ -95,7 +105,48 @@ final class WorkbenchModel: ObservableObject {
         resetResult()
     }
 
+    // MARK: - Live-wire safety (de-energize before working)
+
+    /// კვების გადართვა (მთავარი ამომრთველი / HUD toggle). ჩართვისას ფარი ცოცხალია.
+    func togglePower() {
+        energized.toggle()
+        selectedPort = nil
+        result = nil
+        showResult = false
+        recomputeLive()
+    }
+
+    /// ცოცხალი ფეხების ანალიზი — მხოლოდ ჩართულ ფარზე (გამორთულზე nil → არაფერი ცოცხალია).
+    private func recomputeLive() {
+        liveAnalysis = energized ? solver.analyze(board) : nil
+    }
+
+    /// ცოცხალ ნაწილზე რედაქტირების მცველი. true → ქმედება დაბლოკილია (და დარეგისტრირდა შოკი).
+    private func blockedByLiveEdit(_ ports: [String]) -> Bool {
+        guard energized else { return false }
+        let analysis = solver.analyze(board)
+        guard LiveWire.isEditBlocked(energized: true, analysis: analysis, touchingPorts: ports) else { return false }
+        registerShock()
+        return true
+    }
+
+    /// შოკის მოვლენა — count++, წითელი ფლეში, გაფრთხილება და (Career/Fault) cash-ჯარიმა.
+    private func registerShock() {
+        shockCount += 1
+        shockFlash = true
+        if let job = careerJob {
+            gameRef?.penalizeShock(LiveWire.shockPenalty(reward: job.cashReward))
+        }
+        let token = shockCount
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { [weak self] in
+            guard let self, self.shockCount == token else { return }
+            self.shockFlash = false
+        }
+    }
+
     func deleteWire(_ id: String) {
+        guard let w = board.wires.first(where: { $0.id == id }) else { return }
+        if blockedByLiveEdit([w.fromPortID, w.toPortID]) { return }
         board.wires.removeAll { $0.id == id }
         resetResult()
     }
@@ -114,10 +165,10 @@ final class WorkbenchModel: ObservableObject {
 
     func removeComponent(_ id: String) {
         guard id != "supply" else { return }
-        if let comp = board.components.first(where: { $0.id == id }) {
-            let portIDs = Set(comp.ports.map { $0.id })
-            board.wires.removeAll { portIDs.contains($0.fromPortID) || portIDs.contains($0.toPortID) }
-        }
+        guard let comp = board.components.first(where: { $0.id == id }) else { return }
+        if blockedByLiveEdit(comp.ports.map { $0.id }) { return }
+        let portIDs = Set(comp.ports.map { $0.id })
+        board.wires.removeAll { portIDs.contains($0.fromPortID) || portIDs.contains($0.toPortID) }
         board.components.removeAll { $0.id == id }
         if let tid = templates.keys.first(where: { id.hasPrefix($0 + "_") }) {
             placedCounts[tid] = max(0, (placedCounts[tid] ?? 1) - 1)
@@ -125,10 +176,17 @@ final class WorkbenchModel: ObservableObject {
         resetResult()
     }
 
-    func removeLastWire() { if !board.wires.isEmpty { board.wires.removeLast(); resetResult() } }
-    func clearWires() { board.wires.removeAll(); resetResult() }
+    func removeLastWire() {
+        guard let w = board.wires.last else { return }
+        if blockedByLiveEdit([w.fromPortID, w.toPortID]) { return }
+        board.wires.removeLast(); resetResult()
+    }
+    func clearWires() {
+        if blockedByLiveEdit(board.wires.flatMap { [$0.fromPortID, $0.toPortID] }) { return }
+        board.wires.removeAll(); resetResult()
+    }
 
-    func resetResult() { result = nil; showResult = false; liveAnalysis = nil }
+    func resetResult() { result = nil; showResult = false; recomputeLive() }
 
     func tapPort(_ id: String) {
         measurement = nil
@@ -164,6 +222,7 @@ final class WorkbenchModel: ObservableObject {
             ($0.fromPortID == from && $0.toPortID == to) ||
             ($0.fromPortID == to && $0.toPortID == from)
         }) { return }
+        if blockedByLiveEdit([from, to]) { return }
         let conductor = board.port(from)?.conductor ?? board.port(to)?.conductor ?? .L
         board.connect(from, to, csaMm2: selectedCSA, color: WireColor.standard(for: conductor),
                       cableType: selectedCable, conductorType: selectedConductorType,
@@ -184,6 +243,7 @@ final class WorkbenchModel: ObservableObject {
     /// გადააადგილებს კომპონენტ(ებ)-ს რიგში `shift` პოზიციით (busbar-ის ვიზუალური რიგი).
     func moveComponents(_ ids: Set<String>, by shift: Int) {
         guard shift != 0, !ids.isEmpty else { return }
+        if blockedByLiveEdit(board.components.filter { ids.contains($0.id) }.flatMap { $0.ports.map(\.id) }) { return }
         var comps = board.components
         let moving = comps.filter { ids.contains($0.id) }
         guard !moving.isEmpty,
@@ -200,6 +260,7 @@ final class WorkbenchModel: ObservableObject {
     func moveComponent(_ id: String, relativeTo anchorID: String, after: Bool) {
         guard id != anchorID,
               let comp = board.components.first(where: { $0.id == id }) else { return }
+        if blockedByLiveEdit(comp.ports.map { $0.id }) { return }
         var comps = board.components
         comps.removeAll { $0.id == id }
         guard let aIdx = comps.firstIndex(where: { $0.id == anchorID }) else { return }
@@ -209,16 +270,13 @@ final class WorkbenchModel: ObservableObject {
         resetResult()
     }
 
-    func check() {
-        var r = solver.solve(board, energize: false)
-        if level.isPanelAssembly { r.issues.append(contentsOf: PanelAssembly.validate(board)) }
-        if !r.passed { mistakes += 1 }
-        result = r
-        liveAnalysis = nil
-        showResult = true
-    }
-
-    func powerOn(game: GameState) {
+    /// შემოწმებაზე გაგზავნა — საჭიროა ჩართული კვება (live ფარი). გამორთულზე →
+    /// შეტყობინება. ჩართულზე → ინსპექტორი (solver) აფასებს ცოცხალ ფარს.
+    func inspect(game: GameState) {
+        guard energized else {
+            inspectNotice = "ჩართე კვება შემოწმებამდე"
+            return
+        }
         var r = solver.solve(board, energize: true)
         if level.isPanelAssembly { r.issues.append(contentsOf: PanelAssembly.validate(board)) }
         result = r
@@ -258,7 +316,8 @@ final class WorkbenchModel: ObservableObject {
     }
 
     func isLive(_ portID: String) -> Bool {
-        (liveAnalysis?.portConductors[portID] ?? []).contains { $0.isHot }
+        guard let liveAnalysis else { return false }
+        return LiveWire.isPortLive(liveAnalysis, portID)
     }
 
     var csaOptions: [Double] {
@@ -567,6 +626,7 @@ struct WorkbenchView: View {
     var body: some View {
         VStack(spacing: 0) {
             briefBar
+            powerHUD
             railView
             if let m = model.measurement {
                 Text(m)
@@ -577,6 +637,15 @@ struct WorkbenchView: View {
             }
             Divider()
             controls
+        }
+        .overlay { shockOverlay }
+        .animation(.easeInOut(duration: 0.12), value: model.shockFlash)
+        .onChange(of: model.shockCount) { _ in shockHaptic() }
+        .alert(model.inspectNotice ?? "", isPresented: Binding(
+            get: { model.inspectNotice != nil },
+            set: { if !$0 { model.inspectNotice = nil } }
+        )) {
+            Button("გასაგებია", role: .cancel) { model.inspectNotice = nil }
         }
         .navigationTitle(model.level.title)
         .navigationBarTitleDisplayMode(.inline)
@@ -595,7 +664,7 @@ struct WorkbenchView: View {
                     .environmentObject(game)
             }
         }
-        .onAppear { model.configure(game.templates) }
+        .onAppear { model.configure(game.templates, game: game) }
         .sheet(isPresented: $model.showResult, onDismiss: handleResultDismiss) {
             if let r = model.result {
                 ResultPanelView(result: r, passed: model.levelPassed, level: model.level,
@@ -635,6 +704,58 @@ struct WorkbenchView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal).padding(.vertical, 8)
         .background(Color(.secondarySystemBackground))
+    }
+
+    // MARK: HUD — კვების ინდიკატორი/გადამრთველი (მთავარი ამომრთველი)
+    private var powerHUD: some View {
+        HStack(spacing: 10) {
+            Button { model.togglePower() } label: {
+                Label(model.energized ? "ჩართულია" : "გამორთულია",
+                      systemImage: model.energized ? "bolt.fill" : "bolt.slash.fill")
+                    .font(.subheadline.bold())
+                    .padding(.horizontal, 12).padding(.vertical, 7)
+                    .background(model.energized ? Color.green.opacity(0.22) : Color.gray.opacity(0.18),
+                                in: Capsule())
+                    .foregroundStyle(model.energized ? .green : .secondary)
+                    .overlay(Capsule().stroke(model.energized ? Color.green : Color.gray.opacity(0.4),
+                                              lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("power-toggle")
+
+            Text(model.energized ? "ფარი ცოცხალია — ჯერ გამორთე რედაქტირებამდე"
+                                 : "ფარი გამორთულია — უსაფრთხო რედაქტირება")
+                .font(.caption2).foregroundStyle(.secondary)
+                .lineLimit(2).minimumScaleFactor(0.85)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal).padding(.vertical, 6)
+        .background(model.energized ? Color.green.opacity(0.07) : Color(.secondarySystemBackground))
+    }
+
+    // MARK: შოკის ვიზუალი — წითელი ფლეში + გაფრთხილება
+    @ViewBuilder private var shockOverlay: some View {
+        if model.shockFlash {
+            ZStack(alignment: .top) {
+                Color.red.opacity(0.30).ignoresSafeArea()
+                Text("⚡ დაგარტყა დენმა! ჯერ გამორთე კვება!")
+                    .font(.headline.bold()).foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16).padding(.vertical, 10)
+                    .background(Color.red, in: Capsule())
+                    .padding(.top, 60).padding(.horizontal, 24)
+                    .accessibilityIdentifier("shock-warning")
+            }
+            .allowsHitTesting(false)
+            .transition(.opacity)
+        }
+    }
+
+    private func shockHaptic() {
+        #if canImport(UIKit)
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
+        #endif
     }
 
     private var railView: some View {
@@ -818,23 +939,16 @@ struct WorkbenchView: View {
                 .font(.caption)
                 .padding(.horizontal)
 
-            // მოქმედებები
-            HStack(spacing: 12) {
-                Button { model.check() } label: {
-                    Label("შემოწმება", systemImage: "checkmark.seal")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .accessibilityIdentifier("check")
-
-                Button { model.powerOn(game: game) } label: {
-                    Label("ჩართე ძაბვა", systemImage: "bolt.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.yellow)
-                .accessibilityIdentifier("power-on")
-            }.padding(.horizontal)
+            // მოქმედება — შემოწმებაზე გაგზავნა (საჭიროებს ჩართულ კვებას)
+            Button { model.inspect(game: game) } label: {
+                Label("შემოწმებაზე გაგზავნა", systemImage: "paperplane.fill")
+                    .frame(maxWidth: .infinity)
+                    .font(.headline)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.brand)
+            .accessibilityIdentifier("inspect")
+            .padding(.horizontal)
         }
         .padding(.vertical, 10)
         .background(Color(.secondarySystemBackground))

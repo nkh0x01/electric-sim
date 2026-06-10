@@ -89,9 +89,9 @@ final class ElectricSimUITests: XCTestCase {
         let tutorial = tutorialCell(app)
         XCTAssertTrue(tutorial.waitForExistence(timeout: 10))
         tutorial.tap()
-        XCTAssertTrue(app.buttons["power-on"].waitForExistence(timeout: 10),
-                      "ფარის ეკრანზე უნდა იყოს „ჩართე ძაბვა“ ღილაკი")
-        XCTAssertTrue(app.buttons["check"].exists, "უნდა იყოს „შემოწმება“ ღილაკი")
+        XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 10),
+                      "ფარის ეკრანზე უნდა იყოს „შემოწმებაზე გაგზავნა“ ღილაკი")
+        XCTAssertTrue(app.buttons["power-toggle"].exists, "უნდა იყოს კვების გადამრთველი")
     }
 
     /// solver-ის გაშვება UI-დან → შედეგის ფურცელი იხსნება.
@@ -101,11 +101,15 @@ final class ElectricSimUITests: XCTestCase {
         let tutorial = tutorialCell(app)
         XCTAssertTrue(tutorial.waitForExistence(timeout: 10))
         tutorial.tap()
-        let check = app.buttons["check"]
-        XCTAssertTrue(check.waitForExistence(timeout: 10))
-        check.tap()
+        // ახალი ნაკადი: ჯერ ჩართე კვება, მერე გააგზავნე შემოწმებაზე.
+        let power = app.buttons["power-toggle"]
+        XCTAssertTrue(power.waitForExistence(timeout: 10))
+        power.tap()
+        let inspect = app.buttons["inspect"]
+        XCTAssertTrue(inspect.waitForExistence(timeout: 10))
+        inspect.tap()
         XCTAssertTrue(app.staticTexts["შედეგი"].waitForExistence(timeout: 10),
-                      "შემოწმების შემდეგ უნდა გამოჩნდეს შედეგის ფურცელი")
+                      "ჩართულ ფარზე შემოწმება უნდა აჩვენებდეს შედეგის ფურცელს")
     }
 
     /// დონის ფარზე მოქმედების ღილაკები ეკრანზე ხილული/დაჭერადია — პალიტრამ არ
@@ -116,15 +120,59 @@ final class ElectricSimUITests: XCTestCase {
         let tutorial = tutorialCell(app)
         XCTAssertTrue(tutorial.waitForExistence(timeout: 10))
         tutorial.tap()
-        let check = app.buttons["check"]
-        let power = app.buttons["power-on"]
-        XCTAssertTrue(check.waitForExistence(timeout: 10))
-        XCTAssertTrue(check.isHittable, "„შემოწმება“ ღილაკი ეკრანზე უნდა იყოს (პალიტრამ არ უნდა გადასწიოს)")
-        XCTAssertTrue(power.isHittable, "„ჩართე ძაბვა“ ღილაკი ეკრანზე უნდა იყოს")
+        let inspect = app.buttons["inspect"]
+        let power = app.buttons["power-toggle"]
+        XCTAssertTrue(inspect.waitForExistence(timeout: 10))
+        XCTAssertTrue(inspect.isHittable, "„შემოწმებაზე გაგზავნა“ ღილაკი ეკრანზე უნდა იყოს (პალიტრამ არ უნდა გადასწიოს)")
+        XCTAssertTrue(power.isHittable, "კვების გადამრთველი ეკრანზე უნდა იყოს")
         let shot = XCTAttachment(screenshot: app.screenshot())
         shot.name = "Workbench-palette-controls"
         shot.lifetime = .keepAlways
         add(shot)
+    }
+
+    /// staticText, რომელიც შეიცავს მოცემულ ქვესტრიქონს.
+    private func staticContaining(_ app: XCUIApplication, _ substr: String) -> XCUIElement {
+        app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", substr)).firstMatch
+    }
+
+    /// კვების გადამრთველი ცვლის მდგომარეობას (გამორთულია ↔ ცოცხალია). ნაგულისხმევი OFF.
+    func testPowerToggleChangesState() {
+        let app = launchApp()
+        openLearn(app)
+        let tutorial = tutorialCell(app)
+        XCTAssertTrue(tutorial.waitForExistence(timeout: 10))
+        tutorial.tap()
+        let power = app.buttons["power-toggle"]
+        XCTAssertTrue(power.waitForExistence(timeout: 10))
+        XCTAssertTrue(staticContaining(app, "უსაფრთხო").waitForExistence(timeout: 5),
+                      "ნაგულისხმევად ფარი გამორთულია (უსაფრთხო რედაქტირება)")
+        power.tap()
+        XCTAssertTrue(staticContaining(app, "ცოცხალია").waitForExistence(timeout: 5),
+                      "ჩართვის შემდეგ ფარი ცოცხალია")
+    }
+
+    /// შემოწმება ჯერ კვების ჩართვას მოითხოვს: გამორთულზე → შეტყობინება (არა შედეგი);
+    /// ჩართვის შემდეგ → შედეგის ფურცელი.
+    func testInspectionRequiresPowerOn() {
+        let app = launchApp()
+        openLearn(app)
+        let tutorial = tutorialCell(app)
+        XCTAssertTrue(tutorial.waitForExistence(timeout: 10))
+        tutorial.tap()
+        let inspect = app.buttons["inspect"]
+        XCTAssertTrue(inspect.waitForExistence(timeout: 10))
+        // გამორთული კვება → ინსპექცია არ უნდა გაეშვას, ჩანს შეტყობინება
+        inspect.tap()
+        XCTAssertTrue(app.staticTexts["ჩართე კვება შემოწმებამდე"].waitForExistence(timeout: 5),
+                      "გამორთულ ფარზე უნდა გამოჩნდეს „ჩართე კვება შემოწმებამდე“")
+        XCTAssertFalse(app.staticTexts["შედეგი"].exists, "გამორთულზე შედეგი არ უნდა გამოჩნდეს")
+        app.buttons["გასაგებია"].tap()
+        // ჩართე კვება და გააგზავნე — ახლა შედეგი ჩანს
+        app.buttons["power-toggle"].tap()
+        inspect.tap()
+        XCTAssertTrue(app.staticTexts["შედეგი"].waitForExistence(timeout: 10),
+                      "ჩართულ ფარზე შემოწმება უნდა აჩვენებდეს შედეგს")
     }
 
     /// „შესახებ“ ეკრანი (სწავლების toolbar-ში) → ბრენდი gadget.ge.
