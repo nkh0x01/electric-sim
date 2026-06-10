@@ -12,28 +12,42 @@ struct MainMenuView: View {
     @EnvironmentObject var game: GameState
     @Binding var path: [String]
     @State private var showSettings = false
+    @State private var showAbout = false
 
     var body: some View {
         List {
             Section {
-                modeRow(route: "learn", title: "სწავლება",
+                modeRow(title: "სწავლება",
                         subtitle: "გაკვეთილები და სავარჯიშო დონეები",
                         systemImage: "graduationcap.fill", color: .brand,
-                        id: "menu-learn")
-                modeRow(route: "career", title: "კარიერა",
+                        id: "menu-learn") { path.append("learn") }
+                modeRow(title: "კარიერა",
                         subtitle: "შეასრულე სამუშაოები, აიწიე წოდებაში",
                         systemImage: "briefcase.fill", color: .orange,
-                        id: "menu-career")
-                modeRow(route: "faults", title: "დიაგნოსტიკა",
+                        id: "menu-career") { path.append("career") }
+                modeRow(title: "დიაგნოსტიკა",
                         subtitle: "იპოვე და გაასწორე დეფექტი აწყობილ ფარში",
                         systemImage: "stethoscope", color: .red,
-                        id: "menu-faults")
-                modeRow(route: "sandbox", title: "Sandbox",
+                        id: "menu-faults") { path.append("faults") }
+                modeRow(title: "Sandbox",
                         subtitle: "თავისუფალი აწყობა შეზღუდვის გარეშე",
                         systemImage: "hammer.fill", color: .blue,
-                        id: "menu-sandbox")
+                        id: "menu-sandbox") { path.append("sandbox") }
             } header: {
                 Text("აირჩიე რეჟიმი")
+            }
+
+            // პარამეტრები და „ჩვენ შესახებ“ — პირდაპირ მენიუში (არა მხოლოდ ⚙️-ში),
+            // იგივე სტილით როგორც რეჟიმის რიგები.
+            Section {
+                modeRow(title: "პარამეტრები",
+                        subtitle: "ხმა, შესყიდვები, პროგრესი",
+                        systemImage: "gearshape.fill", color: .gray,
+                        id: "menu-settings") { showSettings = true }
+                modeRow(title: "ჩვენ შესახებ",
+                        subtitle: "აპლიკაცია, ბრენდი და ბმულები",
+                        systemImage: "info.circle.fill", color: .teal,
+                        id: "menu-about") { showAbout = true }
             }
 
             // ტექსტური კრედიტი (ბმულის გარეშე — არ არის რეკლამა). ბმულები მხოლოდ „შესახებ“-ში.
@@ -56,11 +70,22 @@ struct MainMenuView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView().environmentObject(store).environmentObject(game)
         }
+        .sheet(isPresented: $showAbout) {
+            NavigationStack {
+                AboutView()
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("დახურვა") { showAbout = false }
+                        }
+                    }
+            }
+        }
     }
 
-    private func modeRow(route: String, title: String, subtitle: String,
-                         systemImage: String, color: Color, id: String) -> some View {
-        Button { path.append(route) } label: {
+    private func modeRow(title: String, subtitle: String,
+                         systemImage: String, color: Color, id: String,
+                         action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             HStack(spacing: 14) {
                 Image(systemName: systemImage)
                     .font(.title2)

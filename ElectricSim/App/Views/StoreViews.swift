@@ -356,5 +356,6 @@ struct AboutView: View {
             .padding(5)
             .frame(width: 44, height: 44)
             .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
+            .accessibilityIdentifier("about-logo-\(name)")
     }
 }

@@ -131,4 +131,35 @@ final class ElectricSimUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["gadget.ge"].waitForExistence(timeout: 10),
                       "„შესახებ“ ეკრანზე უნდა ეწეროს gadget.ge")
     }
+
+    /// მთავარი მენიუს „პარამეტრები“ რიგი (პირდაპირ სიაში) → SettingsView იხსნება.
+    func testMainMenuSettingsRowOpensSettings() {
+        let app = launchApp()
+        let row = app.buttons["menu-settings"]
+        XCTAssertTrue(row.waitForExistence(timeout: 20), "მთავარ მენიუში უნდა იყოს „პარამეტრები“ რიგი")
+        row.tap()
+        XCTAssertTrue(app.buttons["settings-about"].waitForExistence(timeout: 10),
+                      "„პარამეტრები“ რიგმა უნდა გახსნას SettingsView")
+    }
+
+    /// მთავარი მენიუს „ჩვენ შესახებ“ რიგი (პირდაპირ სიაში) → About ეკრანი ბრენდითა
+    /// და რეალური ლოგოებით (SF-სიმბოლო placeholder აღარ).
+    func testMainMenuAboutRowShowsRealLogos() {
+        let app = launchApp()
+        let row = app.buttons["menu-about"]
+        XCTAssertTrue(row.waitForExistence(timeout: 20), "მთავარ მენიუში უნდა იყოს „ჩვენ შესახებ“ რიგი")
+        row.tap()
+        XCTAssertTrue(app.staticTexts["gadget.ge"].waitForExistence(timeout: 10),
+                      "About ეკრანზე უნდა ეწეროს gadget.ge")
+        // რეალური asset-ლოგოები უნდა დაიხატოს (Image("GadgetLogo")/Image("TsiliLogo")).
+        XCTAssertTrue(app.images["about-logo-GadgetLogo"].waitForExistence(timeout: 5),
+                      "Gadget-ის რეალური ლოგო უნდა დაიხატოს")
+        XCTAssertTrue(app.images["about-logo-TsiliLogo"].exists,
+                      "Tsili-ის რეალური ლოგო უნდა დაიხატოს")
+        // ვიზუალური მტკიცებულება — ეკრანის სქრინშოტი დანართად.
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "About-with-real-logos"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
 }
