@@ -300,6 +300,9 @@ struct WorkbenchView: View {
     @State private var showHint = false
     @State private var showReports = false
     @State private var showPaywall = false
+    // შედეგის sheet-ის დახურვის შემდეგ შესასრულებელი ნავიგაცია (race-ის თავიდან ასაცილებლად).
+    @State private var pendingNav: PendingNav?
+    private enum PendingNav: Equatable { case next(String), pop, paywall }
     // ფარის ჟესტები (board სივრცე)
     @State private var portPoints: [String: CGPoint] = [:]
     @State private var componentFrames: [String: CGRect] = [:]
@@ -531,18 +534,34 @@ struct WorkbenchView: View {
     }
     private var hasNext: Bool { nextDestination() != nil }
 
+    /// „შემდეგი დონე" — ვაყენებთ განზრახვას და ვხურავთ შედეგის sheet-ს; რეალური
+    /// ნავიგაცია ხდება onDismiss-ში (handleResultDismiss), რომ sheet-ის დახურვასა
+    /// და path-ის ცვლილებას შორის race არ მოხდეს (ეს იყო „შემდეგი“-ს ბაგი).
     private func goNext() {
-        model.showResult = false
         guard let dest = nextDestination() else { backToMenu(); return }
-        if dest.locked { showPaywall = true; return }
-        if path.isEmpty { path = [dest.route] } else { path[path.count - 1] = dest.route }
+        if dest.locked { pendingNav = .paywall; model.showResult = false; return }
+        pendingNav = .next(dest.route)
+        model.showResult = false
     }
     /// უკან სიაში/ბორდზე დაბრუნება (workbench-ის pop). მენიუ ახლა root-ია.
     private func backToMenu() {
         // Learn: პროგრესის უსაფრთხო შენახვა (career-ს markCompleted არ სჭირდება).
         if model.careerJob == nil, model.levelPassed { game.markCompleted(model.level) }
+        pendingNav = .pop
         model.showResult = false
-        if !path.isEmpty { path.removeLast() }
+    }
+    /// შედეგის sheet დაიხურა → ახლა უსაფრთხოა path-ის ცვლილება (sheet აღარ ეჯახება).
+    private func handleResultDismiss() {
+        guard let nav = pendingNav else { return }   // უბრალო დახურვა/swipe — ვრჩებით დონეზე
+        pendingNav = nil
+        switch nav {
+        case .next(let route):
+            if path.isEmpty { path = [route] } else { path[path.count - 1] = route }
+        case .pop:
+            if !path.isEmpty { path.removeLast() }
+        case .paywall:
+            showPaywall = true
+        }
     }
 
     var body: some View {
@@ -577,7 +596,7 @@ struct WorkbenchView: View {
             }
         }
         .onAppear { model.configure(game.templates) }
-        .sheet(isPresented: $model.showResult) {
+        .sheet(isPresented: $model.showResult, onDismiss: handleResultDismiss) {
             if let r = model.result {
                 ResultPanelView(result: r, passed: model.levelPassed, level: model.level,
                                 hasNext: hasNext,
@@ -738,12 +757,15 @@ struct WorkbenchView: View {
 
             Text(model.tool.hint).font(.caption2).foregroundStyle(.secondary)
 
-            // კომპონენტების პალიტრა — დაჯგუფებული კატეგორიებად (data-driven)
+            // კომპონენტების პალიტრა — ერთ რიგად, ჰორიზონტალურად გადახვევადი
+            // (LazyHStack — wrapping არ ხდება). თითო კატეგორია ცალკე ჯგუფია,
+            // სათაურში კატეგორიის ხატულათი (data-driven). ბევრკომპონენტიანი
+            // კატეგორია უბრალოდ მარჯვნივ გრძელდება და გადაიხვევა.
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(alignment: .top, spacing: 16) {
+                LazyHStack(alignment: .top, spacing: 16) {
                     ForEach(paletteCategories, id: \.self) { cat in
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(cat.georgian)
+                            Label(cat.georgian, systemImage: cat.sfSymbol)
                                 .font(.caption2.bold()).foregroundStyle(.secondary)
                                 .padding(.leading, 2)
                             HStack(spacing: 8) {
@@ -754,7 +776,8 @@ struct WorkbenchView: View {
                             Divider().frame(height: 78)
                         }
                     }
-                }.padding(.horizontal)
+                }
+                .padding(.horizontal)
             }
 
             // კაბელის კვეთა

@@ -23,6 +23,16 @@ struct FaultMissionView: View {
 
     private var mission: FaultMission? { game.fault(byID: missionID) }
 
+    /// შემდეგი მისიის route (სიის რიგით). თუ ბოლოა ან Pro-ჩაკეტილია → nil
+    /// (ვბრუნდებით სიაში; paywall-ის გვერდის ავლა არ ხდება).
+    private var nextMissionRoute: String? {
+        guard let idx = game.faults.firstIndex(where: { $0.id == missionID }),
+              idx + 1 < game.faults.count else { return nil }
+        let next = game.faults[idx + 1]
+        let locked = !store.isPro && next.tier == .pro
+        return locked ? nil : "fault:\(next.id)"
+    }
+
     var body: some View {
         Group {
             if let m = mission {
@@ -250,8 +260,14 @@ struct FaultMissionView: View {
                 }
             }
             Section {
-                primaryButton("მისიების სია →", "list.bullet") {
-                    if !path.isEmpty { path.removeLast() }
+                if let route = nextMissionRoute {
+                    primaryButton("შემდეგი მისია →", "arrow.right.circle.fill") {
+                        if path.isEmpty { path = [route] } else { path[path.count - 1] = route }
+                    }
+                } else {
+                    primaryButton("მისიების სია →", "list.bullet") {
+                        if !path.isEmpty { path.removeLast() }
+                    }
                 }
             }
         }

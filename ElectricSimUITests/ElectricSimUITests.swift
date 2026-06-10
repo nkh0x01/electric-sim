@@ -108,6 +108,25 @@ final class ElectricSimUITests: XCTestCase {
                       "შემოწმების შემდეგ უნდა გამოჩნდეს შედეგის ფურცელი")
     }
 
+    /// დონის ფარზე მოქმედების ღილაკები ეკრანზე ხილული/დაჭერადია — პალიტრამ არ
+    /// უნდა გადასწიოს ისინი ეკრანს გარეთ (პალიტრის განლაგების რეგრესიის დაცვა).
+    func testWorkbenchControlsStayOnScreen() {
+        let app = launchApp()
+        openLearn(app)
+        let tutorial = tutorialCell(app)
+        XCTAssertTrue(tutorial.waitForExistence(timeout: 10))
+        tutorial.tap()
+        let check = app.buttons["check"]
+        let power = app.buttons["power-on"]
+        XCTAssertTrue(check.waitForExistence(timeout: 10))
+        XCTAssertTrue(check.isHittable, "„შემოწმება“ ღილაკი ეკრანზე უნდა იყოს (პალიტრამ არ უნდა გადასწიოს)")
+        XCTAssertTrue(power.isHittable, "„ჩართე ძაბვა“ ღილაკი ეკრანზე უნდა იყოს")
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "Workbench-palette-controls"
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+
     /// „შესახებ“ ეკრანი (სწავლების toolbar-ში) → ბრენდი gadget.ge.
     func testAboutScreenShowsBranding() {
         let app = launchApp()

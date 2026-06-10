@@ -37,6 +37,17 @@ public enum ComponentCategory: String, Codable, Sendable, CaseIterable {
         }
     }
 
+    /// კატეგორიის SF Symbol — პალიტრის სათაურებში გასარჩევად (data-driven).
+    public var sfSymbol: String {
+        switch self {
+        case .protection: return "shield.fill"
+        case .supply:     return "bolt.fill"
+        case .load:       return "lightbulb.fill"
+        case .control:    return "switch.2"
+        case .auxiliary:  return "wrench.and.screwdriver.fill"
+        }
+    }
+
     /// ნაგულისხმევი კატეგორია kind-იდან (თუ JSON-ში არ არის მითითებული).
     public static func forKind(_ kind: ComponentKind) -> ComponentCategory {
         switch kind {

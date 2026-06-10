@@ -314,8 +314,8 @@ struct AboutView: View {
                 Link(destination: URL(string: "https://gadget.ge")!) {
                     Label("gadget.ge", systemImage: "globe")
                 }
-                Link(destination: URL(string: "mailto:info@gadget.ge")!) {
-                    Label("info@gadget.ge", systemImage: "envelope")
+                Link(destination: URL(string: "mailto:info@gadget.com.ge")!) {
+                    Label("info@gadget.com.ge", systemImage: "envelope")
                 }
             }
 
