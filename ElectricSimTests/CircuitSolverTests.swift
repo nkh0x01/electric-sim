@@ -731,8 +731,10 @@ final class CircuitSolverTests: XCTestCase {
         let levels = try GameData.loadLevels()
         // უფასოა მხოლოდ Learn (tutorial) დონეები.
         let freeIDs = Set(levels.filter { $0.resolvedTier == .free }.map { $0.id })
+        // Learn-ის 6 საწყისი დონე + ფარის აწყობის პირველი 2 (უფასო შესავალი).
         XCTAssertEqual(freeIDs, ["lvl_tutorial", "lvl_socket_rcd", "lvl_two_lamps",
-                                 "lvl_lamp_socket", "lvl_two_sockets", "lvl_lamp_two_sockets"])
+                                 "lvl_lamp_socket", "lvl_two_sockets", "lvl_lamp_two_sockets",
+                                 "lvl_panel_basic", "lvl_panel_rcd"])
         XCTAssertTrue(levels.contains { $0.resolvedCategory == .panelAssembly })
         for l in levels { XCTAssertTrue((1...5).contains(l.resolvedDifficulty)) }
         // გაფართოებული კონტენტი — Pro.
@@ -747,9 +749,9 @@ final class CircuitSolverTests: XCTestCase {
         for level in levels {
             if level.resolvedTier == .free {
                 freeCount += 1
-                // 1. უფასო დონე = Learn/tutorial კატეგორია
-                XCTAssertEqual(level.resolvedCategory, .tutorial,
-                               "უფასო დონე \(level.id) უნდა იყოს Learn/tutorial")
+                // 1. უფასო დონე = Learn/tutorial ან ფარის-აწყობის უფასო შესავალი
+                XCTAssertTrue([.tutorial, .panelAssembly].contains(level.resolvedCategory),
+                              "უფასო დონე \(level.id) უნდა იყოს Learn ან ფარის აწყობა")
                 // 2. სრულდება მხოლოდ ბაზისური (უფასო) კომპონენტებით
                 for entry in level.palette {
                     guard let kind = templates[entry.templateId]?.kind else {
@@ -774,9 +776,44 @@ final class CircuitSolverTests: XCTestCase {
         for s in levels where s.resolvedMode == .sandbox {
             XCTAssertEqual(s.resolvedTier, .pro, "sandbox უნდა იყოს Pro")
         }
-        // panel-assembly / three-phase / fault-finding — ყველა Pro
-        for l in levels where [.panelAssembly, .threePhase, .faultFinding].contains(l.resolvedCategory) {
+        // three-phase / fault-finding — ყველა Pro
+        for l in levels where [.threePhase, .faultFinding].contains(l.resolvedCategory) {
             XCTAssertEqual(l.resolvedTier, .pro, "\(l.id) (\(l.resolvedCategory)) უნდა იყოს Pro")
+        }
+        // ფარის აწყობა — Pro, გარდა პირველი ორი უფასო შესავლისა.
+        let freePanelIDs: Set<String> = ["lvl_panel_basic", "lvl_panel_rcd"]
+        for l in levels where l.resolvedCategory == .panelAssembly && !freePanelIDs.contains(l.id) {
+            XCTAssertEqual(l.resolvedTier, .pro, "\(l.id) — ფარის აწყობა უნდა იყოს Pro")
+        }
+    }
+
+    /// ფარის აწყობა ცალკე რეჟიმად: 6–8 დონე, პირველი 2 უფასო (ბაზისური კომპონენტებით),
+    /// დანარჩენი Pro; თითო დონის goal-დატვირთვა პალიტრაშია.
+    func testPanelAssemblyModeProgression() throws {
+        let levels = try GameData.loadLevels()
+        let templates = try GameData.loadTemplates()
+        let panels = levels.filter { $0.resolvedCategory == .panelAssembly }
+            .sorted { $0.index < $1.index }
+        XCTAssertTrue((6...8).contains(panels.count), "ფარის აწყობა — 6–8 დონე (\(panels.count))")
+        // პირველი ორი უფასო, დანარჩენი Pro.
+        XCTAssertEqual(Array(panels.prefix(2).map { $0.resolvedTier }), [.free, .free])
+        for p in panels.dropFirst(2) { XCTAssertEqual(p.resolvedTier, .pro, "\(p.id) უნდა იყოს Pro") }
+        // უფასო ფარები — მხოლოდ ბაზისური კომპონენტებით.
+        for p in panels.prefix(2) {
+            for e in p.palette {
+                guard let kind = templates[e.templateId]?.kind else { XCTFail("\(p.id): \(e.templateId)"); continue }
+                XCTAssertTrue(ComponentGating.isBasicFree(kind),
+                              "უფასო ფარი \(p.id) იყენებს არა-ბაზისურ კომპონენტს \(e.templateId)")
+            }
+        }
+        // goal-დატვირთვა პალიტრაშია; ფარები იქმნება Board-ად პრობლემის გარეშე.
+        for p in panels {
+            let avail = Set(p.palette.compactMap { templates[$0.templateId]?.kind })
+            for (k, _) in p.goal.poweredLoads {
+                XCTAssertTrue(ComponentKind(rawValue: k).map(avail.contains) ?? false,
+                              "\(p.id): goal \(k) პალიტრაში არ არის")
+            }
+            XCTAssertTrue(p.isPanelAssembly, "\(p.id) isPanelAssembly უნდა იყოს true")
         }
     }
 

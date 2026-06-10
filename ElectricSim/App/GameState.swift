@@ -128,14 +128,19 @@ final class GameState: ObservableObject {
     var campaignLevels: [Level] { levels.filter { $0.resolvedMode != .sandbox } }
     var sandboxLevels: [Level] { levels.filter { $0.resolvedMode == .sandbox } }
 
-    /// კამპანიის დონეები კატეგორიებად დაჯგუფებული და დალაგებული (UI-სთვის).
+    /// „ფარის აწყობა" — ცალკე რეჟიმის დონეები (category == panelAssembly), რიგით.
+    var panelLevels: [Level] { campaignLevels.filter { $0.isPanelAssembly }.sorted { $0.index < $1.index } }
+    /// Learn-ის კამპანია — ფარის-აწყობის დონეების გარეშე (ისინი ცალკე რეჟიმშია), რიგით.
+    var learnLevels: [Level] { campaignLevels.filter { !$0.isPanelAssembly }.sorted { $0.index < $1.index } }
+
+    /// Learn-ის დონეები კატეგორიებად დაჯგუფებული (ფარის აწყობა გამოტოვებულია).
     struct CategoryGroup: Identifiable {
         let category: LevelCategory
         let levels: [Level]
         var id: String { category.rawValue }
     }
     var groupedCampaign: [CategoryGroup] {
-        Dictionary(grouping: campaignLevels) { $0.resolvedCategory }
+        Dictionary(grouping: learnLevels) { $0.resolvedCategory }
             .map { CategoryGroup(category: $0.key, levels: $0.value.sorted { $0.index < $1.index }) }
             .sorted { $0.category.order < $1.category.order }
     }
@@ -145,9 +150,11 @@ final class GameState: ObservableObject {
     func isUnlocked(_ level: Level) -> Bool {
         // sandbox და custom დონეები ყოველთვის ღიაა.
         if level.resolvedMode == .sandbox { return true }
-        guard let idx = campaignLevels.firstIndex(where: { $0.id == level.id }) else { return true }
+        // პროგრესია თითო ტრეკში ცალკე — Learn და ფარის აწყობა დამოუკიდებლად იხსნება.
+        let track = level.isPanelAssembly ? panelLevels : learnLevels
+        guard let idx = track.firstIndex(where: { $0.id == level.id }) else { return true }
         if idx == 0 { return true }
-        return completedLevelIDs.contains(campaignLevels[idx - 1].id)
+        return completedLevelIDs.contains(track[idx - 1].id)
     }
 
     func markCompleted(_ level: Level) {

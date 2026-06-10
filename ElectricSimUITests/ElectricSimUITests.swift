@@ -131,6 +131,25 @@ final class ElectricSimUITests: XCTestCase {
         add(shot)
     }
 
+    /// მთავარი მენიუს „ფარის აწყობა" რეჟიმი მისაწვდომია და დონეები ჩანს.
+    func testPanelAssemblyModeReachable() {
+        let app = launchApp()
+        let panels = app.buttons["menu-panels"]
+        XCTAssertTrue(panels.waitForExistence(timeout: 20), "მთავარ მენიუში უნდა იყოს „ფარის აწყობა“")
+        panels.tap()
+        XCTAssertTrue(staticContaining(app, "მარტივი ერთფაზა ფარი").waitForExistence(timeout: 10),
+                      "ფარის აწყობის სიაში უნდა ჩანდეს პირველი დონე")
+    }
+
+    /// ფარის-აწყობის დონეები Learn-ში აღარ დუბლირდება (ცალკე რეჟიმში გადავიდა).
+    func testPanelLevelsNotDuplicatedInLearn() {
+        let app = launchApp()
+        openLearn(app)
+        XCTAssertTrue(tutorialCell(app).waitForExistence(timeout: 10), "Learn-ში ჩანს გაკვეთილი")
+        XCTAssertFalse(staticContaining(app, "მარტივი ერთფაზა ფარი").waitForExistence(timeout: 3),
+                       "ფარის აწყობის დონე Learn-ში აღარ უნდა ჩანდეს")
+    }
+
     /// ფარზე ჩანს არჩეული კაბელის ქართული სახელი (ხისტი/მრავალწვერა + კვეთა + აღნიშვნა).
     func testWorkbenchShowsGeorgianCableName() {
         let app = launchApp()

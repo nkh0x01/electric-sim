@@ -14,10 +14,11 @@ import Foundation
 
 public enum ComponentGating {
 
-    /// უფასო (Learn) დონეების ბაზისური ნაკრები: მთავარი ამომრთველი, ავტომატი,
-    /// RCD, ნათურა, როზეტი (+ კაბელი). Learn დონეები ამ კომპონენტებით სრულდება.
+    /// უფასო დონეების ბაზისური ნაკრები: მთავარი ამომრთველი, ავტომატი, RCD,
+    /// ნათურა, როზეტი, შინა/სალტე (busbar) (+ კაბელი). Learn-ისა და უფასო ფარის-
+    /// აწყობის დონეები ამ კომპონენტებით სრულდება (რეალურ ფარს ყოველთვის აქვს სალტე).
     public static let freeBasicKinds: Set<ComponentKind> = [
-        .mainSwitch, .mcb, .rcd, .lamp, .socket
+        .mainSwitch, .mcb, .rcd, .lamp, .socket, .busbar
     ]
 
     /// kind ბაზისურ (უფასო) ნაკრებშია?

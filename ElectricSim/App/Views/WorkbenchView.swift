@@ -580,11 +580,12 @@ struct WorkbenchView: View {
     }
 
     // MARK: next destination (Learn დონე ან Career სამუშაო) + Pro gating
+    /// „შემდეგი" იგივე ტრეკშია — ფარის აწყობას ფარის აწყობა მოჰყვება, Learn-ს Learn.
     private var nextLevelID: String? {
-        let camp = game.campaignLevels
-        guard let idx = camp.firstIndex(where: { $0.id == model.level.id }) else { return nil }
+        let track = model.level.isPanelAssembly ? game.panelLevels : game.learnLevels
+        guard let idx = track.firstIndex(where: { $0.id == model.level.id }) else { return nil }
         let n = idx + 1
-        return n < camp.count ? camp[n].id : nil
+        return n < track.count ? track[n].id : nil
     }
     /// (route, locked) — route ემატება/ანაცვლებს path-ის ბოლოს.
     private func nextDestination() -> (route: String, locked: Bool)? {

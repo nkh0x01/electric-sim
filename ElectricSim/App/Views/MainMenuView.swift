@@ -25,6 +25,10 @@ struct MainMenuView: View {
                         subtitle: "შეასრულე სამუშაოები, აიწიე წოდებაში",
                         systemImage: "briefcase.fill", color: .orange,
                         id: "menu-career") { path.append("career") }
+                modeRow(title: "ფარის აწყობა",
+                        subtitle: "ააწყვე გამანაწილებელი ფარი ნულიდან",
+                        systemImage: "square.grid.3x3.fill", color: .purple,
+                        id: "menu-panels") { path.append("panels") }
                 modeRow(title: "დიაგნოსტიკა",
                         subtitle: "იპოვე და გაასწორე დეფექტი აწყობილ ფარში",
                         systemImage: "stethoscope", color: .red,

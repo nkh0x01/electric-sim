@@ -187,8 +187,11 @@ final class CareerTests: XCTestCase {
     func testExistingLevelsStillLoad() throws {
         let levels = try GameData.loadLevels()
         XCTAssertTrue(levels.contains { $0.id == "lvl_tutorial" })
-        // 6-დონიანი უფასო ტიერი უცვლელია
-        XCTAssertEqual(levels.filter { $0.resolvedTier == .free }.count, 6)
+        // Learn-ის 6 უფასო გაკვეთილი უცვლელია.
+        let freeLearn = levels.filter { $0.resolvedTier == .free && $0.resolvedCategory == .tutorial }
+        XCTAssertEqual(freeLearn.count, 6)
+        // + ფარის აწყობის 2 უფასო შესავალი → სულ 8 უფასო.
+        XCTAssertEqual(levels.filter { $0.resolvedTier == .free }.count, 8)
         _ = try GameData.loadTemplates()
     }
 }

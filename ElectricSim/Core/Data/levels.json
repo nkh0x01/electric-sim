@@ -428,7 +428,7 @@
   },
   {
     "id": "lvl_panel_intro",
-    "index": 9,
+    "index": 33,
     "title": "ფარის აწყობა — შესავალი",
     "brief": "ააწყვე სრული ფარი სწორი თანმიმდევრობით: მთავარი ამომრთველი → SPD → RCD → ავტომატები სავარცხელი ზოლით → 2 ხაზი (განათება + როზეტი). რელსზე თანმიმდევრობა მნიშვნელოვანია!",
     "hint": "მარცხნიდან მარჯვნივ: მთავარი, SPD, RCD, შემდეგ ავტომატები. ავტომატები ჩართე სავარცხელ ზოლზე, ზოლი კი — RCD-ის L OUT-ზე. კომპონენტს გადააადგილებ გრძელი დაჭერის შემდეგ გადათრევით.",
@@ -915,7 +915,7 @@
   },
   {
     "id": "lvl_panel_full",
-    "index": 16,
+    "index": 35,
     "title": "ფარის აწყობა — სამი ხაზი",
     "brief": "ააწყვე ფარი სამი ხაზით სწორი თანმიმდევრობით: მთავარი → SPD → RCD → ავტომატები (ზოლით) → განათება + როზეტი + ბოილერი.",
     "hint": "დაიცავი წყობა: მთავარი, SPD, RCD, შემდეგ სამი ავტომატი სავარცხელ ზოლზე. ზოლი იკვებება RCD-ის L OUT-დან. თითო ავტომატი — თითო ხაზი.",
@@ -1076,7 +1076,7 @@
   },
   {
     "id": "lvl_panel_three",
-    "index": 19,
+    "index": 37,
     "title": "ფარის აწყობა — გაფართოებული",
     "brief": "ააწყვე ფარი ოთხი ხაზით სწორი თანმიმდევრობით: მთავარი → SPD → RCD → ავტომატები (ზოლით) → 1 განათება + 2 როზეტი + 1 ბოილერი.",
     "hint": "ყველა ავტომატი სავარცხელ ზოლზე, ზოლი RCD-ის გამოსასვლელიდან. დაიცავი თანმიმდევრობა — შეცდომის შემთხვევაში მიიღებ ქართულ ახსნას.",
@@ -1695,6 +1695,99 @@
     "goal": {
       "poweredLoads": {},
       "description": "თავისუფალი რეჟიმი — მიზანი არ არის."
+    }
+  },
+  {
+    "id": "lvl_panel_basic",
+    "index": 31,
+    "title": "მარტივი ერთფაზა ფარი",
+    "brief": "ააწყვე უმარტივესი ფარი: მთავარი ამომრთველი, ორი ავტომატი სავარცხელი ზოლით და ორი განათების ხაზი. ნული და მიწა გაიყვანე N-bus და PE-bus სალტეებზე. რელსზე მთავარი ყველაზე მარცხნივ უნდა იყოს.",
+    "hint": "მარცხნიდან: მთავარი → ავტომატები. მთავარის L OUT → L-სალტე → ავტომატების შესასვლელები. თითო ავტომატი თითო ნათურას კვებავს. ნული → N-bus, მიწა → PE-bus.",
+    "phase": "single",
+    "category": "panelAssembly",
+    "difficulty": 1,
+    "tier": "free",
+    "palette": [
+      { "templateId": "main_2p", "max": 1 },
+      { "templateId": "mcb_b10", "max": 2 },
+      { "templateId": "busbar_l", "max": 1 },
+      { "templateId": "busbar_n", "max": 1 },
+      { "templateId": "busbar_pe", "max": 1 },
+      { "templateId": "lamp_60", "max": 2 }
+    ],
+    "goal": {
+      "poweredLoads": { "lamp": 2 },
+      "description": "ორივე განათების ხაზი უნდა აანთდეს, ფარი სწორი თანმიმდევრობით აწყობილი."
+    }
+  },
+  {
+    "id": "lvl_panel_rcd",
+    "index": 32,
+    "title": "ბინის ფარი RCD-ით",
+    "brief": "ბინის ფარს დაამატე RCD (30mA) დაცვა. რელსზე: მთავარი → RCD → ავტომატები (ზოლით). როზეტის ხაზი აუცილებლად RCD-ის ქვემოთ უნდა იყოს. ნული და მიწა — N-bus/PE-bus-ზე.",
+    "hint": "მთავარი → RCD → L-სალტე → ავტომატები. RCD-ის L OUT → ზოლი. ნათურა და როზეტი თითო ავტომატზე. როზეტი RCD-ის გარეშე დაუშვებელია.",
+    "phase": "single",
+    "category": "panelAssembly",
+    "difficulty": 2,
+    "tier": "free",
+    "palette": [
+      { "templateId": "main_2p", "max": 1 },
+      { "templateId": "rcd_30", "max": 1 },
+      { "templateId": "busbar_l", "max": 1 },
+      { "templateId": "busbar_n", "max": 1 },
+      { "templateId": "busbar_pe", "max": 1 },
+      { "templateId": "mcb_b10", "max": 1 },
+      { "templateId": "mcb_b16", "max": 1 },
+      { "templateId": "lamp_60", "max": 1 },
+      { "templateId": "socket_16", "max": 1 }
+    ],
+    "goal": {
+      "poweredLoads": { "lamp": 1, "socket": 1 },
+      "description": "განათება და როზეტი უნდა მუშაობდეს; როზეტი 30mA RCD-ის ქვემოთ."
+    }
+  },
+  {
+    "id": "lvl_panel_rcbo",
+    "index": 34,
+    "title": "RCBO-ფარი",
+    "brief": "ააწყვე ფარი ცალკეული RCBO-ებით — თითო ხაზს თავისი დიფ-ავტომატი (MCB + RCD ერთად). ორი როზეტის ხაზი თითო RCBO-ზე. რელსზე მთავარი პირველი.",
+    "hint": "მთავარი → RCBO-ები. თითო RCBO თითო როზეტს კვებავს — ცალკეული დაცვა. ნული → N-bus, მიწა → PE-bus.",
+    "phase": "single",
+    "category": "panelAssembly",
+    "difficulty": 3,
+    "tier": "pro",
+    "palette": [
+      { "templateId": "main_2p", "max": 1 },
+      { "templateId": "rcbo_b16_30", "max": 2 },
+      { "templateId": "busbar_n", "max": 1 },
+      { "templateId": "busbar_pe", "max": 1 },
+      { "templateId": "socket_16", "max": 2 }
+    ],
+    "goal": {
+      "poweredLoads": { "socket": 2 },
+      "description": "ორივე როზეტი უნდა მუშაობდეს, თითო ცალკე RCBO-ით დაცული."
+    }
+  },
+  {
+    "id": "lvl_panel_3ph",
+    "index": 36,
+    "title": "სამფაზა ფარი ბალანსით",
+    "brief": "ააწყვე სამფაზა ფარი ძრავისთვის: მთავარი 4P → ძრავის დამცავი (MPCB) → 3-ფაზიანი ძრავა. ფაზები L1/L2/L3 თანაბრად დატვირთე. რელსზე მთავარი პირველი.",
+    "hint": "მთავარი 4P-ის L1/L2/L3 → MPCB-ის შესასვლელები; MPCB-ის გამოსასვლელები → ძრავის L1/L2/L3. მიწა → PE. სამფაზა ძრავა ბუნებრივად აბალანსებს ფაზებს.",
+    "phase": "three",
+    "category": "panelAssembly",
+    "difficulty": 4,
+    "tier": "pro",
+    "palette": [
+      { "templateId": "main_4p", "max": 1 },
+      { "templateId": "mpcb_16", "max": 1 },
+      { "templateId": "busbar_pe", "max": 1 },
+      { "templateId": "motor_3ph", "max": 1, "csaOptions": [2.5, 4] }
+    ],
+    "goal": {
+      "poweredLoads": { "motor": 1 },
+      "description": "სამფაზა ძრავა უნდა მუშაობდეს, ფაზები დაბალანსებული.",
+      "requireBalanced": true
     }
   }
 ]

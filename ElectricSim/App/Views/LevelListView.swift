@@ -146,7 +146,7 @@ struct LevelListView: View {
     }
 }
 
-private struct LevelRowContent: View {
+struct LevelRowContent: View {
     let level: Level
     let completed: Bool
     let unlocked: Bool
@@ -206,5 +206,63 @@ private struct LevelRowContent: View {
     private var iconColor: Color {
         if completed { return .green }
         return unlocked && !proLocked ? .yellow : .secondary
+    }
+}
+
+// MARK: - Panel Assembly mode (ფარის აწყობა) — own top-level list
+
+/// „ფარის აწყობა" რეჟიმის სია — გამანაწილებელი ფარის აწყობის დონეები რიგით,
+/// პროგრესიითა და free/Pro გeyთვალისწინებით (პირველი ორი უფასოა).
+struct PanelListView: View {
+    @EnvironmentObject var game: GameState
+    @EnvironmentObject var store: EntitlementStore
+    @Binding var path: [String]
+    @State private var showPaywall = false
+
+    var body: some View {
+        List {
+            Section {
+                Label("ააწყვე სრული ფარი სწორი თანმიმდევრობით: მთავარი → SPD → RCD → ავტომატები (სავარცხელი ზოლით). ნული და მიწა გაანაწილე N-bus/PE-bus სალტეებზე.",
+                      systemImage: "square.grid.3x3.fill")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
+            if !store.isPro {
+                Section {
+                    Button { showPaywall = true } label: {
+                        HStack {
+                            Image(systemName: "bolt.shield.fill").foregroundStyle(.yellow)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("განბლოკე ელექტრიკი Pro").font(.subheadline.bold())
+                                Text("ფარის აწყობის ყველა დონე — პირველი ორი უფასოა")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+
+            Section("ფარის აწყობა") {
+                ForEach(game.panelLevels) { level in
+                    let unlocked = game.isUnlocked(level)
+                    let locked = game.isProLocked(level, isPro: store.isPro)
+                    Button {
+                        if locked { showPaywall = true } else { path.append(level.id) }
+                    } label: {
+                        LevelRowContent(level: level, completed: game.isCompleted(level),
+                                        unlocked: unlocked, proLocked: locked)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!unlocked)
+                    .accessibilityIdentifier("panel-\(level.id)")
+                }
+            }
+        }
+        .navigationTitle("ფარის აწყობა")
+        .navigationBarTitleDisplayMode(.inline)
+        .safeAreaInset(edge: .bottom) { AdBannerView() }
+        .sheet(isPresented: $showPaywall) { PaywallView().environmentObject(store) }
     }
 }

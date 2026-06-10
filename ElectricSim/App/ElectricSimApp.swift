@@ -46,6 +46,7 @@ struct RootView: View {
         switch route {
         case "learn":   LevelListView(path: $path)
         case "career":  CareerBoardView(path: $path)
+        case "panels":  PanelListView(path: $path)
         case "sandbox": SandboxListView(path: $path)
         case "faults":  FaultListView(path: $path)
         default:
