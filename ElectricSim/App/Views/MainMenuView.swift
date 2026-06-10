@@ -52,11 +52,15 @@ struct MainMenuView: View {
 
             // ტექსტური კრედიტი (ბმულის გარეშე — არ არის რეკლამა). ბმულები მხოლოდ „შესახებ“-ში.
             Section {
-                Text("Tsili.ge — იყიდე ქართული წარმოება")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowBackground(Color.clear)
+                VStack(spacing: 2) {
+                    Text("დამზადებულია Gadget-ის მიერ")
+                    Text("Tsili.ge — იყიდე ქართული წარმოება")
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .listRowBackground(Color.clear)
             }
         }
         .navigationTitle("ელექტრიკოსის სიმულატორი")

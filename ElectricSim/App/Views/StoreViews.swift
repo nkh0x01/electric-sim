@@ -348,14 +348,15 @@ struct AboutView: View {
     }
 
     /// ბრენდის ლოგო asset-იდან (რეალური PNG, 3 scale). 44pt badge, resizable +
-    /// scaledToFit — SF-სიმბოლოს fallback აღარ არის, რეალური ლოგო ჩანს.
+    /// scaledToFit. მუქი ფონი — თეთრი Gadget-ისა და წითელი Tsili-ის ლოგოები რომ
+    /// მკაფიოდ გამოჩნდეს (ღია ფონზე თეთრი ლოგო ქრებოდა).
     private func brandLogo(_ name: String) -> some View {
         Image(name)
             .resizable()
             .scaledToFit()
             .padding(5)
             .frame(width: 44, height: 44)
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
+            .background(Color(white: 0.12), in: RoundedRectangle(cornerRadius: 10))
             .accessibilityIdentifier("about-logo-\(name)")
     }
 }
