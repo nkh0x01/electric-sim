@@ -151,6 +151,13 @@ final class WorkbenchModel: ObservableObject {
         resetResult()
     }
 
+    /// სადენზე ბუნიკის (ferrule) დადება/მოხსნა — მრავალწვერა კაბელისთვის ხრახნიან კლემაში.
+    func setFerrule(_ id: String, _ on: Bool) {
+        guard let idx = board.wires.firstIndex(where: { $0.id == id }) else { return }
+        board.wires[idx].ferruled = on
+        resetResult()
+    }
+
     func placed(_ tid: String) -> Int { placedCounts[tid] ?? 0 }
     func canAdd(_ e: PaletteEntry) -> Bool { placed(e.templateId) < e.max }
 
@@ -933,6 +940,13 @@ struct WorkbenchView: View {
                 .pickerStyle(.segmented)
             }.padding(.horizontal)
 
+            // არჩეული კაბელის ქართული სახელი (ხისტი/მრავალწვერა + კვეთა + აღნიშვნა)
+            Text(model.selectedConductorType.cableName(csaMm2: model.selectedCSA))
+                .font(.caption2).foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+                .accessibilityIdentifier("cable-name")
+
             // სიგრძე (ΔU%-სთვის)
             Stepper("სიგრძე: \(Int(model.selectedLengthM))მ",
                     value: $model.selectedLengthM, in: 0...100, step: 5)
@@ -1091,24 +1105,39 @@ struct WiresListView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(model.board.wires) { wire in
-                        HStack(spacing: 10) {
-                            Circle()
-                                .fill(wire.color.swiftUIColor)
-                                .frame(width: 14, height: 14)
-                                .overlay(Circle().stroke(.gray.opacity(0.4)))
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("\(label(wire.fromPortID))  →  \(label(wire.toPortID))")
-                                    .font(.caption)
-                                Text("\(wire.color.georgianName) · \(wire.csaMm2, specifier: "%.1f")mm² · \(wire.conductorType.georgianName)")
-                                    .font(.caption2).foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(spacing: 10) {
+                                Circle()
+                                    .fill(wire.color.swiftUIColor)
+                                    .frame(width: 14, height: 14)
+                                    .overlay(Circle().stroke(.gray.opacity(0.4)))
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("\(label(wire.fromPortID))  →  \(label(wire.toPortID))")
+                                        .font(.caption)
+                                    Text("\(wire.conductorType.cableName(csaMm2: wire.csaMm2)) · \(wire.color.georgianName)")
+                                        .font(.caption2).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Button(role: .destructive) {
+                                    model.deleteWire(wire.id)
+                                } label: {
+                                    Image(systemName: "trash")
+                                }
+                                .buttonStyle(.borderless)
                             }
-                            Spacer()
-                            Button(role: .destructive) {
-                                model.deleteWire(wire.id)
-                            } label: {
-                                Image(systemName: "trash")
+                            // ბუნიკი მხოლოდ მრავალწვერა კაბელისთვისაა აქტუალური (ხრახნიან კლემაში).
+                            if wire.conductorType == .stranded {
+                                Toggle(isOn: Binding(
+                                    get: { wire.ferruled },
+                                    set: { model.setFerrule(wire.id, $0) }
+                                )) {
+                                    Label("ბუნიკი (ferrule)",
+                                          systemImage: wire.ferruled ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
+                                        .font(.caption)
+                                        .foregroundStyle(wire.ferruled ? .green : .orange)
+                                }
+                                .accessibilityIdentifier("ferrule-toggle")
                             }
-                            .buttonStyle(.borderless)
                         }
                     }
                 }

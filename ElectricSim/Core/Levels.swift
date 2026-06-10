@@ -80,6 +80,7 @@ public struct ComponentTemplate: Codable, Identifiable, Sendable {
     public var faultShortToN: Bool?
     public var priceGEL: Double?
     public var category: ComponentCategory?
+    public var conductor: Conductor?     // busbar-ისთვის: N-bus / PE-bus / L (default)
 
     /// გადაჭრილი პალიტრის კატეგორია (explicit ან kind-იდან).
     public var resolvedCategory: ComponentCategory { category ?? ComponentCategory.forKind(kind) }
@@ -108,7 +109,8 @@ public struct ComponentTemplate: Codable, Identifiable, Sendable {
         case .spd:
             return ComponentFactory.spd(id: instanceID)
         case .busbar:
-            return ComponentFactory.busbar(id: instanceID, conductor: .L, slots: poles ?? 4)
+            return ComponentFactory.busbar(id: instanceID, conductor: conductor ?? .L,
+                                           slots: poles ?? 4, name: name)
         case .lamp:
             return ComponentFactory.lamp(id: instanceID, powerW: powerW ?? 60,
                                          requiresPE: requiresPE ?? true, leakageMa: leakageMa)

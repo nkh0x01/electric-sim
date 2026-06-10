@@ -1,0 +1,94 @@
+//
+//  CableBusFerruleTests.swift
+//  ElectricSimTests
+//
+//  ქართული კაბელის სახელი, N/PE სალტეები (junction nodes) და მრავალწვერა
+//  კაბელის ბუნიკის (ferrule) წესი ხრახნიან კლემაში.
+//
+
+import XCTest
+@testable import ElectricSimCore
+
+final class CableBusFerruleTests: XCTestCase {
+
+    private func portID(_ comp: Component, _ cond: Conductor, side: PortSide? = nil) -> String {
+        comp.ports.first { $0.conductor == cond && (side == nil || $0.side == side) }!.id
+    }
+
+    // MARK: Part 2 — ქართული კაბელის სახელი
+    func testGeorgianCableName() {
+        XCTAssertEqual(ConductorType.solid.cableName(csaMm2: 1.5), "ხისტი კაბელი 1.5მმ² (NYM)")
+        XCTAssertEqual(ConductorType.stranded.cableName(csaMm2: 2.5), "მრავალწვერა კაბელი 2.5მმ² (PVS)")
+        XCTAssertEqual(ConductorType.solid.cableName(csaMm2: 4), "ხისტი კაბელი 4მმ² (NYM)")
+    }
+
+    // MARK: Part 3 — PE/N სალტეები junction nodes-ად (მიწა/ნული გადადის)
+    func testPEBusEarthsAndNBusCarriesNeutral() {
+        var b = Board(phase: .single)
+        let supply = ComponentFactory.supply(id: "supply")
+        let lamp = ComponentFactory.lamp(id: "lamp")                 // requiresPE = true
+        let peb = ComponentFactory.busbar(id: "peb", conductor: .PE, slots: 4)
+        let nb = ComponentFactory.busbar(id: "nb", conductor: .N, slots: 4)
+        b.add(supply); b.add(lamp); b.add(peb); b.add(nb)
+
+        // L: lamp → supply
+        b.connect(portID(lamp, .L), portID(supply, .L), csaMm2: 1.5, color: .brown)
+        // N: lamp → N-bus → supply N
+        b.connect(portID(lamp, .N), nb.ports[0].id, csaMm2: 1.5, color: .blue)
+        b.connect(nb.ports[1].id, portID(supply, .N), csaMm2: 1.5, color: .blue)
+        // PE: lamp → PE-bus → supply PE
+        b.connect(portID(lamp, .PE), peb.ports[0].id, csaMm2: 1.5, color: .yellowGreen)
+        b.connect(peb.ports[1].id, portID(supply, .PE), csaMm2: 1.5, color: .yellowGreen)
+
+        let r = CircuitSolver().solve(b)
+        XCTAssertFalse(r.contains(.missingPE), "PE-სალტეთი მიწა მიერთებულია — missingPE არ უნდა იყოს")
+        XCTAssertFalse(r.contains(.openCircuit), "N-სალტეთი ნული მიერთებულია — წრედი დასრულებულია")
+    }
+
+    /// კონტროლი: PE-სალტეს გარეშე (PE არ მიერთებული) — missingPE ჩნდება.
+    func testMissingPEWhenNoPEBus() {
+        var b = Board(phase: .single)
+        let supply = ComponentFactory.supply(id: "supply")
+        let lamp = ComponentFactory.lamp(id: "lamp")
+        b.add(supply); b.add(lamp)
+        b.connect(portID(lamp, .L), portID(supply, .L), csaMm2: 1.5, color: .brown)
+        b.connect(portID(lamp, .N), portID(supply, .N), csaMm2: 1.5, color: .blue)
+        // PE დაუკავშირებელი
+        XCTAssertTrue(CircuitSolver().solve(b).contains(.missingPE))
+    }
+
+    // MARK: Part 4 — ბუნიკის წესი
+    func testStrandedIntoScrewTerminalNeedsFerrule() {
+        var b = Board(phase: .single)
+        let supply = ComponentFactory.supply(id: "supply")
+        let mcb = ComponentFactory.mcb(id: "mcb", ratingA: 16)
+        b.add(supply); b.add(mcb)
+        let supplyL = portID(supply, .L)
+        let mcbIn = portID(mcb, .L, side: .input)
+
+        // მრავალწვერა, ბუნიკის გარეშე → შეცდომა + შეტყობინება
+        b.connect(supplyL, mcbIn, csaMm2: 2.5, color: .brown, conductorType: .stranded)
+        let r1 = CircuitSolver().solve(b)
+        XCTAssertTrue(r1.contains(.missingFerrule), "მრავალწვერა + ხრახნიანი კლემა ბუნიკის გარეშე → შეცდომა")
+        XCTAssertTrue(r1.issues.contains { $0.code == .missingFerrule && $0.message.contains("ბუნიკი") },
+                      "შეტყობინებაში უნდა იყოს „ბუნიკი“")
+        XCTAssertTrue(r1.issues.contains { $0.code == .missingFerrule && $0.message.contains("ავტომატის") },
+                      "შეტყობინება უნდა ეხებოდეს ავტომატის კლემას")
+
+        // ბუნიკით → შეცდომა აღარ არის
+        var b2 = b
+        b2.wires[0].ferruled = true
+        XCTAssertFalse(CircuitSolver().solve(b2).contains(.missingFerrule), "ბუნიკით → წესი დაცულია")
+    }
+
+    func testSolidCableNeedsNoFerrule() {
+        var b = Board(phase: .single)
+        let supply = ComponentFactory.supply(id: "supply")
+        let mcb = ComponentFactory.mcb(id: "mcb", ratingA: 16)
+        b.add(supply); b.add(mcb)
+        // ხისტი კაბელი ხრახნიან კლემაში → ბუნიკი არ სჭირდება
+        b.connect(portID(supply, .L), portID(mcb, .L, side: .input),
+                  csaMm2: 2.5, color: .brown, conductorType: .solid)
+        XCTAssertFalse(CircuitSolver().solve(b).contains(.missingFerrule))
+    }
+}

@@ -54,7 +54,7 @@ struct MainMenuView: View {
             Section {
                 VStack(spacing: 2) {
                     Text("დამზადებულია Gadget-ის მიერ")
-                    Text("Tsili.ge — იყიდე ქართული წარმოება")
+                    Text("Tsili.ge — შეიძინე ქართული ნაწარმი")
                 }
                 .font(.caption2)
                 .foregroundStyle(.secondary)

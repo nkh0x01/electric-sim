@@ -131,6 +131,18 @@ final class ElectricSimUITests: XCTestCase {
         add(shot)
     }
 
+    /// ფარზე ჩანს არჩეული კაბელის ქართული სახელი (ხისტი/მრავალწვერა + კვეთა + აღნიშვნა).
+    func testWorkbenchShowsGeorgianCableName() {
+        let app = launchApp()
+        openLearn(app)
+        let tutorial = tutorialCell(app)
+        XCTAssertTrue(tutorial.waitForExistence(timeout: 10))
+        tutorial.tap()
+        let cable = app.staticTexts["cable-name"]
+        XCTAssertTrue(cable.waitForExistence(timeout: 10), "ფარზე უნდა ჩანდეს ქართული კაბელის სახელი")
+        XCTAssertTrue(cable.label.contains("კაბელი"), "სახელი ქართულ-პირველი უნდა იყოს („კაბელი“)")
+    }
+
     /// staticText, რომელიც შეიცავს მოცემულ ქვესტრიქონს.
     private func staticContaining(_ app: XCUIApplication, _ substr: String) -> XCUIElement {
         app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", substr)).firstMatch

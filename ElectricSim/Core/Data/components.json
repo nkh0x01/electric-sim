@@ -83,6 +83,24 @@
     "category": "auxiliary"
   },
   {
+    "id": "busbar_n",
+    "kind": "busbar",
+    "name": "ნულის სალტე (N-bus)",
+    "conductor": "N",
+    "poles": 8,
+    "priceGEL": 8,
+    "category": "auxiliary"
+  },
+  {
+    "id": "busbar_pe",
+    "kind": "busbar",
+    "name": "დამიწების სალტე (PE-bus)",
+    "conductor": "PE",
+    "poles": 8,
+    "priceGEL": 8,
+    "category": "auxiliary"
+  },
+  {
     "id": "lamp_60",
     "kind": "lamp",
     "name": "ნათურა 60W",

@@ -320,6 +320,18 @@ public struct CircuitSolver {
                                         currentA: current, trip: trip, shockRisk: shockRisk))
         }
 
+        // --- 8b. ბუნიკი (ferrule): მრავალწვერა კაბელი ხრახნიან კლემაში (IEC) ---
+        for wire in board.wires where wire.conductorType == .stranded && !wire.ferruled {
+            for portID in [wire.fromPortID, wire.toPortID] {
+                if let comp = board.component(withPort: portID), comp.kind.hasScrewTerminal {
+                    issues.append(Issue(code: .missingFerrule,
+                                        message: "მრავალწვერა კაბელს ბუნიკი სჭირდება \(comp.kind.ferruleTerm) კლემაში",
+                                        componentIDs: [comp.id]))
+                    break
+                }
+            }
+        }
+
         // --- 9. სამფაზიანი ბალანსი (Phase 3) ---
         if board.phase == .three {
             let vals: [Double] = [phaseCurrent[.L1] ?? 0, phaseCurrent[.L2] ?? 0, phaseCurrent[.L3] ?? 0]

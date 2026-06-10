@@ -105,6 +105,17 @@ public enum ConductorType: String, Codable, CaseIterable, Sendable {
     public var georgianName: String {
         self == .solid ? "ხისტი" : "მრავალწვერა"
     }
+
+    /// კაბელის ტექნიკური აღნიშვნა (ხისტი → NYM, მრავალწვერა → PVS).
+    public var designation: String { self == .solid ? "NYM" : "PVS" }
+
+    /// ქართულ-პირველი სრული სახელი ფრჩხილებში აღნიშვნით — components.json-ის
+    /// სტილში. მაგ.: „ხისტი კაბელი 1.5მმ² (NYM)" / „მრავალწვერა კაბელი 2.5მმ² (PVS)".
+    public func cableName(csaMm2 csa: Double) -> String {
+        let size = csa.truncatingRemainder(dividingBy: 1) == 0
+            ? String(Int(csa)) : String(format: "%.1f", csa)
+        return "\(georgianName) კაბელი \(size)მმ² (\(designation))"
+    }
 }
 
 // MARK: - Component kind
@@ -196,6 +207,26 @@ public enum ComponentKind: String, Codable, CaseIterable, Sendable {
 
     /// დამცავი ავტომატია (ampacity/ნომინალის შემოწმებისთვის)?
     public var isBreaker: Bool { self == .mcb || self == .mpcb || self == .rcbo || self == .fuse }
+
+    /// ხრახნიანი კლემაა (screw terminal) — მრავალწვერა კაბელს ბუნიკი სჭირდება (IEC).
+    public var hasScrewTerminal: Bool {
+        switch self {
+        case .mcb, .rcd, .rcbo, .mainSwitch, .spd: return true
+        default: return false
+        }
+    }
+
+    /// ქართული ტერმინი ferrule-შეტყობინებისთვის (კლემის მფლობელი).
+    public var ferruleTerm: String {
+        switch self {
+        case .mcb:        return "ავტომატის"
+        case .rcd:        return "RCD-ის"
+        case .rcbo:       return "დიფ-ავტომატის (RCBO)"
+        case .mainSwitch: return "მთავარი ამომრთველის"
+        case .spd:        return "ზეძაბვის დამცავის (SPD)"
+        default:          return "მოწყობილობის"
+        }
+    }
 }
 
 // MARK: - Port (ფეხი / terminal)
@@ -355,16 +386,20 @@ public enum ComponentFactory {
         return Component(id: id, kind: .spd, name: "ზეძაბვის დამცავი (SPD)", poles: 1, ports: ports)
     }
 
-    /// ზოლი (busbar / ნულის ან მიწის შინა). `slots` ფეხი, ყველა ერთ კვანძში.
-    public static func busbar(id: String, conductor: Conductor, slots: Int) -> Component {
+    /// ზოლი (busbar / ნულის ან მიწის სალტე). `slots` ფეხი, ყველა ერთ კვანძში.
+    /// `name` — სურვილისამებრ ცხადი სახელი (template-იდან); არადა გამტარს მიხედვით.
+    public static func busbar(id: String, conductor: Conductor, slots: Int, name: String? = nil) -> Component {
         let ports = (0..<slots).map {
             Port(id: pid(id, "\($0)"), conductor: conductor, side: .single, name: "\(conductor.rawValue)\($0)")
         }
         let title: String
-        switch conductor {
-        case .N: title = "ნულის შინა"
-        case .PE: title = "მიწის შინა"
-        default: title = "შინა (busbar)"
+        if let name { title = name }
+        else {
+            switch conductor {
+            case .N: title = "ნულის სალტე (N-bus)"
+            case .PE: title = "დამიწების სალტე (PE-bus)"
+            default: title = "შინა (busbar)"
+            }
         }
         return Component(id: id, kind: .busbar, name: title, poles: slots, ports: ports)
     }
@@ -469,12 +504,14 @@ public struct Wire: Identifiable, Hashable, Codable, Sendable {
     public var cableType: CableType
     public var conductorType: ConductorType
     public var lengthM: Double
+    public var ferruled: Bool          // მრავალწვერა კაბელზე ბუნიკი (ferrule) დადებულია?
 
     public init(id: String = UUID().uuidString,
                 from: String, to: String,
                 csaMm2: Double, color: WireColor,
                 cableType: CableType = .copper,
-                conductorType: ConductorType = .solid, lengthM: Double = 0) {
+                conductorType: ConductorType = .solid, lengthM: Double = 0,
+                ferruled: Bool = false) {
         self.id = id
         self.fromPortID = from
         self.toPortID = to
@@ -483,6 +520,7 @@ public struct Wire: Identifiable, Hashable, Codable, Sendable {
         self.cableType = cableType
         self.conductorType = conductorType
         self.lengthM = lengthM
+        self.ferruled = ferruled
     }
 
     // backward-compatible decode (cableType/conductorType/lengthM default-ებით თუ აკლია)
@@ -496,6 +534,7 @@ public struct Wire: Identifiable, Hashable, Codable, Sendable {
         cableType = try c.decodeIfPresent(CableType.self, forKey: .cableType) ?? .copper
         conductorType = try c.decodeIfPresent(ConductorType.self, forKey: .conductorType) ?? .solid
         lengthM = try c.decodeIfPresent(Double.self, forKey: .lengthM) ?? 0
+        ferruled = try c.decodeIfPresent(Bool.self, forKey: .ferruled) ?? false
     }
 }
 
@@ -524,9 +563,11 @@ public struct Board: Codable, Sendable {
 
     public mutating func connect(_ a: String, _ b: String, csaMm2: Double,
                                  color: WireColor, cableType: CableType = .copper,
-                                 conductorType: ConductorType = .solid, lengthM: Double = 0) {
+                                 conductorType: ConductorType = .solid, lengthM: Double = 0,
+                                 ferruled: Bool = false) {
         wires.append(Wire(from: a, to: b, csaMm2: csaMm2, color: color,
-                          cableType: cableType, conductorType: conductorType, lengthM: lengthM))
+                          cableType: cableType, conductorType: conductorType,
+                          lengthM: lengthM, ferruled: ferruled))
     }
 
     public func component(withPort portID: String) -> Component? {

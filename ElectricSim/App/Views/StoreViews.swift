@@ -319,10 +319,10 @@ struct AboutView: View {
                 }
             }
 
-            Section("მხარდაჭერა") {
+            Section("პროექტის მხარდამჭერია") {
                 HStack(spacing: 12) {
                     brandLogo("TsiliLogo")
-                    Text("Tsili.ge — იყიდე ქართული წარმოება").font(.callout)
+                    Text("Tsili.ge — შეიძინე ქართული ნაწარმი").font(.callout)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Link(destination: URL(string: "https://tsili.ge")!) {
