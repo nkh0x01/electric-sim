@@ -215,7 +215,7 @@ struct SettingsView: View {
                     NavigationLink {
                         AboutView()
                     } label: {
-                        Label("შესახებ", systemImage: "info.circle")
+                        Label("ჩვენ შესახებ", systemImage: "info.circle")
                     }
                     .accessibilityIdentifier("settings-about")
                 }
@@ -308,7 +308,7 @@ struct AboutView: View {
 
             Section("შემქმნელი") {
                 HStack(spacing: 12) {
-                    brandLogo("GadgetLogo", fallback: "wrench.and.screwdriver.fill", tint: .brand)
+                    brandLogo("GadgetLogo")
                     Text("შექმნილია Gadget-ის მიერ").font(.callout)
                 }
                 Link(destination: URL(string: "https://gadget.ge")!) {
@@ -321,7 +321,7 @@ struct AboutView: View {
 
             Section("მხარდაჭერა") {
                 HStack(spacing: 12) {
-                    brandLogo("TsiliLogo", fallback: "heart.fill", tint: .pink)
+                    brandLogo("TsiliLogo")
                     Text("Tsili.ge — იყიდე ქართული წარმოება").font(.callout)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -347,15 +347,14 @@ struct AboutView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    /// ბრენდის ლოგო asset-იდან. სანამ რეალურ PNG-ს ჩასვამ, asset ცარიელია →
-    /// ზედა Image არაფერს ხატავs და ქვედა SF-სიმბოლო ჩანს (build არ ფუჭდება).
-    private func brandLogo(_ name: String, fallback: String, tint: Color) -> some View {
-        ZStack {
-            Image(systemName: fallback).resizable().scaledToFit()
-                .foregroundStyle(tint).padding(9)
-            Image(name).resizable().scaledToFit()   // ცარიელ asset-ზე უხილავია
-        }
-        .frame(width: 44, height: 44)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
+    /// ბრენდის ლოგო asset-იდან (რეალური PNG, 3 scale). 44pt badge, resizable +
+    /// scaledToFit — SF-სიმბოლოს fallback აღარ არის, რეალური ლოგო ჩანს.
+    private func brandLogo(_ name: String) -> some View {
+        Image(name)
+            .resizable()
+            .scaledToFit()
+            .padding(5)
+            .frame(width: 44, height: 44)
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
     }
 }
