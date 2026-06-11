@@ -429,6 +429,11 @@ struct WorkbenchView: View {
         model.level.palette.filter { paletteCategory($0) == category }
     }
 
+    /// კაბელის კვეთის ერთხაზიანი იარლიყი — locale-დამოუკიდებელი წერტილით, ქართული „მმ²".
+    static func csaLabel(_ csa: Double) -> String {
+        String(format: "%.1f", csa) + " მმ²"
+    }
+
     @ViewBuilder
     private func paletteCard(_ e: PaletteEntry) -> some View {
         let t = model.templates[e.templateId]
@@ -911,13 +916,14 @@ struct WorkbenchView: View {
 
             // კაბელის კვეთა
             HStack {
-                Text("cable_section_label").font(.caption)
-                Picker("cable_section_label", selection: $model.selectedCSA) {
+                Text("კვეთა").font(.caption)
+                Picker("კვეთა", selection: $model.selectedCSA) {
                     ForEach(model.csaOptions, id: \.self) { csa in
-                        Text("\(csa, specifier: "%.1f")mm²").tag(csa)
+                        Text(Self.csaLabel(csa)).tag(csa)
                     }
                 }
                 .pickerStyle(.menu)
+                .fixedSize()   // ერთ ხაზზე — „6.0 მმ²" არ უნდა გადატყდეს
                 Spacer()
                 Button { model.showWires = true } label: {
                     Label("\(model.board.wires.count)", systemImage: "list.bullet")

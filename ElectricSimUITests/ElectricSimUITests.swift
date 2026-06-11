@@ -141,6 +141,25 @@ final class ElectricSimUITests: XCTestCase {
                       "ფარის აწყობის სიაში უნდა ჩანდეს პირველი დონე")
     }
 
+    /// პირველი ფარის-აწყობის დონეს აქვს კომპონენტების პალიტრა (main switch, MCB და ა.შ.),
+    /// რომ ფარის აწყობა საერთოდ შესაძლებელი იყოს.
+    func testPanelFirstLevelHasComponentPalette() {
+        let app = launchApp()
+        let panels = app.buttons["menu-panels"]
+        XCTAssertTrue(panels.waitForExistence(timeout: 20))
+        panels.tap()
+        let row = app.buttons["panel-lvl_panel_basic"]
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        row.tap()
+        XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 10), "ფარის ეკრანი უნდა გაიხსნას")
+        XCTAssertTrue(staticContaining(app, "მთავარი ამომრთველი").waitForExistence(timeout: 5),
+                      "კომპონენტების პალიტრაში უნდა იყოს მთავარი ამომრთველი")
+        XCTAssertTrue(staticContaining(app, "ავტომატი").exists,
+                      "კომპონენტების პალიტრაში უნდა იყოს ავტომატი (MCB)")
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "Panel-basic-workbench"; shot.lifetime = .keepAlways; add(shot)
+    }
+
     /// ფარის-აწყობის დონეები Learn-ში აღარ დუბლირდება (ცალკე რეჟიმში გადავიდა).
     func testPanelLevelsNotDuplicatedInLearn() {
         let app = launchApp()

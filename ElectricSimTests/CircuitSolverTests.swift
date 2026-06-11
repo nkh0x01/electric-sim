@@ -787,6 +787,22 @@ final class CircuitSolverTests: XCTestCase {
         }
     }
 
+    /// ყველა ასაწყობ (non-faultFind) დონეს აქვს არა-ცარიელი კომპონენტების პალიტრა —
+    /// თორემ დონის აწყობა შეუძლებელია (იცავს „ცარიელი პალიტრის" რეგრესიას).
+    func testBuildableLevelsHaveNonEmptyPalette() throws {
+        let levels = try GameData.loadLevels()
+        for lv in levels where lv.resolvedMode != .faultFind {
+            XCTAssertFalse(lv.palette.isEmpty,
+                           "\(lv.id) (\(lv.resolvedMode)) — კომპონენტების პალიტრა ცარიელია")
+        }
+        // ფარის აწყობის ყველა დონეს განსაკუთრებით სჭირდება პალიტრა.
+        let panels = levels.filter { $0.isPanelAssembly }
+        XCTAssertFalse(panels.isEmpty)
+        for p in panels {
+            XCTAssertFalse(p.palette.isEmpty, "ფარის აწყობა \(p.id) — პალიტრა ცარიელია")
+        }
+    }
+
     /// ფარის აწყობა ცალკე რეჟიმად: 6–8 დონე, პირველი 2 უფასო (ბაზისური კომპონენტებით),
     /// დანარჩენი Pro; თითო დონის goal-დატვირთვა პალიტრაშია.
     func testPanelAssemblyModeProgression() throws {
