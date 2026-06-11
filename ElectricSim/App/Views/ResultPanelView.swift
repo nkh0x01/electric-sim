@@ -86,6 +86,7 @@ struct ResultPanelView: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(.brand)
+                        .accessibilityIdentifier("result-next")
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
                     }

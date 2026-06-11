@@ -262,6 +262,7 @@ struct FaultMissionView: View {
             Section {
                 if let route = nextMissionRoute {
                     primaryButton("შემდეგი მისია →", "arrow.right.circle.fill") {
+                        // ადგილზე ჩანაცვლება მუშაობს destination-ის .id(route)-ით (RootView).
                         if path.isEmpty { path = [route] } else { path[path.count - 1] = route }
                     }
                 } else {

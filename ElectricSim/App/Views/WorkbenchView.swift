@@ -136,13 +136,13 @@ final class WorkbenchModel: ObservableObject {
 
     // MARK: - Live-wire safety (de-energize before working)
 
-    /// კვების გადართვა (მთავარი ამომრთველი / HUD toggle). ჩართვისას ფარი ცოცხალია.
+    /// კვების გადართვა (მთავარი ამომრთველი / HUD toggle). ჩართვისას ფარი ცოცხალია
+    /// და ჩუმი solve ანათებს მუშა წრედებს (ნათურები, როზეტები) — ფორმალური
+    /// ინსპექციის (შედეგის ფურცლის) გარეშე. გამორთვა → ნეიტრალური ჩვენება.
     func togglePower() {
         energized.toggle()
         selectedPort = nil
-        result = nil
-        showResult = false
-        recomputeLive()
+        resetResult()   // ჩართულზე ჩუმი solve, გამორთულზე ნეიტრალური (იხ. resetResult)
     }
 
     /// ცოცხალი ფეხების ანალიზი — მხოლოდ ჩართულ ფარზე (გამორთულზე nil → არაფერი ცოცხალია).
@@ -226,7 +226,19 @@ final class WorkbenchModel: ObservableObject {
         board.wires.removeAll(); resetResult()
     }
 
-    func resetResult() { result = nil; showResult = false; recomputeLive() }
+    /// რედაქტირების შემდეგ ფორმალური შედეგი უქმდება. ჩართულ ფარზე ჩუმი solve
+    /// განაახლებს ვიზუალს (ნათება/ბერკეტები რეალობას მიჰყვება); გამორთულზე — ნეიტრალური.
+    func resetResult() {
+        showResult = false
+        if energized {
+            var r = solver.solve(board, energize: true)
+            if level.isPanelAssembly { r.issues.append(contentsOf: PanelAssembly.validate(board)) }
+            result = r          // მხოლოდ ვიზუალისთვის — დასრულება/ჯილდო inspect()-შია
+        } else {
+            result = nil
+        }
+        recomputeLive()
+    }
 
     func tapPort(_ id: String) {
         measurement = nil
@@ -441,6 +453,14 @@ struct WorkbenchView: View {
     private struct DropSlot: Equatable { let anchor: String; let after: Bool }
     @State private var dropSlot: DropSlot?
     @State private var snappedID: String?
+    // ფარი-პირველი განლაგება: ბრიფი ერთ ხაზად (გასაშლელით) + ფოკუს-რეჟიმი.
+    @State private var briefExpanded = false
+    @State private var focusMode = false
+    @State private var preFocusZoom: CGFloat?
+    @State private var showFocusPalette = false
+    // ფოკუს-პალიტრიდან ჩაკეტილ ბარათზე შეხება: ჯერ პალიტრა იხურება, მერე paywall
+    // (ორი sheet ერთდროულად ვერ იქნება წარდგენილი).
+    @State private var pendingPaywallAfterPalette = false
     // ფარის ჟესტები (board სივრცე)
     @State private var portPoints: [String: CGPoint] = [:]
     @State private var componentFrames: [String: CGRect] = [:]
@@ -557,12 +577,23 @@ struct WorkbenchView: View {
     }
 
     @ViewBuilder
-    private func paletteCard(_ e: PaletteEntry) -> some View {
+    private func paletteCard(_ e: PaletteEntry, afterAdd: (() -> Void)? = nil) -> some View {
         let t = model.templates[e.templateId]
         let locked = isPaletteLocked(e)
         Button {
-            if locked { showPaywall = true }
-            else if let newID = model.add(e) { snapPulse(newID) }   // ჩაჭდობა რელსზე
+            if locked {
+                // ფოკუს-პალიტრის sheet-იდან paywall პირდაპირ ვერ წარდგება —
+                // ჯერ პალიტრა დაიხუროს, paywall მის onDismiss-ში გაიხსნება.
+                if showFocusPalette {
+                    pendingPaywallAfterPalette = true
+                    showFocusPalette = false
+                } else {
+                    showPaywall = true
+                }
+            } else if let newID = model.add(e) {
+                snapPulse(newID)   // ჩაჭდობა რელსზე
+                afterAdd?()        // ფოკუს-პალიტრა: არჩევაზე იხურება
+            }
         } label: {
             VStack(spacing: 2) {
                 Image(systemName: locked ? "lock.fill" : (t?.kind ?? .mcb).sfSymbol)
@@ -771,6 +802,9 @@ struct WorkbenchView: View {
         pendingNav = nil
         switch nav {
         case .next(let route):
+            // იგივე სიღრმეზე route-ის ჩანაცვლება მუშაობს მხოლოდ destination-ის
+            // .id(route)-თან ერთად (იხ. RootView) — სხვანაირად SwiftUI ძველ
+            // @StateObject-იან ეკრანს იტოვებს. ეს იყო „შემდეგი დონე"-ს ბაგი.
             if path.isEmpty { path = [route] } else { path[path.count - 1] = route }
         case .pop:
             if !path.isEmpty { path.removeLast() }
@@ -780,19 +814,30 @@ struct WorkbenchView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            briefBar
-            powerHUD
-            railView
-            if let m = model.measurement {
-                Text(m)
-                    .font(.callout.bold())
-                    .padding(8)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.yellow.opacity(0.2))
+        GeometryReader { geo in
+            VStack(spacing: 0) {
+                if !focusMode {
+                    briefBar
+                    powerHUD
+                }
+                railView
+                if let m = model.measurement, !focusMode {
+                    Text(m)
+                        .font(.callout.bold())
+                        .padding(6)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.yellow.opacity(0.2))
+                }
+                if !focusMode {
+                    Divider()
+                    // კონტროლების კლასტერი ზღვრულია (~36%) — ფარი იღებს ეკრანის
+                    // უმეტესობას; შიგთავსი საჭიროებისას შიგნით გადაიხვევა.
+                    controls
+                        .frame(height: geo.size.height * 0.36)
+                }
             }
-            Divider()
-            controls
+            // ფოკუს-რეჟიმი: ფარი მთელ ეკრანზე + თხელი მცურავი ზოლი ქვემოთ.
+            .overlay(alignment: .bottom) { if focusMode { focusStrip } }
         }
         .overlay { shockOverlay }
         .animation(.easeInOut(duration: 0.12), value: model.shockFlash)
@@ -827,6 +872,10 @@ struct WorkbenchView: View {
             if !didInitPalette {
                 didInitPalette = true
                 expandedCategory = defaultExpandedCategory
+                // ბრიფი: პირველი ნახვისას გაშლილი, შემდეგ ჯერებზე ერთ ხაზად.
+                let seenKey = "briefSeen.\(model.level.id)"
+                briefExpanded = !UserDefaults.standard.bool(forKey: seenKey)
+                UserDefaults.standard.set(true, forKey: seenKey)
             }
         }
         .sheet(isPresented: $model.showResult, onDismiss: handleResultDismiss) {
@@ -841,43 +890,61 @@ struct WorkbenchView: View {
         .sheet(isPresented: $model.showWires) {
             WiresListView(model: model)
         }
+        .sheet(isPresented: $showFocusPalette, onDismiss: {
+            if pendingPaywallAfterPalette {
+                pendingPaywallAfterPalette = false
+                showPaywall = true
+            }
+        }) { focusPaletteSheet }
         .alert("მინიშნება", isPresented: $showHint) {
             Button("გასაგებია", role: .cancel) {}
         } message: { Text(model.level.hint) }
         .sheet(isPresented: $showPaywall) { PaywallView().environmentObject(store) }
     }
 
+    /// ბრიფი ერთ ხაზად — „მეტი ▾" შლის სრულ ტექსტს + რეჟიმის ბანერებს.
+    /// პირველი ნახვის შემდეგ ავტომატურად იკეცება (briefSeen.<id>, per level).
     private var briefBar: some View {
         VStack(alignment: .leading, spacing: 4) {
-            if model.level.resolvedMode == .faultFind {
-                Label("დეფექტის ძებნა — იპოვე და გაასწორე ხარვეზი", systemImage: "magnifyingglass")
-                    .font(.caption.bold())
-                    .foregroundStyle(.orange)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(model.level.brief)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(briefExpanded ? nil : 1)
+                Spacer(minLength: 0)
+                Button(briefExpanded ? "ნაკლები ▴" : "მეტი ▾") {
+                    withAnimation(.easeInOut(duration: 0.2)) { briefExpanded.toggle() }
+                }
+                .font(.caption2.bold())
+                .accessibilityIdentifier("brief-toggle")
             }
-            if model.level.isPanelAssembly {
-                Label("ფარის აწყობა — დაიცავი თანმიმდევრობა: მთავარი → SPD → RCD → ავტომატები (ზოლით)",
-                      systemImage: "rectangle.3.group")
-                    .font(.caption.bold())
-                    .foregroundStyle(.blue)
+            if briefExpanded {
+                if model.level.resolvedMode == .faultFind {
+                    Label("დეფექტის ძებნა — იპოვე და გაასწორე ხარვეზი", systemImage: "magnifyingglass")
+                        .font(.caption2.bold())
+                        .foregroundStyle(.orange)
+                }
+                if model.level.isPanelAssembly {
+                    Label("ფარის აწყობა — თანმიმდევრობა: მთავარი → SPD → RCD → ავტომატები (ზოლით)",
+                          systemImage: "rectangle.3.group")
+                        .font(.caption2.bold())
+                        .foregroundStyle(.blue)
+                }
             }
-            Text(model.level.brief)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal).padding(.vertical, 8)
+        .padding(.horizontal).padding(.vertical, 6)
         .background(Color(.secondarySystemBackground))
     }
 
-    // MARK: HUD — კვების ინდიკატორი/გადამრთველი (მთავარი ამომრთველი)
+    // MARK: HUD — კვების ინდიკატორი/გადამრთველი, ერთი კომპაქტური რიგი
     private var powerHUD: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             Button { model.togglePower() } label: {
                 Label(model.energized ? "ჩართულია" : "გამორთულია",
                       systemImage: model.energized ? "bolt.fill" : "bolt.slash.fill")
-                    .font(.subheadline.bold())
-                    .padding(.horizontal, 12).padding(.vertical, 7)
+                    .font(.caption.bold())
+                    .padding(.horizontal, 9).padding(.vertical, 4)
                     .background(model.energized ? Color.green.opacity(0.22) : Color.gray.opacity(0.18),
                                 in: Capsule())
                     .foregroundStyle(model.energized ? .green : .secondary)
@@ -887,14 +954,12 @@ struct WorkbenchView: View {
             .buttonStyle(.plain)
             .accessibilityIdentifier("power-toggle")
 
-            Text(model.energized ? "ფარი ცოცხალია — ჯერ გამორთე რედაქტირებამდე"
-                                 : "ფარი გამორთულია — უსაფრთხო რედაქტირება")
+            Text(model.energized ? "ფარი ცოცხალია" : "უსაფრთხოა — შეგიძლია რედაქტირება")
                 .font(.caption2).foregroundStyle(.secondary)
-                .lineLimit(2).minimumScaleFactor(0.85)
-                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(1).minimumScaleFactor(0.8)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal).padding(.vertical, 6)
+        .padding(.horizontal).padding(.vertical, 4)
         .background(model.energized ? Color.green.opacity(0.07) : Color(.secondarySystemBackground))
     }
 
@@ -944,6 +1009,84 @@ struct WorkbenchView: View {
         .simultaneousGesture(boardDrag)
         .simultaneousGesture(boardZoom)
         .overlay(alignment: .bottomTrailing) { zoomControls }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("board-rail")
+    }
+
+    /// ფოკუს-რეჟიმის გადართვა: ფარი მთელ ეკრანზე, მოდულები უფრო მსხვილად.
+    private func toggleFocus() {
+        withAnimation(.easeInOut(duration: 0.25)) {
+            if focusMode {
+                focusMode = false
+                if let z = preFocusZoom { zoom = z; preFocusZoom = nil }
+            } else {
+                focusMode = true
+                preFocusZoom = zoom
+                if zoom < 1.35 { zoom = 1.35 }   // დეტალები კომფორტულად იკითხება
+            }
+        }
+    }
+
+    /// ფოკუს-რეჟიმის თხელი მცურავი ზოლი: პალიტრა / სადენი / კვება / ინსპექცია.
+    private var focusStrip: some View {
+        HStack(spacing: 18) {
+            Button { showFocusPalette = true } label: {
+                Image(systemName: "square.grid.2x2.fill").font(.title3)
+            }
+            .accessibilityIdentifier("focus-palette")
+            Button { model.tool = .wire; model.selectedPort = nil } label: {
+                Image(systemName: Tool.wire.symbol).font(.title3)
+                    .foregroundStyle(model.tool == .wire ? Color.brand : Color.secondary)
+            }
+            .accessibilityIdentifier("focus-wire")
+            Button { model.togglePower() } label: {
+                Image(systemName: model.energized ? "bolt.fill" : "bolt.slash.fill")
+                    .font(.title3)
+                    .foregroundStyle(model.energized ? Color.green : Color.secondary)
+            }
+            .accessibilityIdentifier("power-toggle")
+            Button { model.inspect(game: game) } label: {
+                Image(systemName: "paperplane.fill").font(.title3)
+                    .foregroundStyle(Color.brand)
+            }
+            .accessibilityIdentifier("inspect")
+        }
+        .padding(.horizontal, 20).padding(.vertical, 11)
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().stroke(Color.gray.opacity(0.3)))
+        .padding(.bottom, 10)
+    }
+
+    /// ფოკუს-რეჟიმის პალიტრა — მცურავი ფურცელი ფარის თავზე; არჩევაზე იხურება.
+    private var focusPaletteSheet: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(paletteCategories, id: \.self) { cat in
+                        VStack(alignment: .leading, spacing: 6) {
+                            Label(cat.georgian, systemImage: cat.sfSymbol)
+                                .font(.caption.bold()).foregroundStyle(.secondary)
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(paletteEntries(in: cat)) { e in
+                                        paletteCard(e, afterAdd: { showFocusPalette = false })
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding()
+            }
+            .navigationTitle("პალიტრა")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("დახურვა") { showFocusPalette = false }
+                }
+            }
+        }
+        .presentationDetents([.medium])
     }
 
     private var boardContent: some View {
@@ -961,8 +1104,9 @@ struct WorkbenchView: View {
                             onTapPort: { model.tapPort($0) },
                             onLongPress: { model.toggleSelect(comp.id) },
                             onDelete: comp.id == "supply" ? nil : { model.removeComponent(comp.id) },
+                            // ბერკეტი: ჩართულზე ზევით; გაგდებაზე (რომელიმე trip) — ვარდება.
                             leverUp: model.energized
-                                && model.result?.state(for: comp.id)?.trip == nil,
+                                && !(model.result?.anyTrip ?? false),
                             isSnapped: snappedID == comp.id,
                             isUntightened: { model.isPortUntightened($0) },
                             hasWire: { pid in
@@ -998,6 +1142,13 @@ struct WorkbenchView: View {
         ZStack {
             ForEach(model.board.wires) { wire in
                 if let a = portPoints[wire.fromPortID], let b = portPoints[wire.toPortID] {
+                    // ცოცხალი (ფაზიანი) სადენი ჩართულ ფარზე — მსუბუქი ყვითელი ნათება
+                    if model.energized,
+                       model.isLive(wire.fromPortID) || model.isLive(wire.toPortID) {
+                        Path { p in p.move(to: a); p.addLine(to: b) }
+                            .stroke(Color.yellow.opacity(0.32),
+                                    style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                    }
                     Path { p in p.move(to: a); p.addLine(to: b) }
                         .stroke(wire.color.swiftUIColor, style: wireStroke(wire.conductorType))
                 }
@@ -1029,6 +1180,12 @@ struct WorkbenchView: View {
 
     private var zoomControls: some View {
         VStack(spacing: 6) {
+            // ფოკუს-რეჟიმი (⤢) — ფარი მთელ ეკრანზე / უკან
+            Button { toggleFocus() } label: {
+                zoomIcon(focusMode ? "arrow.down.right.and.arrow.up.left"
+                                   : "arrow.up.left.and.arrow.down.right")
+            }
+            .accessibilityIdentifier("focus-toggle")
             Button { zoom = min(zoom + 0.2, 3.0) } label: { zoomIcon("plus.magnifyingglass") }
             Button { zoom = max(zoom - 0.2, 0.3) } label: { zoomIcon("minus.magnifyingglass") }
             Button { zoom = 1.0; pan = .zero } label: { zoomIcon("scope") }
@@ -1062,92 +1219,95 @@ struct WorkbenchView: View {
                 }.padding(.horizontal)
             }
 
-            Text(model.tool.hint).font(.caption2).foregroundStyle(.secondary)
+            // შიდა გადახვევადი ნაწილი — კლასტერი ზღვრულია (ფარი-პირველი განლაგება).
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 8) {
+                    Text(model.tool.hint).font(.caption2).foregroundStyle(.secondary)
 
-            // კომპონენტების პალიტრა — აკორდეონი: კატეგორიის სათაურები ჩამოსაშლელია,
-            // ერთდროულად მხოლოდ ერთია გახსნილი (ტელეფონზე კომპაქტური). გახსნილი
-            // კატეგორიის ბარათები ჰორიზონტალურად გადაიხვევა, როგორც აქამდე.
-            if !paletteCategories.isEmpty {
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        ForEach(paletteCategories, id: \.self) { cat in
-                            categoryHeader(cat)
-                            if expandedCategory == cat {
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: 8) {
-                                        ForEach(paletteEntries(in: cat)) { e in paletteCard(e) }
+                    // კომპონენტების პალიტრა — აკორდეონი (ერთდროულად ერთი კატეგორია).
+                    if !paletteCategories.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            ForEach(paletteCategories, id: \.self) { cat in
+                                categoryHeader(cat)
+                                if expandedCategory == cat {
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: 8) {
+                                            ForEach(paletteEntries(in: cat)) { e in paletteCard(e) }
+                                        }
+                                        .padding(.horizontal, 2)
                                     }
-                                    .padding(.horizontal, 2)
+                                    .transition(.opacity.combined(with: .move(edge: .top)))
                                 }
-                                .transition(.opacity.combined(with: .move(edge: .top)))
                             }
                         }
+                        .padding(.horizontal)
                     }
-                    .padding(.horizontal)
+
+                    // სადენის ხელსაწყოები — კვეთა მხოლოდ სადენის ხელსაწყოზე
+                    HStack {
+                        if model.tool == .wire {
+                            Text("კვეთა").font(.caption)
+                            Picker("კვეთა", selection: $model.selectedCSA) {
+                                ForEach(model.csaOptions, id: \.self) { csa in
+                                    Text(Self.csaLabel(csa)).tag(csa)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .fixedSize()   // ერთ ხაზზე — „6.0 მმ²" არ უნდა გადატყდეს
+                        }
+                        Spacer()
+                        // „ყველას მოჭერა" — ჩანს, სანამ მოუჭერელი შეერთება არსებობს.
+                        if model.hasUntightened {
+                            Button {
+                                model.tightenAll()
+                                GameFeedback.ratchet()
+                            } label: {
+                                Label("მოჭერა", systemImage: "wrench.and.screwdriver.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(.orange)
+                            }
+                            .accessibilityIdentifier("tighten-all")
+                            .accessibilityLabel("ყველას მოჭერა")
+                        }
+                        Button { model.showWires = true } label: {
+                            Label("\(model.board.wires.count)", systemImage: "list.bullet")
+                        }
+                        Button { model.removeLastWire() } label: { Image(systemName: "arrow.uturn.backward") }
+                        Button(role: .destructive) { model.clearWires() } label: { Image(systemName: "trash") }
+                    }.padding(.horizontal)
+
+                    // კაბელის პარამეტრები — მხოლოდ სადენის ხელსაწყოზე
+                    if model.tool == .wire {
+                        HStack(spacing: 10) {
+                            Picker("მასალა", selection: $model.selectedCable) {
+                                Text("Cu").tag(CableType.copper)
+                                Text("Al").tag(CableType.aluminum)
+                            }
+                            .pickerStyle(.segmented)
+                            .frame(width: 88)
+                            Picker("ძარღვი", selection: $model.selectedConductorType) {
+                                Text("cable_type_solid").tag(ConductorType.solid)
+                                Text("cable_type_stranded").tag(ConductorType.stranded)
+                            }
+                            .pickerStyle(.segmented)
+                        }.padding(.horizontal)
+
+                        Text(model.selectedConductorType.cableName(csaMm2: model.selectedCSA))
+                            .font(.caption2).foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal)
+                            .accessibilityIdentifier("cable-name")
+
+                        Stepper("სიგრძე: \(Int(model.selectedLengthM))მ",
+                                value: $model.selectedLengthM, in: 0...100, step: 5)
+                            .font(.caption)
+                            .padding(.horizontal)
+                    }
                 }
-                .frame(height: paletteAccordionHeight)
+                .padding(.bottom, 4)
             }
 
-            // კაბელის კვეთა
-            HStack {
-                Text("კვეთა").font(.caption)
-                Picker("კვეთა", selection: $model.selectedCSA) {
-                    ForEach(model.csaOptions, id: \.self) { csa in
-                        Text(Self.csaLabel(csa)).tag(csa)
-                    }
-                }
-                .pickerStyle(.menu)
-                .fixedSize()   // ერთ ხაზზე — „6.0 მმ²" არ უნდა გადატყდეს
-                Spacer()
-                // „ყველას მოჭერა" — ჩანს, სანამ მოუჭერელი შეერთება არსებობს.
-                if model.hasUntightened {
-                    Button {
-                        model.tightenAll()
-                        GameFeedback.ratchet()
-                    } label: {
-                        Label("მოჭერა", systemImage: "wrench.and.screwdriver.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.orange)
-                    }
-                    .accessibilityIdentifier("tighten-all")
-                    .accessibilityLabel("ყველას მოჭერა")
-                }
-                Button { model.showWires = true } label: {
-                    Label("\(model.board.wires.count)", systemImage: "list.bullet")
-                }
-                Button { model.removeLastWire() } label: { Image(systemName: "arrow.uturn.backward") }
-                Button(role: .destructive) { model.clearWires() } label: { Image(systemName: "trash") }
-            }.padding(.horizontal)
-
-            // კაბელის მასალა (Cu/Al) + ძარღვის ტიპი (ხისტი/მრავალწვერა)
-            HStack(spacing: 10) {
-                Picker("მასალა", selection: $model.selectedCable) {
-                    Text("Cu").tag(CableType.copper)
-                    Text("Al").tag(CableType.aluminum)
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 88)
-                Picker("ძარღვი", selection: $model.selectedConductorType) {
-                    Text("cable_type_solid").tag(ConductorType.solid)
-                    Text("cable_type_stranded").tag(ConductorType.stranded)
-                }
-                .pickerStyle(.segmented)
-            }.padding(.horizontal)
-
-            // არჩეული კაბელის ქართული სახელი (ხისტი/მრავალწვერა + კვეთა + აღნიშვნა)
-            Text(model.selectedConductorType.cableName(csaMm2: model.selectedCSA))
-                .font(.caption2).foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal)
-                .accessibilityIdentifier("cable-name")
-
-            // სიგრძე (ΔU%-სთვის)
-            Stepper("სიგრძე: \(Int(model.selectedLengthM))მ",
-                    value: $model.selectedLengthM, in: 0...100, step: 5)
-                .font(.caption)
-                .padding(.horizontal)
-
-            // მოქმედება — შემოწმებაზე გაგზავნა (საჭიროებს ჩართულ კვებას)
+            // ფიქსირებული ქვედა მოქმედება — ყოველთვის ხილული (არ გადაიხვევა)
             Button { model.inspect(game: game) } label: {
                 Label("შემოწმებაზე გაგზავნა", systemImage: "paperplane.fill")
                     .frame(maxWidth: .infinity)
@@ -1158,7 +1318,7 @@ struct WorkbenchView: View {
             .accessibilityIdentifier("inspect")
             .padding(.horizontal)
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, 8)
         .background(Color(.secondarySystemBackground))
     }
 }
@@ -1231,6 +1391,10 @@ struct ComponentCardView: View {
         // ჩაჭდობის პულსი — რელსზე დაჯდომისას წამიერი „დაწოლა".
         .scaleEffect(isSnapped ? 1.06 : 1)
         .animation(.spring(response: 0.25, dampingFraction: 0.5), value: isSnapped)
+        // კვება ჩართულია და მუშაობს → ყვითელი ჰალო (ნათურა ანათებს).
+        .shadow(color: loadState?.isPowered == true ? Color.yellow.opacity(0.55) : .clear,
+                radius: loadState?.isPowered == true ? 10 : 0)
+        .animation(.easeInOut(duration: 0.25), value: loadState?.isPowered == true)
         // ბარათის ჩარჩო board-სივრცეში (გადაადგილების hit-test).
         .background(GeometryReader { g in
             Color.clear.preference(key: CardFrameKey.self,
@@ -1289,6 +1453,17 @@ struct ComponentCardView: View {
         }
         .frame(width: faceWidth, height: 54)
         .shadow(color: .black.opacity(0.10), radius: 1.5, x: 0, y: 1)
+        // როზეტი კვების ქვეშ — მწვანე „ცოცხალი" წერტილი
+        .overlay(alignment: .topTrailing) {
+            if component.kind == .socket, loadState?.isPowered == true {
+                Circle().fill(.green).frame(width: 6, height: 6).padding(4)
+            }
+        }
+        // დატვირთვის მდგომარეობა accessibility-ში (ტესტებisთვის/VoiceOver)
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier("face-\(component.id)")
+        .accessibilityValue(component.kind.isLoad
+                            ? (loadState?.isPowered == true ? "ანთია" : "გამორთულია") : "")
     }
 
     /// შავი გადამრთველი ბერკეტი — ზევით ON, ქვევით OFF (ვიზუალური მდგომარეობა).
@@ -1425,7 +1600,8 @@ struct ComponentCardView: View {
     private var iconColor: Color {
         if let st = loadState {
             if st.trip != nil { return .red }
-            if st.isPowered { return .orange }
+            // სასიგნალო ნათურა კვების ქვეშ — მწვანედ ანათებს
+            if st.isPowered { return component.kind == .indicatorLight ? .green : .orange }
         }
         return component.kind == .supply ? .yellow : Color.black.opacity(0.7)
     }

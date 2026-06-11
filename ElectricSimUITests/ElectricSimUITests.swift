@@ -278,6 +278,126 @@ final class ElectricSimUITests: XCTestCase {
         shot.name = "Tighten-interaction"; shot.lifetime = .keepAlways; add(shot)
     }
 
+    /// კლემიდან კლემამდე სადენის გავლება (drag) — term-<portID> ელემენტებით.
+    private func dragWire(_ app: XCUIApplication, _ fromID: String, _ toID: String) {
+        let from = app.otherElements[fromID]
+        let to = app.otherElements[toID]
+        XCTAssertTrue(from.waitForExistence(timeout: 5), "კლემა \(fromID) უნდა არსებობდეს")
+        XCTAssertTrue(to.waitForExistence(timeout: 5), "კლემა \(toID) უნდა არსებობდეს")
+        from.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35))
+            .press(forDuration: 0.05,
+                   thenDragTo: to.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35)))
+    }
+
+    /// პირველი გაკვეთილის სრული აწყობა UI-დან: MCB + ნათურა + 4 სადენი + მოჭერა.
+    /// აბრუნებს მზად ფარს ინსპექციისთვის (კვება ჯერ გამორთულია).
+    private func buildTutorialCircuit(_ app: XCUIApplication) {
+        app.buttons["palette-cat-protection"].tap()
+        let mcb = app.buttons["palette-card-mcb_b10"]
+        XCTAssertTrue(mcb.waitForExistence(timeout: 5)); mcb.tap()
+        app.buttons["palette-cat-load"].tap()
+        let lamp = app.buttons["palette-card-lamp_60"]
+        XCTAssertTrue(lamp.waitForExistence(timeout: 5)); lamp.tap()
+        dragWire(app, "term-supply.L", "term-mcb_b10_1.in")
+        dragWire(app, "term-mcb_b10_1.out", "term-lamp_60_1.L")
+        dragWire(app, "term-supply.N", "term-lamp_60_1.N")
+        dragWire(app, "term-supply.PE", "term-lamp_60_1.PE")
+        let tighten = app.buttons["tighten-all"]
+        XCTAssertTrue(tighten.waitForExistence(timeout: 5)); tighten.tap()
+    }
+
+    /// ფარი-პირველი განლაგება: ფარის ზონა ეკრანის ≥45%-ია (ბრიფი ჩაკეცილი).
+    func testBoardGetsMajorityOfScreen() {
+        let app = launchApp()
+        openLearn(app)
+        let tutorial = tutorialCell(app)
+        XCTAssertTrue(tutorial.waitForExistence(timeout: 10))
+        tutorial.tap()
+        XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 10))
+        // პირველი ნახვისას ბრიფი გაშლილია — ჩავკეცოთ ნორმალურ მდგომარეობამდე.
+        let toggle = app.buttons["brief-toggle"]
+        if toggle.waitForExistence(timeout: 5), toggle.label.contains("ნაკლები") { toggle.tap() }
+        let rail = app.otherElements["board-rail"]
+        XCTAssertTrue(rail.waitForExistence(timeout: 5), "ფარის ზონა უნდა არსებობდეს")
+        let ratio = rail.frame.height / app.frame.height
+        XCTAssertGreaterThanOrEqual(ratio, 0.45,
+                                    "ფარი ეკრანის ≥45%% უნდა იყოს (ახლა: \(ratio))")
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "Board-first-normal"; shot.lifetime = .keepAlways; add(shot)
+    }
+
+    /// ფოკუს-რეჟიმი: ⤢ შესვლა → მცურავი პალიტრიდან კომპონენტის დადება → გამოსვლა.
+    func testFocusModePlaceComponentAndExit() {
+        let app = launchApp()
+        openLearn(app)
+        let tutorial = tutorialCell(app)
+        XCTAssertTrue(tutorial.waitForExistence(timeout: 10))
+        tutorial.tap()
+        let focus = app.buttons["focus-toggle"]
+        XCTAssertTrue(focus.waitForExistence(timeout: 10), "ფარზე უნდა იყოს ⤢ ღილაკი")
+        focus.tap()
+        // კონტროლები დამალულია, მცურავი ზოლი ჩანს
+        XCTAssertTrue(app.buttons["focus-palette"].waitForExistence(timeout: 5),
+                      "ფოკუსში უნდა ჩანდეს მცურავი ზოლი")
+        XCTAssertFalse(app.buttons["brief-toggle"].exists, "ფოკუსში ბრიფი დამალულია")
+        // პალიტრის ფურცელი → კომპონენტი დაჯდა → ფურცელი დაიხურა
+        app.buttons["focus-palette"].tap()
+        let card = app.buttons["palette-card-mcb_b10"]
+        XCTAssertTrue(card.waitForExistence(timeout: 5), "ფოკუს-პალიტრაში უნდა იყოს MCB")
+        card.tap()
+        XCTAssertTrue(app.otherElements["term-mcb_b10_1.in"].waitForExistence(timeout: 5),
+                      "კომპონენტი ფარზე უნდა დაჯდეს")
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "Focus-mode"; shot.lifetime = .keepAlways; add(shot)
+        // გამოსვლა — ჩვეულებრივი კონტროლები ბრუნდება
+        app.buttons["focus-toggle"].tap()
+        XCTAssertTrue(app.buttons["brief-toggle"].waitForExistence(timeout: 5),
+                      "ფოკუსიდან გამოსვლის შემდეგ ბრიფი ბრუნდება")
+    }
+
+    /// კვების ჩართვაზე მუშა ნათურა ანათებს (ინსპექციის გარეშეც) — accessibility state.
+    func testLampGlowsAfterPowerOn() {
+        let app = launchApp()
+        openLearn(app)
+        let tutorial = tutorialCell(app)
+        XCTAssertTrue(tutorial.waitForExistence(timeout: 10))
+        tutorial.tap()
+        XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 10))
+        buildTutorialCircuit(app)
+        let face = app.otherElements["face-lamp_60_1"]
+        XCTAssertTrue(face.waitForExistence(timeout: 5))
+        XCTAssertEqual(face.value as? String, "გამორთულია", "კვებამდე ნათურა არ ანათებს")
+        app.buttons["power-toggle"].tap()
+        let lit = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "value == 'ანთია'"), object: face)
+        XCTAssertEqual(XCTWaiter().wait(for: [lit], timeout: 5), .completed,
+                       "კვების ჩართვაზე მუშა ნათურა უნდა აანთდეს")
+    }
+
+    /// რეგრესია: დონის დასრულების შემდეგ „შემდეგი დონე" რეალურად ხსნის შემდეგ დონეს.
+    func testNextLevelNavigatesAfterCompletion() {
+        let app = launchApp()
+        openLearn(app)
+        let tutorial = tutorialCell(app)
+        XCTAssertTrue(tutorial.waitForExistence(timeout: 10))
+        tutorial.tap()
+        XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 10))
+        buildTutorialCircuit(app)
+        app.buttons["power-toggle"].tap()
+        app.buttons["inspect"].tap()
+        XCTAssertTrue(app.staticTexts["შედეგი"].waitForExistence(timeout: 10))
+        XCTAssertTrue(staticContaining(app, "დონე დასრულდა").waitForExistence(timeout: 5),
+                      "სწორი წრედით დონე უნდა ჩაითვალოს")
+        let next = app.buttons["result-next"]
+        XCTAssertTrue(next.waitForExistence(timeout: 5), "უნდა იყოს „შემდეგი დონე“ ღილაკი")
+        next.tap()
+        // შემდეგი დონის ფარი უნდა გაიხსნას (nav title: „გაკვეთილი 2 — როზეტი RCD-ით")
+        let nextTitle = app.navigationBars.staticTexts
+            .matching(NSPredicate(format: "label CONTAINS %@", "გაკვეთილი 2")).firstMatch
+        XCTAssertTrue(nextTitle.waitForExistence(timeout: 10),
+                      "„შემდეგი დონე“-მ უნდა გახსნას მე-2 გაკვეთილის ფარი")
+    }
+
     /// ელოდება ელემენტის გაქრობას (ანიმაციის დასრულებას).
     private func waitGone(_ element: XCUIElement, _ message: String) {
         let exp = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"),
