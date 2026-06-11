@@ -141,8 +141,8 @@ final class ElectricSimUITests: XCTestCase {
                       "ფარის აწყობის სიაში უნდა ჩანდეს პირველი დონე")
     }
 
-    /// პირველი ფარის-აწყობის დონეს აქვს კომპონენტების პალიტრა (main switch, MCB და ა.შ.),
-    /// რომ ფარის აწყობა საერთოდ შესაძლებელი იყოს.
+    /// პირველი ფარის-აწყობის დონეს აქვს კომპონენტების პალიტრა (main switch, MCB და ა.შ.).
+    /// აკორდეონის გამო ჯერ კატეგორიის სათაურს ვხსნით, შემდეგ ვამოწმებთ ბარათებს.
     func testPanelFirstLevelHasComponentPalette() {
         let app = launchApp()
         let panels = app.buttons["menu-panels"]
@@ -152,12 +152,58 @@ final class ElectricSimUITests: XCTestCase {
         XCTAssertTrue(row.waitForExistence(timeout: 10))
         row.tap()
         XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 10), "ფარის ეკრანი უნდა გაიხსნას")
-        XCTAssertTrue(staticContaining(app, "მთავარი ამომრთველი").waitForExistence(timeout: 5),
-                      "კომპონენტების პალიტრაში უნდა იყოს მთავარი ამომრთველი")
-        XCTAssertTrue(staticContaining(app, "ავტომატი").exists,
-                      "კომპონენტების პალიტრაში უნდა იყოს ავტომატი (MCB)")
+        // კვება-წყაროს კატეგორია → მთავარი ამომრთველის ბარათი
+        let supply = app.buttons["palette-cat-supply"]
+        XCTAssertTrue(supply.waitForExistence(timeout: 5), "პალიტრაში უნდა იყოს კვება-წყაროს სათაური")
+        supply.tap()
+        XCTAssertTrue(staticContaining(app, "მთავარი ამომრთველი 2P").waitForExistence(timeout: 5),
+                      "გახსნილ კატეგორიაში უნდა იყოს მთავარი ამომრთველი")
+        // დამცავების კატეგორია → MCB ბარათი
+        let protection = app.buttons["palette-cat-protection"]
+        XCTAssertTrue(protection.exists, "პალიტრაში უნდა იყოს დამცავების სათაური")
+        protection.tap()
+        XCTAssertTrue(staticContaining(app, "ავტომატი (MCB)").waitForExistence(timeout: 5),
+                      "გახსნილ კატეგორიაში უნდა იყოს ავტომატი (MCB)")
+        XCTAssertTrue(app.buttons["inspect"].isHittable, "ქვედა ღილაკები ეკრანზე უნდა დარჩეს")
         let shot = XCTAttachment(screenshot: app.screenshot())
         shot.name = "Panel-basic-workbench"; shot.lifetime = .keepAlways; add(shot)
+    }
+
+    /// პალიტრის აკორდეონი: სათაურები ჩანს; საწყისად გახსნილია მიზნის კატეგორია
+    /// (ნათურა → დატვირთვა); მეორის გახსნა წინას კეტავს; ხელახლა შეხება — კეტავს.
+    func testPaletteAccordionOneCategoryAtATime() {
+        let app = launchApp()
+        openLearn(app)
+        let tutorial = tutorialCell(app)
+        XCTAssertTrue(tutorial.waitForExistence(timeout: 10))
+        tutorial.tap()
+        let protection = app.buttons["palette-cat-protection"]
+        let load = app.buttons["palette-cat-load"]
+        XCTAssertTrue(protection.waitForExistence(timeout: 10), "უნდა იყოს დამცავების სათაური")
+        XCTAssertTrue(load.exists, "უნდა იყოს დატვირთვის სათაური")
+        XCTAssertTrue(app.buttons["palette-cat-supply"].exists, "უნდა იყოს კვება-წყაროს სათაური")
+        // საწყისად გახსნილია მიზნის (ნათურა → დატვირთვა) კატეგორია; დამცავები დახურულია.
+        XCTAssertTrue(staticContaining(app, "ნათურა 60W").waitForExistence(timeout: 5),
+                      "საწყისად დატვირთვის კატეგორია უნდა იყოს გახსნილი")
+        XCTAssertFalse(staticContaining(app, "ავტომატი (MCB)").exists,
+                       "დამცავები საწყისად დახურული უნდა იყოს")
+        // დამცავების გახსნა → MCB ჩანს, დატვირთვა (აკორდეონი) იკეტება.
+        protection.tap()
+        XCTAssertTrue(staticContaining(app, "ავტომატი (MCB)").waitForExistence(timeout: 5),
+                      "გახსნისას MCB ბარათი უნდა გამოჩნდეს")
+        waitGone(staticContaining(app, "ნათურა 60W"),
+                 "აკორდეონი — ერთდროულად მხოლოდ ერთი კატეგორიაა გახსნილი")
+        // ხელახლა შეხება კეტავს.
+        protection.tap()
+        waitGone(staticContaining(app, "ავტომატი (MCB)"),
+                 "ხელახლა შეხებამ კატეგორია უნდა დაკეტოს")
+    }
+
+    /// ელოდება ელემენტის გაქრობას (ანიმაციის დასრულებას).
+    private func waitGone(_ element: XCUIElement, _ message: String) {
+        let exp = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"),
+                                            object: element)
+        XCTAssertEqual(XCTWaiter().wait(for: [exp], timeout: 5), .completed, message)
     }
 
     /// ფარის-აწყობის დონეები Learn-ში აღარ დუბლირდება (ცალკე რეჟიმში გადავიდა).

@@ -369,6 +369,9 @@ struct WorkbenchView: View {
     // შედეგის sheet-ის დახურვის შემდეგ შესასრულებელი ნავიგაცია (race-ის თავიდან ასაცილებლად).
     @State private var pendingNav: PendingNav?
     private enum PendingNav: Equatable { case next(String), pop, paywall }
+    // პალიტრის აკორდეონი — ერთდროულად მხოლოდ ერთი კატეგორიაა გახსნილი.
+    @State private var expandedCategory: ComponentCategory?
+    @State private var didInitPalette = false
     // ფარის ჟესტები (board სივრცე)
     @State private var portPoints: [String: CGPoint] = [:]
     @State private var componentFrames: [String: CGRect] = [:]
@@ -427,6 +430,56 @@ struct WorkbenchView: View {
     }
     private func paletteEntries(in category: ComponentCategory) -> [PaletteEntry] {
         model.level.palette.filter { paletteCategory($0) == category }
+    }
+
+    /// საწყისად გახსნილი კატეგორია — პირველი (ჩვენების რიგით), რომელშიც დონის
+    /// მიზნისთვის (goal.poweredLoads) საჭირო კომპონენტია; თუ ასეთი არ არის — პირველივე.
+    private var defaultExpandedCategory: ComponentCategory? {
+        let goalKinds = Set(model.level.goal.poweredLoads.keys.compactMap { ComponentKind(rawValue: $0) })
+        if !goalKinds.isEmpty {
+            for cat in paletteCategories {
+                let kinds = paletteEntries(in: cat).compactMap { model.templates[$0.templateId]?.kind }
+                if kinds.contains(where: goalKinds.contains) { return cat }
+            }
+        }
+        return paletteCategories.first
+    }
+
+    /// აკორდეონის სიმაღლე: სათაურები + (გახსნილი რიგი). ზღვრულია, რომ ქვედა
+    /// ღილაკები ეკრანიდან არ გავიდეს (ბევრი კატეგორიის დონეზე შიგნით გადაიხვევა).
+    private var paletteAccordionHeight: CGFloat {
+        let headers = CGFloat(paletteCategories.count) * 27
+        let expanded: CGFloat = expandedCategory != nil ? 74 : 0
+        return min(headers + expanded + 8, 180)
+    }
+
+    /// კატეგორიის ჩამოსაშლელი სათაური: ხატულა + სახელი + რაოდენობა + chevron.
+    private func categoryHeader(_ cat: ComponentCategory) -> some View {
+        let isOpen = expandedCategory == cat
+        let count = paletteEntries(in: cat).count
+        return Button {
+            withAnimation(.easeInOut(duration: 0.22)) {
+                // აკორდეონი: ერთის გახსნა წინას კეტავს; ხელახლა შეხება — კეტავს.
+                expandedCategory = isOpen ? nil : cat
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: cat.sfSymbol).font(.caption2)
+                Text("\(cat.georgian) (\(count))").font(.caption2.bold())
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .semibold))
+                    .rotationEffect(.degrees(isOpen ? 90 : 0))
+            }
+            .foregroundStyle(isOpen ? Color.primary : Color.secondary)
+            .padding(.horizontal, 10).padding(.vertical, 4)
+            .background(isOpen ? Color.yellow.opacity(0.18) : Color(.tertiarySystemBackground),
+                        in: RoundedRectangle(cornerRadius: 8))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("palette-cat-\(cat.rawValue)")
+        .accessibilityValue(isOpen ? "გახსნილია" : "დახურულია")
     }
 
     /// კაბელის კვეთის ერთხაზიანი იარლიყი — locale-დამოუკიდებელი წერტილით, ქართული „მმ²".
@@ -677,7 +730,15 @@ struct WorkbenchView: View {
                     .environmentObject(game)
             }
         }
-        .onAppear { model.configure(game.templates, game: game) }
+        .onAppear {
+            model.configure(game.templates, game: game)
+            // საწყისი აკორდეონი — configure-ის შემდეგ (templates უკვე ჩატვირთულია,
+            // კატეგორიები სწორად დგინდება); მომხმარებლის არჩევანს აღარ ვცვლით.
+            if !didInitPalette {
+                didInitPalette = true
+                expandedCategory = defaultExpandedCategory
+            }
+        }
         .sheet(isPresented: $model.showResult, onDismiss: handleResultDismiss) {
             if let r = model.result {
                 ResultPanelView(result: r, passed: model.levelPassed, level: model.level,
@@ -772,13 +833,16 @@ struct WorkbenchView: View {
     }
 
     private var railView: some View {
-        ZStack(alignment: .topLeading) {
-            Color(.systemBackground)
-            boardContent
-                .scaleEffect(zoom * pinch, anchor: .topLeading)
-                .offset(x: pan.width + panLive.width, y: pan.height + panLive.height)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // ფარის შიგთავსი overlay-შია (და არა ZStack-ში), რომ მისმა ბუნებრივმა
+        // სიმაღლემ კონტეინერი არ გაზარდოს და ქვედა ღილაკები ეკრანიდან არ
+        // გამოდევნოს — ჭარბი ეჭრება, ნავიგაცია pan/zoom-ით ხდება.
+        Color(.systemBackground)
+            .overlay(alignment: .topLeading) {
+                boardContent
+                    .scaleEffect(zoom * pinch, anchor: .topLeading)
+                    .offset(x: pan.width + panLive.width, y: pan.height + panLive.height)
+            }
+        .frame(maxWidth: .infinity, minHeight: 100, maxHeight: .infinity)
         .background(GeometryReader { g in
             Color.clear
                 .onAppear { railWidth = g.size.width }
@@ -891,27 +955,28 @@ struct WorkbenchView: View {
 
             Text(model.tool.hint).font(.caption2).foregroundStyle(.secondary)
 
-            // კომპონენტების პალიტრა — ერთ რიგად, ჰორიზონტალურად გადახვევადი
-            // (LazyHStack — wrapping არ ხდება). თითო კატეგორია ცალკე ჯგუფია,
-            // სათაურში კატეგორიის ხატულათი (data-driven). ბევრკომპონენტიანი
-            // კატეგორია უბრალოდ მარჯვნივ გრძელდება და გადაიხვევა.
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(alignment: .top, spacing: 16) {
-                    ForEach(paletteCategories, id: \.self) { cat in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Label(cat.georgian, systemImage: cat.sfSymbol)
-                                .font(.caption2.bold()).foregroundStyle(.secondary)
-                                .padding(.leading, 2)
-                            HStack(spacing: 8) {
-                                ForEach(paletteEntries(in: cat)) { e in paletteCard(e) }
+            // კომპონენტების პალიტრა — აკორდეონი: კატეგორიის სათაურები ჩამოსაშლელია,
+            // ერთდროულად მხოლოდ ერთია გახსნილი (ტელეფონზე კომპაქტური). გახსნილი
+            // კატეგორიის ბარათები ჰორიზონტალურად გადაიხვევა, როგორც აქამდე.
+            if !paletteCategories.isEmpty {
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(paletteCategories, id: \.self) { cat in
+                            categoryHeader(cat)
+                            if expandedCategory == cat {
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 8) {
+                                        ForEach(paletteEntries(in: cat)) { e in paletteCard(e) }
+                                    }
+                                    .padding(.horizontal, 2)
+                                }
+                                .transition(.opacity.combined(with: .move(edge: .top)))
                             }
                         }
-                        if cat != paletteCategories.last {
-                            Divider().frame(height: 78)
-                        }
                     }
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
+                .frame(height: paletteAccordionHeight)
             }
 
             // კაბელის კვეთა
