@@ -45,6 +45,7 @@ public enum IssueCode: String, Sendable {
     case polarityReversed       // L და N ადგილებ-არეული
     case openCircuit            // ხაზი არ არის დასრულებული (ნათურა არ ანათებს)
     case missingFerrule         // მრავალწვერა კაბელი ხრახნიან კლემაში ბუნიკის გარეშე
+    case looseTerminal          // შეერთებული კლემა მოუჭერელია (screw-down)
     case phaseImbalance         // ფაზების დისბალანსი (3 ფაზა)
     case overload               // გადატვირთვა
     case shortCircuit           // მოკლე ჩართვა (Test რეჟიმი)
@@ -167,6 +168,8 @@ public enum IssueMessages {
             return "ხაზი დაუსრულებელია — წრედი ღიაა. დატვირთვამდე ფაზაც და ნულიც უნდა იყოს მიერთებული."
         case .missingFerrule:
             return "მრავალწვერა კაბელს ხრახნიან კლემაში ბუნიკი (ferrule) სჭირდება. დაამატე ბუნიკი ან გამოიყენე ხისტი კაბელი."
+        case .looseTerminal:
+            return "კლემა არ არის მოჭერილი — დაშურუპე შეერთება. გეჭიროს კლემაზე ხანგრძლივად ან გამოიყენე ერთიანი მოჭერის ღილაკი."
         case .phaseImbalance:
             return "ფაზების დიდი დისბალანსი. დატვირთვები თანაბრად გაანაწილე L1/L2/L3-ზე."
         case .overload:

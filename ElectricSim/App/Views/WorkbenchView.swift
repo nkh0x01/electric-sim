@@ -7,9 +7,38 @@
 //
 
 import SwiftUI
+import AudioToolbox
 #if canImport(UIKit)
 import UIKit
 #endif
+
+// MARK: - Haptics + sound feedback (ჩაჭდობა / მოჭერა)
+
+/// მსუბუქი ფიზიკური უკუკავშირი: ჩაჭდობის „კლიკი" და მოჭერის „რაჭეტი".
+/// ხმა ემორჩილება პარამეტრების pref.soundEnabled-ს (default ჩართული).
+enum GameFeedback {
+    private static var soundOn: Bool {
+        UserDefaults.standard.object(forKey: "pref.soundEnabled") == nil
+            ? true
+            : UserDefaults.standard.bool(forKey: "pref.soundEnabled")
+    }
+    /// DIN-რელსზე ჩაჭდობა — მყარი დარტყმა + მოკლე კლიკი.
+    static func snap() {
+        #if canImport(UIKit)
+        UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+        #endif
+        if soundOn { AudioServicesPlaySystemSound(1104) }   // keyboard tock
+    }
+    /// კლემის მოჭერა — ორმაგი მსუბუქი იმპულსი (რაჭეტის შეგრძნება) + წკრიალი.
+    static func ratchet() {
+        #if canImport(UIKit)
+        let gen = UIImpactFeedbackGenerator(style: .light)
+        gen.impactOccurred()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { gen.impactOccurred(intensity: 0.7) }
+        #endif
+        if soundOn { AudioServicesPlaySystemSound(1103) }   // tink
+    }
+}
 
 // MARK: - Tools
 
@@ -161,13 +190,17 @@ final class WorkbenchModel: ObservableObject {
     func placed(_ tid: String) -> Int { placedCounts[tid] ?? 0 }
     func canAdd(_ e: PaletteEntry) -> Bool { placed(e.templateId) < e.max }
 
-    func add(_ e: PaletteEntry) {
-        guard let t = templates[e.templateId], canAdd(e) else { return }
+    /// აბრუნებს ახალი კომპონენტის id-ს (ჩაჭდობის პულსისთვის); ვერ-დამატებაზე nil.
+    @discardableResult
+    func add(_ e: PaletteEntry) -> String? {
+        guard let t = templates[e.templateId], canAdd(e) else { return nil }
         let n = placed(e.templateId)
-        let inst = t.makeComponent(instanceID: "\(e.templateId)_\(n + 1)", phase: board.phase)
+        let newID = "\(e.templateId)_\(n + 1)"
+        let inst = t.makeComponent(instanceID: newID, phase: board.phase)
         board.add(inst)
         placedCounts[e.templateId] = n + 1
         resetResult()
+        return newID
     }
 
     func removeComponent(_ id: String) {
@@ -231,9 +264,41 @@ final class WorkbenchModel: ObservableObject {
         }) { return }
         if blockedByLiveEdit([from, to]) { return }
         let conductor = board.port(from)?.conductor ?? board.port(to)?.conductor ?? .L
+        // ახალი ინტერაქტიული შეერთება მოუჭერელია — მოთამაშემ უნდა „დაშურუპოს".
         board.connect(from, to, csaMm2: selectedCSA, color: WireColor.standard(for: conductor),
                       cableType: selectedCable, conductorType: selectedConductorType,
-                      lengthM: selectedLengthM)
+                      lengthM: selectedLengthM, tightened: false)
+        resetResult()
+    }
+
+    // MARK: - მოჭერა (screw-down)
+
+    /// ფეხზე მიერთებული რომელიმე სადენი მოუჭერელია?
+    func isPortUntightened(_ portID: String) -> Bool {
+        board.wires.contains { !$0.tightened && ($0.fromPortID == portID || $0.toPortID == portID) }
+    }
+
+    /// ფეხის კლემის მოჭერა — ამ ფეხზე მისული ყველა სადენი მოჭერილად ითვლება.
+    /// აბრუნებს true-ს, თუ რამე რეალურად მოიჭერა (feedback-ისთვის).
+    @discardableResult
+    func tightenPort(_ portID: String) -> Bool {
+        var any = false
+        for i in board.wires.indices
+        where !board.wires[i].tightened
+            && (board.wires[i].fromPortID == portID || board.wires[i].toPortID == portID) {
+            board.wires[i].tightened = true
+            any = true
+        }
+        if any { resetResult() }
+        return any
+    }
+
+    var hasUntightened: Bool { board.wires.contains { !$0.tightened } }
+
+    /// „ყველას მოჭერა" — ყველა მოუჭერელი შეერთება ერთიანად.
+    func tightenAll() {
+        guard hasUntightened else { return }
+        for i in board.wires.indices { board.wires[i].tightened = true }
         resetResult()
     }
 
@@ -372,6 +437,10 @@ struct WorkbenchView: View {
     // პალიტრის აკორდეონი — ერთდროულად მხოლოდ ერთი კატეგორიაა გახსნილი.
     @State private var expandedCategory: ComponentCategory?
     @State private var didInitPalette = false
+    // ჩაჭდობა (snap-in): გადათრევისას სამიზნე სლოტის ჰაილაითი + დაჯდომის პულსი.
+    private struct DropSlot: Equatable { let anchor: String; let after: Bool }
+    @State private var dropSlot: DropSlot?
+    @State private var snappedID: String?
     // ფარის ჟესტები (board სივრცე)
     @State private var portPoints: [String: CGPoint] = [:]
     @State private var componentFrames: [String: CGRect] = [:]
@@ -492,7 +561,8 @@ struct WorkbenchView: View {
         let t = model.templates[e.templateId]
         let locked = isPaletteLocked(e)
         Button {
-            if locked { showPaywall = true } else { model.add(e) }
+            if locked { showPaywall = true }
+            else if let newID = model.add(e) { snapPulse(newID) }   // ჩაჭდობა რელსზე
         } label: {
             VStack(spacing: 2) {
                 Image(systemName: locked ? "lock.fill" : (t?.kind ?? .mcb).sfSymbol)
@@ -516,6 +586,7 @@ struct WorkbenchView: View {
         .buttonStyle(.plain)
         .disabled(!locked && !model.canAdd(e))
         .opacity(locked ? 0.85 : (model.canAdd(e) ? 1 : 0.4))
+        .accessibilityIdentifier("palette-card-\(e.templateId)")
     }
 
     @State private var zoom: CGFloat = 1.0
@@ -569,9 +640,11 @@ struct WorkbenchView: View {
             let xs = pts.map(\.x), ys = pts.map(\.y)
             let minX = xs.min()!, maxX = xs.max()!
             let minY = ys.min()!, maxY = ys.max()!
-            // header/სხეული ფეხებზე ზემოთ → ზევით მეტი მარჟა.
-            let region = CGRect(x: minX - 28, y: minY - 92,
-                                width: (maxX - minX) + 56, height: (maxY - minY) + 120)
+            // კლემები ზედა/ქვედა კიდეებზეა, მაგრამ ზოგ კომპონენტს მხოლოდ ერთ
+            // მხარეს აქვს (SPD ზევით, დატვირთვები ქვევით) → სიმეტრიული მარჟა
+            // ორივე მიმართულებით, რომ მოდულის სახეც დაიჭიროს.
+            let region = CGRect(x: minX - 28, y: minY - 80,
+                                width: (maxX - minX) + 56, height: (maxY - minY) + 160)
             if region.contains(p) {
                 let d = hypot(region.midX - p.x, region.midY - p.y)
                 if d < bestDist { bestDist = d; bestID = comp.id }
@@ -602,6 +675,12 @@ struct WorkbenchView: View {
                     #endif
                 }
                 if dragMode == .wire { dragCurrent = toBoard(v.location) }
+                // გადატანისას — სამიზნე სლოტის ჰაილაითი (სად ჩაჯდება).
+                if dragMode == .move, let id = moveID,
+                   !(model.selection.contains(id) && model.selection.count > 1) {
+                    dropSlot = dropAnchor(for: id, at: toBoard(v.location))
+                        .map { DropSlot(anchor: $0.anchor, after: $0.after) }
+                }
             }
             .onEnded { v in
                 switch dragMode {
@@ -616,17 +695,28 @@ struct WorkbenchView: View {
                             // ჯგუფი — ჰორიზონტალური shift (არსებული ქცევა)
                             let shift = Int((v.translation.width / (140 * max(zoom, 0.01))).rounded())
                             model.moveComponents(model.selection, by: shift)
+                            snapPulse(id)
                         } else if let drop = dropAnchor(for: id, at: toBoard(v.location)) {
                             // ერთი კომპონენტი — ნებისმიერ რიგზე/პოზიციაზე (drop-თან უახლოეს ბარათთან).
                             model.moveComponent(id, relativeTo: drop.anchor, after: drop.after)
+                            snapPulse(id)                          // ჩაჭდობა: პულსი + კლიკი
                         }
                     }
                 case .pan:
                     pan.width += v.translation.width; pan.height += v.translation.height
                 case .none: break
                 }
-                dragMode = .none; dragFrom = nil; moveID = nil
+                dragMode = .none; dragFrom = nil; moveID = nil; dropSlot = nil
             }
+    }
+
+    /// რელსზე ჩაჭდობის უკუკავშირი: წამიერი მასშტაბის პულსი + მყარი ჰაპტიკა/კლიკი.
+    private func snapPulse(_ id: String) {
+        snappedID = id
+        GameFeedback.snap()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
+            if snappedID == id { snappedID = nil }
+        }
     }
 
     // MARK: pinch zoom (2 თითი) — drag-თან simultaneous
@@ -870,7 +960,17 @@ struct WorkbenchView: View {
                             isLive: { model.isLive($0) },
                             onTapPort: { model.tapPort($0) },
                             onLongPress: { model.toggleSelect(comp.id) },
-                            onDelete: comp.id == "supply" ? nil : { model.removeComponent(comp.id) }
+                            onDelete: comp.id == "supply" ? nil : { model.removeComponent(comp.id) },
+                            leverUp: model.energized
+                                && model.result?.state(for: comp.id)?.trip == nil,
+                            isSnapped: snappedID == comp.id,
+                            isUntightened: { model.isPortUntightened($0) },
+                            hasWire: { pid in
+                                model.board.wires.contains { $0.fromPortID == pid || $0.toPortID == pid }
+                            },
+                            onTightenPort: { pid in
+                                if model.tightenPort(pid) { GameFeedback.ratchet() }
+                            }
                         )
                     }
                 }
@@ -906,6 +1006,15 @@ struct WorkbenchView: View {
                 Path { p in p.move(to: a); p.addLine(to: dragCurrent) }
                     .stroke(Color.gray.opacity(0.7),
                             style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [6, 4]))
+            }
+            // ჩაჭდობის სლოტი — სად დაჯდება გადათრეული მოდული (მწვანე მონახაზი).
+            if let slot = dropSlot, let f = componentFrames[slot.anchor] {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.green.opacity(0.12))
+                    .overlay(RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color.green, style: StrokeStyle(lineWidth: 2.5, dash: [6, 4])))
+                    .frame(width: 16, height: f.height)
+                    .position(x: slot.after ? f.maxX + 14 : f.minX - 14, y: f.midY)
             }
         }
         .allowsHitTesting(false)   // არ ბლოკავს ფეხების/ბარათების ჟესტებს
@@ -990,6 +1099,19 @@ struct WorkbenchView: View {
                 .pickerStyle(.menu)
                 .fixedSize()   // ერთ ხაზზე — „6.0 მმ²" არ უნდა გადატყდეს
                 Spacer()
+                // „ყველას მოჭერა" — ჩანს, სანამ მოუჭერელი შეერთება არსებობს.
+                if model.hasUntightened {
+                    Button {
+                        model.tightenAll()
+                        GameFeedback.ratchet()
+                    } label: {
+                        Label("მოჭერა", systemImage: "wrench.and.screwdriver.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+                    }
+                    .accessibilityIdentifier("tighten-all")
+                    .accessibilityLabel("ყველას მოჭერა")
+                }
                 Button { model.showWires = true } label: {
                     Label("\(model.board.wires.count)", systemImage: "list.bullet")
                 }
@@ -1052,56 +1174,63 @@ struct ComponentCardView: View {
     let onTapPort: (String) -> Void
     let onLongPress: () -> Void
     let onDelete: (() -> Void)?
+    // რეალისტური DIN-მოდული — default-ებით, რომ read-only ჩვენებებმა (FaultBoardView)
+    // უცვლელად იმუშაოს: ბერკეტი, ჩაჭდობის პულსი, კლემის მოჭერა.
+    var leverUp: Bool = false
+    var isSnapped: Bool = false
+    var isUntightened: (String) -> Bool = { _ in false }
+    var hasWire: (String) -> Bool = { _ in false }
+    var onTightenPort: (String) -> Void = { _ in }
 
     private var inputs: [Port] { component.ports.filter { $0.side == .input } }
     private var outputs: [Port] { component.ports.filter { $0.side == .output } }
     private var singles: [Port] { component.ports.filter { $0.side == .single } }
+    private var isConnector: Bool { component.kind.isConnector }
 
     var body: some View {
-        VStack(spacing: 6) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(headerColor)
-                    .frame(width: 92, height: 54)
-                VStack(spacing: 2) {
-                    if component.kind.hasArtwork {
-                        Image(component.kind.assetName)
-                            .resizable().scaledToFit().frame(height: 24)
-                    } else {
-                        Image(systemName: component.kind.sfSymbol)
-                            .font(.title3)
-                            .foregroundStyle(iconColor)
-                    }
-                    Text(component.name).font(.caption2).lineLimit(2).multilineTextAlignment(.center)
-                }.padding(2)
-            }
-            .overlay(alignment: .topTrailing) {
-                if let onDelete {
-                    Button(action: onDelete) {
-                        Image(systemName: "minus.circle.fill")
-                            .foregroundStyle(.red).background(Circle().fill(.white))
-                    }
-                    .offset(x: 6, y: -6)
+        VStack(spacing: 5) {
+            // ზედა კიდე — შემავალი ხრახნიანი კლემები (კვების მხარე)
+            if !inputs.isEmpty { terminalRow(inputs) }
+            // მოდულის სახე (კონექტორებს ცალკე სახე არ აქვთ — სალტეა)
+            if !isConnector { moduleFace }
+            // ქვედა კიდე — გამავალი/დატვირთვის კლემები
+            let bottom = outputs + singles
+            if !bottom.isEmpty { terminalRow(bottom) }
+            // ქართული სახელი — მოდულის ქვეშ
+            Text(component.name)
+                .font(.system(size: 8)).foregroundStyle(Color.black.opacity(0.55))
+                .lineLimit(2).multilineTextAlignment(.center)
+                .frame(maxWidth: max(faceWidth + 36, 88))
+        }
+        .padding(7)
+        // DIN-მოდულის კორპუსი: ღია კედელი + მსუბუქი ჩრდილი
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isConnector ? Color(white: 0.88) : Color(white: 0.95))
+                .shadow(color: .black.opacity(0.18), radius: 2, x: 0, y: 1)
+        )
+        .overlay(RoundedRectangle(cornerRadius: 8)
+            .stroke(isSelected ? Color.brand : Color.gray.opacity(0.35), lineWidth: isSelected ? 2 : 1))
+        .overlay(alignment: .topTrailing) {
+            if let onDelete {
+                Button(action: onDelete) {
+                    Image(systemName: "minus.circle.fill")
+                        .foregroundStyle(.red).background(Circle().fill(.white))
                 }
-            }
-            .overlay(alignment: .topLeading) {
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.brand).background(Circle().fill(.white))
-                        .offset(x: -6, y: -6)
-                }
-            }
-
-            HStack(alignment: .top, spacing: 14) {
-                if !inputs.isEmpty { portColumn(inputs, label: "IN") }
-                if !outputs.isEmpty { portColumn(outputs, label: "OUT") }
-                if !singles.isEmpty { portColumn(singles, label: nil) }
+                // ოდნავ გარეთ — ზედა კლემებს (IN) არ უნდა ეფაროს.
+                .offset(x: 9, y: -9)
             }
         }
-        .padding(8)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Color(.tertiarySystemBackground)))
-        .overlay(RoundedRectangle(cornerRadius: 12)
-            .stroke(isSelected ? Color.brand : Color.gray.opacity(0.3), lineWidth: isSelected ? 2 : 1))
+        .overlay(alignment: .topLeading) {
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.brand).background(Circle().fill(.white))
+                    .offset(x: -9, y: -9)
+            }
+        }
+        // ჩაჭდობის პულსი — რელსზე დაჯდომისას წამიერი „დაწოლა".
+        .scaleEffect(isSnapped ? 1.06 : 1)
+        .animation(.spring(response: 0.25, dampingFraction: 0.5), value: isSnapped)
         // ბარათის ჩარჩო board-სივრცეში (გადაადგილების hit-test).
         .background(GeometryReader { g in
             Color.clear.preference(key: CardFrameKey.self,
@@ -1111,32 +1240,156 @@ struct ComponentCardView: View {
         .onLongPressGesture(minimumDuration: 0.4) { onLongPress() }
     }
 
-    private func portColumn(_ ports: [Port], label: String?) -> some View {
-        VStack(spacing: 6) {
-            if let label { Text(label).font(.system(size: 8)).foregroundStyle(.secondary) }
-            ForEach(ports) { port in
-                HStack(spacing: 4) {
-                    portDot(port)
-                    Text(port.name).font(.system(size: 9)).foregroundStyle(.secondary)
+    // MARK: მოდულის სახე — თეთრი კორპუსი, ბერკეტი/ხატულა, ტექ-იარლიყი
+
+    /// DIN-მოდულის სიგანე მოდულებში (1 მოდული ≈ 18მმ რეალურში).
+    private var moduleUnits: Int {
+        switch component.kind {
+        case .mcb, .fuse, .lightSwitch, .relay, .selectorSwitch, .indicatorLight: return 1
+        case .rcd, .rcbo, .mainSwitch, .contactor, .smartSwitch, .smartRelay, .smartDimmer: return 2
+        default: return 3   // mpcb/vfd/წყაროები/დატვირთვები — განიერი სახე
+        }
+    }
+    private var faceWidth: CGFloat { CGFloat(moduleUnits) * 26 + 6 }
+
+    private var moduleFace: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 5)
+                .fill(Color(white: 0.98))
+                .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.gray.opacity(0.3), lineWidth: 0.8))
+            // მდგომარეობის შეფერილობა (გაგდება/კვება) — სახეზე
+            RoundedRectangle(cornerRadius: 5).fill(faceTint)
+            if component.kind.isSeriesDevice {
+                VStack(spacing: 3) {
+                    Text(techLabel)
+                        .font(.system(size: 7, weight: .bold))
+                        .foregroundStyle(Color.black.opacity(0.6))
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                    lever
                 }
-                .contentShape(Rectangle())
-                .onTapGesture { onTapPort(port.id) }
+                .padding(.vertical, 3)
+            } else {
+                VStack(spacing: 2) {
+                    if component.kind.hasArtwork {
+                        Image(component.kind.assetName)
+                            .resizable().scaledToFit().frame(height: 24)
+                    } else {
+                        Image(systemName: component.kind.sfSymbol)
+                            .font(.body)
+                            .foregroundStyle(iconColor)
+                    }
+                    if !techLabel.isEmpty {
+                        Text(techLabel)
+                            .font(.system(size: 7, weight: .bold))
+                            .foregroundStyle(Color.black.opacity(0.6))
+                    }
+                }
+                .padding(2)
             }
+        }
+        .frame(width: faceWidth, height: 54)
+        .shadow(color: .black.opacity(0.10), radius: 1.5, x: 0, y: 1)
+    }
+
+    /// შავი გადამრთველი ბერკეტი — ზევით ON, ქვევით OFF (ვიზუალური მდგომარეობა).
+    private var lever: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 2.5)
+                .fill(Color(white: 0.18))
+                .frame(width: 12, height: 24)
+            RoundedRectangle(cornerRadius: 1)
+                .fill(Color(white: 0.45))
+                .frame(width: 8, height: 7)
+                .offset(y: leverUp ? -6 : 6)
+        }
+        .animation(.easeInOut(duration: 0.15), value: leverUp)
+    }
+
+    /// ტექნიკური იარლიყი მოდულის სახეზე (მაგ. "C16", "30mA", "2P").
+    private var techLabel: String {
+        let k = component.kind
+        if k == .rcd { return "\(Int(component.mAtrip ?? 30))mA" }
+        if k == .rcbo, let r = component.ratingA {
+            return "\(component.curve?.rawValue ?? "B")\(Int(r)) \(Int(component.mAtrip ?? 30))mA"
+        }
+        if k.isBreaker, let r = component.ratingA {
+            return "\(component.curve?.rawValue ?? "C")\(Int(r))"
+        }
+        switch k {
+        case .mainSwitch: return component.poles >= 3 ? "4P" : "2P"
+        case .spd:        return "SPD"
+        case .supply:     return component.poles >= 3 ? "400V" : "230V"
+        default:
+            if let r = component.ratingA { return "\(Int(r))A" }
+            return ""
         }
     }
 
-    private func portDot(_ port: Port) -> some View {
+    // MARK: ხრახნიანი კლემები (ზედა/ქვედა კიდე) + სალტის ლითონის ზოლი
+
+    @ViewBuilder
+    private func terminalRow(_ ports: [Port]) -> some View {
+        let row = HStack(alignment: .top, spacing: 7) {
+            ForEach(ports) { terminal($0) }
+        }
+        if isConnector {
+            // სალტე (busbar): ლითონის ზოლი ხრახნებით + გამტარის ფერის მინიშნება
+            row
+                .padding(.horizontal, 6).padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(LinearGradient(colors: [Color(white: 0.86), Color(white: 0.64)],
+                                             startPoint: .top, endPoint: .bottom))
+                        .overlay(alignment: .top) {
+                            busTint
+                                .frame(height: 3)
+                                .clipShape(RoundedRectangle(cornerRadius: 1.5))
+                                .padding(.horizontal, 3).padding(.top, 1.5)
+                        }
+                )
+        } else {
+            row
+        }
+    }
+
+    /// სალტის ფერის მინიშნება: PE → მწვანე-ყვითელი, N → ლურჯი, L → სპილენძი.
+    @ViewBuilder
+    private var busTint: some View {
+        switch component.ports.first?.conductor {
+        case .PE: LinearGradient(colors: [.green, .yellow], startPoint: .leading, endPoint: .trailing).opacity(0.85)
+        case .N:  Color.blue.opacity(0.7)
+        default:  Color.orange.opacity(0.5)
+        }
+    }
+
+    /// ხრახნიანი კლემა: ლითონის ბუდე გამტარის ფერის კოდით + ხრახნის თავი ჭრილით.
+    /// მოუჭერელი (ახალი შეერთება): ჭრილი 45°-ზე, ნარინჯისფერი, 🔧 მინიშნება.
+    private func terminal(_ port: Port) -> some View {
         let selected = selectedPort == port.id
         let live = isLive(port.id)
-        return Circle()
-            .fill(port.conductor.swiftUIColor)
-            .frame(width: 16, height: 16)
-            .overlay(Circle().stroke(selected ? Color.yellow : Color.white,
-                                     lineWidth: selected ? 3 : 1))
-            .overlay {
-                if live {
-                    Circle().stroke(Color.yellow, lineWidth: 2).blur(radius: 2)
-                }
+        let loose = isUntightened(port.id)
+        let wired = hasWire(port.id)
+        return VStack(spacing: 1) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(LinearGradient(colors: [Color(white: 0.8), Color(white: 0.58)],
+                                         startPoint: .top, endPoint: .bottom))
+                    .frame(width: 17, height: 17)
+                    .overlay(RoundedRectangle(cornerRadius: 3)
+                        .stroke(port.conductor.swiftUIColor, lineWidth: 1.6))
+                Circle()
+                    .fill(loose ? Color.orange.opacity(0.9) : Color(white: 0.4))
+                    .frame(width: 10, height: 10)
+                Rectangle()
+                    .fill(Color(white: 0.12))
+                    .frame(width: 8, height: 1.6)
+                    .rotationEffect(.degrees(loose ? 45 : 0))
+            }
+            .overlay(Circle().stroke(selected ? Color.yellow : .clear, lineWidth: 3)
+                .frame(width: 21, height: 21))
+            .overlay { if live { Circle().stroke(Color.yellow, lineWidth: 2).blur(radius: 2) } }
+            .overlay(alignment: .topTrailing) {
+                if loose { Text("🔧").font(.system(size: 7)).offset(x: 7, y: -6) }
             }
             .background(GeometryReader { g in
                 Color.clear.preference(
@@ -1144,14 +1397,29 @@ struct ComponentCardView: View {
                     value: [port.id: CGPoint(x: g.frame(in: .named(kBoardSpace)).midX,
                                              y: g.frame(in: .named(kBoardSpace)).midY)])
             })
+            .animation(.easeInOut(duration: 0.2), value: loose)
+            Text(port.name).font(.system(size: 8))
+                .foregroundStyle(Color.black.opacity(0.5)).lineLimit(1)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { onTapPort(port.id) }
+        // tap-and-hold (~0.4წმ) — კლემის მოჭერა; მოჭერილზე — ბარათის მონიშვნა
+        // (კონექტორებს სახე არ აქვთ და მონიშვნა კლემებიდანაც უნდა შეიძლებოდეს).
+        .onLongPressGesture(minimumDuration: 0.4) {
+            if loose { onTightenPort(port.id) } else { onLongPress() }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier("term-\(port.id)")
+        .accessibilityLabel("კლემა \(port.name)")
+        .accessibilityValue(loose ? "მოსაჭერია" : (wired ? "მოჭერილია" : "თავისუფალია"))
     }
 
-    private var headerColor: Color {
+    private var faceTint: Color {
         if let st = loadState {
-            if st.trip != nil { return Color.red.opacity(0.25) }
-            if st.isPowered { return Color.yellow.opacity(0.45) }
+            if st.trip != nil { return Color.red.opacity(0.28) }
+            if st.isPowered { return Color.yellow.opacity(0.40) }
         }
-        return Color(.secondarySystemBackground)
+        return .clear
     }
 
     private var iconColor: Color {
@@ -1159,7 +1427,7 @@ struct ComponentCardView: View {
             if st.trip != nil { return .red }
             if st.isPowered { return .orange }
         }
-        return component.kind == .supply ? .yellow : .primary
+        return component.kind == .supply ? .yellow : Color.black.opacity(0.7)
     }
 }
 

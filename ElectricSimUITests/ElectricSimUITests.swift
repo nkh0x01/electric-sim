@@ -199,6 +199,85 @@ final class ElectricSimUITests: XCTestCase {
                  "ხელახლა შეხებამ კატეგორია უნდა დაკეტოს")
     }
 
+    /// ფარის-აწყობის დონეზე პალიტრიდან დამატებული DIN-მოდულები რელსზე ჯდება —
+    /// კლემები (terminals) ჩანს და მისამართებადია.
+    func testPanelModulesMountOnRail() {
+        let app = launchApp()
+        let panels = app.buttons["menu-panels"]
+        XCTAssertTrue(panels.waitForExistence(timeout: 20))
+        panels.tap()
+        let row = app.buttons["panel-lvl_panel_basic"]
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        row.tap()
+        XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 10))
+        // მთავარი ამომრთველი + 2 ავტომატი + N/PE სალტეები პალიტრიდან
+        app.buttons["palette-cat-supply"].tap()
+        app.buttons["palette-card-main_2p"].tap()
+        app.buttons["palette-cat-protection"].tap()
+        let mcb = app.buttons["palette-card-mcb_b10"]
+        mcb.tap(); mcb.tap()
+        app.buttons["palette-cat-auxiliary"].tap()
+        app.buttons["palette-card-busbar_n"].tap()
+        app.buttons["palette-card-busbar_pe"].tap()
+        // მოდულები რელსზეა — კლემები არსებობს
+        XCTAssertTrue(app.otherElements["term-main_2p_1.Lin"].waitForExistence(timeout: 5),
+                      "მთავარი ამომრთველის კლემა უნდა ჩანდეს რელსზე")
+        XCTAssertTrue(app.otherElements["term-mcb_b10_2.in"].exists, "მეორე MCB-ის კლემა")
+        XCTAssertTrue(app.otherElements["term-busbar_pe_1.0"].exists, "PE-სალტის კლემა")
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "Panel-DIN-modules"; shot.lifetime = .keepAlways; add(shot)
+    }
+
+    /// სადენის შეერთება → კლემა მოუჭერელია → ინსპექცია იძლევა მოჭერის შეცდომას;
+    /// long-press კლემაზე ჭერს (screw-down) და შეცდომა ქრება.
+    func testWireTightenInteractionAndInspection() {
+        let app = launchApp()
+        openLearn(app)
+        let tutorial = tutorialCell(app)
+        XCTAssertTrue(tutorial.waitForExistence(timeout: 10))
+        tutorial.tap()
+        // პალიტრიდან MCB (აკორდეონი: ჯერ დამცავების კატეგორია)
+        let protection = app.buttons["palette-cat-protection"]
+        XCTAssertTrue(protection.waitForExistence(timeout: 10))
+        protection.tap()
+        let mcbCard = app.buttons["palette-card-mcb_b10"]
+        XCTAssertTrue(mcbCard.waitForExistence(timeout: 5))
+        mcbCard.tap()
+        // სადენი: კვების L → MCB-ის შესასვლელი (drag; ნაგულისხმევი ხელსაწყო „სადენი")
+        let from = app.otherElements["term-supply.L"]
+        let to = app.otherElements["term-mcb_b10_1.in"]
+        XCTAssertTrue(from.waitForExistence(timeout: 5), "კვების L კლემა უნდა ჩანდეს")
+        XCTAssertTrue(to.waitForExistence(timeout: 5), "MCB-ის IN კლემა უნდა ჩანდეს")
+        let start = from.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35))
+        let end = to.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35))
+        start.press(forDuration: 0.05, thenDragTo: end)
+        // ახალი შეერთება მოუჭერელია
+        let loose = NSPredicate(format: "value == 'მოსაჭერია'")
+        let looseExp = XCTNSPredicateExpectation(predicate: loose, object: to)
+        XCTAssertEqual(XCTWaiter().wait(for: [looseExp], timeout: 5), .completed,
+                       "ახალი შეერთება მოუჭერელი უნდა იყოს")
+        // ინსპექცია (კვება ჩართული) → მოჭერის შეცდომა ჩანს
+        app.buttons["power-toggle"].tap()
+        app.buttons["inspect"].tap()
+        XCTAssertTrue(app.staticTexts["შედეგი"].waitForExistence(timeout: 10))
+        XCTAssertTrue(staticContaining(app, "არ არის მოჭერილი").waitForExistence(timeout: 5),
+                      "მოუჭერელ კლემაზე ინსპექციამ უნდა იჩივლოს")
+        app.buttons["დახურვა"].tap()
+        // long-press კლემაზე (~0.4წმ+) → მოჭერა
+        to.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35)).press(forDuration: 0.8)
+        let tight = NSPredicate(format: "value == 'მოჭერილია'")
+        let tightExp = XCTNSPredicateExpectation(predicate: tight, object: to)
+        XCTAssertEqual(XCTWaiter().wait(for: [tightExp], timeout: 5), .completed,
+                       "long-press-მა კლემა უნდა მოჭიროს")
+        // ხელახალი ინსპექცია → მოჭერის შეცდომა აღარ არის
+        app.buttons["inspect"].tap()
+        XCTAssertTrue(app.staticTexts["შედეგი"].waitForExistence(timeout: 10))
+        XCTAssertFalse(staticContaining(app, "არ არის მოჭერილი").exists,
+                       "მოჭერის შემდეგ ინსპექციაში მოჭერის შეცდომა აღარ უნდა იყოს")
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "Tighten-interaction"; shot.lifetime = .keepAlways; add(shot)
+    }
+
     /// ელოდება ელემენტის გაქრობას (ანიმაციის დასრულებას).
     private func waitGone(_ element: XCUIElement, _ message: String) {
         let exp = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"),

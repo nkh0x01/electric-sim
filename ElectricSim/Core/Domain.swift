@@ -505,13 +505,15 @@ public struct Wire: Identifiable, Hashable, Codable, Sendable {
     public var conductorType: ConductorType
     public var lengthM: Double
     public var ferruled: Bool          // მრავალწვერა კაბელზე ბუნიკი (ferrule) დადებულია?
+    public var tightened: Bool         // კლემები მოჭერილია? default true — მხოლოდ ახალი
+                                       // ინტერაქტიული შეერთება იწყება მოუჭერელი.
 
     public init(id: String = UUID().uuidString,
                 from: String, to: String,
                 csaMm2: Double, color: WireColor,
                 cableType: CableType = .copper,
                 conductorType: ConductorType = .solid, lengthM: Double = 0,
-                ferruled: Bool = false) {
+                ferruled: Bool = false, tightened: Bool = true) {
         self.id = id
         self.fromPortID = from
         self.toPortID = to
@@ -521,6 +523,7 @@ public struct Wire: Identifiable, Hashable, Codable, Sendable {
         self.conductorType = conductorType
         self.lengthM = lengthM
         self.ferruled = ferruled
+        self.tightened = tightened
     }
 
     // backward-compatible decode (cableType/conductorType/lengthM default-ებით თუ აკლია)
@@ -535,6 +538,8 @@ public struct Wire: Identifiable, Hashable, Codable, Sendable {
         conductorType = try c.decodeIfPresent(ConductorType.self, forKey: .conductorType) ?? .solid
         lengthM = try c.decodeIfPresent(Double.self, forKey: .lengthM) ?? 0
         ferruled = try c.decodeIfPresent(Bool.self, forKey: .ferruled) ?? false
+        // ძველი/წინასწარ აწყობილი ფარები მოჭერილად იტვირთება.
+        tightened = try c.decodeIfPresent(Bool.self, forKey: .tightened) ?? true
     }
 }
 
@@ -564,10 +569,10 @@ public struct Board: Codable, Sendable {
     public mutating func connect(_ a: String, _ b: String, csaMm2: Double,
                                  color: WireColor, cableType: CableType = .copper,
                                  conductorType: ConductorType = .solid, lengthM: Double = 0,
-                                 ferruled: Bool = false) {
+                                 ferruled: Bool = false, tightened: Bool = true) {
         wires.append(Wire(from: a, to: b, csaMm2: csaMm2, color: color,
                           cableType: cableType, conductorType: conductorType,
-                          lengthM: lengthM, ferruled: ferruled))
+                          lengthM: lengthM, ferruled: ferruled, tightened: tightened))
     }
 
     public func component(withPort portID: String) -> Component? {

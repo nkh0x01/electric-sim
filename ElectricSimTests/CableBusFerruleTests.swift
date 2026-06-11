@@ -91,4 +91,42 @@ final class CableBusFerruleTests: XCTestCase {
                   csaMm2: 2.5, color: .brown, conductorType: .solid)
         XCTAssertFalse(CircuitSolver().solve(b).contains(.missingFerrule))
     }
+
+    // MARK: მოჭერის (screw-down) წესი
+    func testLooseTerminalFailsInspection() {
+        var b = Board(phase: .single)
+        let supply = ComponentFactory.supply(id: "supply")
+        let mcb = ComponentFactory.mcb(id: "mcb", ratingA: 16)
+        b.add(supply); b.add(mcb)
+        // ახალი ინტერაქტიული შეერთება — მოუჭერელი → ინსპექცია იჭრება შეტყობინებით
+        b.connect(portID(supply, .L), portID(mcb, .L, side: .input),
+                  csaMm2: 2.5, color: .brown, tightened: false)
+        let r = CircuitSolver().solve(b)
+        XCTAssertTrue(r.contains(.looseTerminal))
+        XCTAssertTrue(r.issues.contains { $0.code == .looseTerminal && $0.message.contains("მოჭერილი") })
+        XCTAssertFalse(r.passed, "მოუჭერელი კლემა — ინსპექცია უნდა ჩაიჭრას")
+
+        // მოჭერის შემდეგ — წესი დაცულია
+        var b2 = b
+        b2.wires[0].tightened = true
+        XCTAssertFalse(CircuitSolver().solve(b2).contains(.looseTerminal))
+    }
+
+    /// წინასწარ აწყობილი/ძველი ფარები მოჭერილია ნაგულისხმევად (connect/decode default).
+    func testDefaultConnectionsAreTightened() throws {
+        var b = Board(phase: .single)
+        let supply = ComponentFactory.supply(id: "supply")
+        let mcb = ComponentFactory.mcb(id: "mcb", ratingA: 16)
+        b.add(supply); b.add(mcb)
+        b.connect(portID(supply, .L), portID(mcb, .L, side: .input), csaMm2: 2.5, color: .brown)
+        XCTAssertTrue(b.wires[0].tightened, "ნაგულისხმევი შეერთება მოჭერილია")
+        XCTAssertFalse(CircuitSolver().solve(b).contains(.looseTerminal))
+
+        // ძველი JSON (tightened ველის გარეშე) → მოჭერილად იშიფრება
+        let json = """
+        {"id":"w1","fromPortID":"a","toPortID":"b","csaMm2":1.5,"color":"brown"}
+        """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(Wire.self, from: json)
+        XCTAssertTrue(decoded.tightened)
+    }
 }

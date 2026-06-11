@@ -332,6 +332,15 @@ public struct CircuitSolver {
             }
         }
 
+        // --- 8c. მოჭერა (screw-down): შეერთებული კლემა მოუჭერელია → ინსპექცია იჭრება ---
+        for wire in board.wires where !wire.tightened {
+            let owners = [wire.fromPortID, wire.toPortID]
+                .compactMap { board.component(withPort: $0)?.id }
+            issues.append(Issue(code: .looseTerminal,
+                                message: "კლემა არ არის მოჭერილი — დაშურუპე შეერთება",
+                                componentIDs: owners))
+        }
+
         // --- 9. სამფაზიანი ბალანსი (Phase 3) ---
         if board.phase == .three {
             let vals: [Double] = [phaseCurrent[.L1] ?? 0, phaseCurrent[.L2] ?? 0, phaseCurrent[.L3] ?? 0]
