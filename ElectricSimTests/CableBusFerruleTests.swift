@@ -112,6 +112,27 @@ final class CableBusFerruleTests: XCTestCase {
         XCTAssertFalse(CircuitSolver().solve(b2).contains(.looseTerminal))
     }
 
+    // MARK: instance-id გენერაცია (კოლიზიის რეგრესია)
+
+    /// წაშლა-დამატების შემდეგ id აღარ მეორდება: nextInstanceID = max სუფიქსი + 1
+    /// (count+1 სქემა tid_2-ის დუბლს ქმნიდა: 2 დადება → tid_1 წაშლა → დამატება).
+    func testNextInstanceIDNeverCollidesAfterRemoval() {
+        var b = Board(phase: .single)
+        b.add(ComponentFactory.mcb(id: "mcb_b10_1", ratingA: 10))
+        b.add(ComponentFactory.mcb(id: "mcb_b10_2", ratingA: 10))
+        b.components.removeAll { $0.id == "mcb_b10_1" }   // შუა ინსტანციის წაშლა
+        let next = b.nextInstanceID(forTemplate: "mcb_b10")
+        XCTAssertEqual(next, "mcb_b10_3", "max+1 — არსებულ mcb_b10_2-ს არ უნდა დაემთხვეს")
+        b.add(ComponentFactory.mcb(id: next, ratingA: 10))
+        XCTAssertEqual(Set(b.components.map(\.id)).count, b.components.count,
+                       "ფარზე id-ები უნიკალური უნდა იყოს")
+        // პრეფიქსით მსგავსი სხვა შაბლონი (mcb_b1 vs mcb_b10) არ ერევა
+        XCTAssertEqual(b.nextInstanceID(forTemplate: "mcb_b1"), "mcb_b1_1")
+        // არა-რიცხვითი სუფიქსები (prebuilt id-ები, მაგ. "B1") უგულებელყოფილია
+        b.add(ComponentFactory.mcb(id: "mcb_b10_x", ratingA: 10))
+        XCTAssertEqual(b.nextInstanceID(forTemplate: "mcb_b10"), "mcb_b10_4")
+    }
+
     /// წინასწარ აწყობილი/ძველი ფარები მოჭერილია ნაგულისხმევად (connect/decode default).
     func testDefaultConnectionsAreTightened() throws {
         var b = Board(phase: .single)

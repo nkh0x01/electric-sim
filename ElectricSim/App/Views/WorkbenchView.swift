@@ -225,11 +225,11 @@ final class WorkbenchModel: ObservableObject {
     @discardableResult
     func add(_ e: PaletteEntry) -> String? {
         guard let t = templates[e.templateId], canAdd(e) else { return nil }
-        let n = placed(e.templateId)
-        let newID = "\(e.templateId)_\(n + 1)"
+        // უნიკალური id ფარის მიხედვით (max+1) — count+1 წაშლის შემდეგ კოლიზიას იძლეოდა.
+        let newID = board.nextInstanceID(forTemplate: e.templateId)
         let inst = t.makeComponent(instanceID: newID, phase: board.phase)
         board.add(inst)
-        placedCounts[e.templateId] = n + 1
+        placedCounts[e.templateId] = placed(e.templateId) + 1
         resetResult()
         return newID
     }

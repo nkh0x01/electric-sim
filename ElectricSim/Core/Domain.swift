@@ -566,6 +566,19 @@ public struct Board: Codable, Sendable {
 
     public mutating func add(_ component: Component) { components.append(component) }
 
+    /// უნიკალური instance-id შაბლონისთვის: "<templateId>_<n>", სადაც n = ფარზე ამ
+    /// შაბლონის მაქს. გამოყენებული სუფიქსი + 1. წაშლა-დამატების შემდეგაც არ
+    /// მეორდება (count+1-ისგან განსხვავებით) — id-კოლიზია სადენების ბოლოებსა და
+    /// მონიშვნას აფუჭებდა.
+    public func nextInstanceID(forTemplate templateId: String) -> String {
+        let prefix = templateId + "_"
+        let maxUsed = components.compactMap { comp -> Int? in
+            guard comp.id.hasPrefix(prefix) else { return nil }
+            return Int(comp.id.dropFirst(prefix.count))
+        }.max() ?? 0
+        return "\(templateId)_\(maxUsed + 1)"
+    }
+
     public mutating func connect(_ a: String, _ b: String, csaMm2: Double,
                                  color: WireColor, cableType: CableType = .copper,
                                  conductorType: ConductorType = .solid, lengthM: Double = 0,
