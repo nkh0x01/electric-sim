@@ -60,7 +60,7 @@ public enum ComponentCategory: String, Codable, Sendable, CaseIterable {
         case .contactor, .relay, .lightSwitch, .selectorSwitch,
              .smartSwitch, .smartRelay, .smartDimmer, .smartMeter, .vfd:
             return .control
-        case .busbar, .wago, .terminalBlock, .emergencyStop, .indicatorLight:
+        case .busbar, .comb, .wago, .terminalBlock, .emergencyStop, .indicatorLight:
             return .auxiliary
         }
     }
@@ -111,6 +111,8 @@ public struct ComponentTemplate: Codable, Identifiable, Sendable {
         case .busbar:
             return ComponentFactory.busbar(id: instanceID, conductor: conductor ?? .L,
                                            slots: poles ?? 4, name: name)
+        case .comb:
+            return ComponentFactory.comb(id: instanceID, teeth: poles ?? 8)
         case .lamp:
             return ComponentFactory.lamp(id: instanceID, powerW: powerW ?? 60,
                                          requiresPE: requiresPE ?? true, leakageMa: leakageMa)
@@ -274,11 +276,13 @@ public struct Level: Codable, Identifiable, Sendable {
     public let category: LevelCategory?   // nil → გამოითვლება
     public let difficulty: Int?           // 1...5 (nil → 1)
     public let tier: LevelTier?           // nil → გამოითვლება (heuristic)
+    public let railCount: Int?            // კარადის DIN-რელსების რაოდენობა (nil → heuristic)
 
     public init(id: String, index: Int, title: String, brief: String, hint: String,
                 phase: Phase, palette: [PaletteEntry], goal: LevelGoal,
                 mode: LevelMode? = nil, prebuilt: PrebuiltBoard? = nil,
-                category: LevelCategory? = nil, difficulty: Int? = nil, tier: LevelTier? = nil) {
+                category: LevelCategory? = nil, difficulty: Int? = nil, tier: LevelTier? = nil,
+                railCount: Int? = nil) {
         self.id = id
         self.index = index
         self.title = title
@@ -292,6 +296,7 @@ public struct Level: Codable, Identifiable, Sendable {
         self.category = category
         self.difficulty = difficulty
         self.tier = tier
+        self.railCount = railCount
     }
 
     public var resolvedMode: LevelMode { mode ?? .build }
@@ -316,6 +321,14 @@ public struct Level: Codable, Identifiable, Sendable {
 
     /// სირთულე 1...5.
     public var resolvedDifficulty: Int { min(5, max(1, difficulty ?? 1)) }
+
+    /// კარადის DIN-რელსების რაოდენობა: explicit (2...4) ან heuristic — დიდი
+    /// პალიტრა მეტ რელსს იღებს; პატარა Learn-ფარები ერთ კომპაქტურ რელსს.
+    public var resolvedRailCount: Int {
+        if let railCount { return min(4, max(2, railCount)) }
+        if palette.count >= 10 { return 3 }
+        return palette.count >= 6 ? 2 : 1
+    }
 
     /// ფარის-აწყობის დონეა? (ააწყობ სრულ consumer unit-ს სწორი თანმიმდევრობით)
     public var isPanelAssembly: Bool { resolvedCategory == .panelAssembly }

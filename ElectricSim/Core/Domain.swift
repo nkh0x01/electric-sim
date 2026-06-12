@@ -132,7 +132,8 @@ public enum ComponentKind: String, Codable, CaseIterable, Sendable {
     case contactor    // კონტაქტორი
     case relay        // რელე
     case lightSwitch  // გამთიშველი/ჩამრთველი
-    case busbar       // სავარცხელი/ნულის/მიწის ზოლი (კონექტორი)
+    case busbar       // ნულის/მიწის/ფაზის სალტე (კონექტორი)
+    case comb         // სავარცხელი სალტე — მომიჯნავე მოდულების L-კლემების ხიდი (კონექტორი)
     case wago         // Wago / კლემა (კონექტორი)
     // დატვირთვები (1 ფაზა)
     case lamp         // განათება
@@ -167,7 +168,9 @@ public enum ComponentKind: String, Codable, CaseIterable, Sendable {
     case battery          // აკუმულატორი
 
     /// კონექტორია? (ყველა ფეხი ერთ კვანძში ერთიანდება)
-    public var isConnector: Bool { self == .busbar || self == .wago || self == .terminalBlock }
+    public var isConnector: Bool {
+        self == .busbar || self == .comb || self == .wago || self == .terminalBlock
+    }
 
     /// 3-ფაზიანი დატვირთვაა?
     public var isThreePhaseLoad: Bool { self == .motor || self == .socket3ph }
@@ -402,6 +405,16 @@ public enum ComponentFactory {
             }
         }
         return Component(id: id, kind: .busbar, name: title, poles: slots, ports: ports)
+    }
+
+    /// სავარცხელი სალტე (comb busbar): `teeth` კბილი, ყველა ერთ კვანძში (L).
+    /// კბილები აპლიკაციის მხრიდან მავთულდება მომიჯნავე მოდულების L-შესასვლელებზე.
+    public static func comb(id: String, teeth: Int) -> Component {
+        let ports = (0..<teeth).map {
+            Port(id: pid(id, "\($0)"), conductor: .L, side: .single, name: "T\($0 + 1)")
+        }
+        return Component(id: id, kind: .comb, name: "სავარცხელი სალტე (comb)",
+                         poles: teeth, ports: ports)
     }
 
     public static func lamp(id: String, powerW: Double = 60, requiresPE: Bool = true, leakageMa: Double? = nil) -> Component {

@@ -376,6 +376,71 @@ final class ElectricSimUITests: XCTestCase {
                       "ფოკუსიდან გამოსვლის შემდეგ ბრიფი ბრუნდება")
     }
 
+    /// კარადა ფიქსირებული რელსებით: ფარის-აწყობის დონეზე ორივე რელსი იხატება
+    /// (ცარიელიც), დატვირთვები კი ქვედა ზოლში.
+    func testCabinetRendersFixedRails() {
+        let app = launchApp()
+        app.buttons["menu-panels"].tap()
+        let row = app.buttons["panel-lvl_panel_basic"]
+        XCTAssertTrue(row.waitForExistence(timeout: 10)); row.tap()
+        XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.otherElements["rail-0"].waitForExistence(timeout: 5), "რელსი 1 უნდა ჩანდეს")
+        XCTAssertTrue(app.otherElements["rail-1"].exists, "ცარიელი რელსი 2-იც ფიქსირებულია")
+        // დატვირთვა → ქვედა ზოლი ჩნდება
+        openPaletteCard(app, header: "palette-cat-load", card: "palette-card-lamp_60").tap()
+        XCTAssertTrue(app.otherElements["load-strip"].waitForExistence(timeout: 5),
+                      "დატვირთვების ზოლი კარადის ძირში")
+    }
+
+    /// რეგრესია (user-reported): მოდულის გადათრევა ქვედა (თუნდაც ცარიელ) რელსზე
+    /// მართლა იქ სვამს მას.
+    func testDragModuleToLowerRail() {
+        let app = launchApp()
+        app.buttons["menu-panels"].tap()
+        let row = app.buttons["panel-lvl_panel_basic"]
+        XCTAssertTrue(row.waitForExistence(timeout: 10)); row.tap()
+        XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 10))
+        // MCB რელს 1-ზე (ზემოდან ივსება)
+        openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-mcb_b10").tap()
+        let face = app.otherElements["face-mcb_b10_1"]
+        XCTAssertTrue(face.waitForExistence(timeout: 5))
+        let beforeY = face.frame.midY
+        // გადათრევა მოძრაობის რეჟიმში (არა-სადენის ხელსაწყო) ცარიელ რელს 2-ზე
+        app.buttons["მულტიმეტრი"].tap()
+        let rail1 = app.otherElements["rail-1"]
+        XCTAssertTrue(rail1.exists)
+        face.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .press(forDuration: 0.15,
+                   thenDragTo: rail1.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.5)),
+                   withVelocity: .slow, thenHoldForDuration: 0.2)
+        let landed = NSPredicate { _, _ in face.frame.midY > beforeY + 50 }
+        let exp = XCTNSPredicateExpectation(predicate: landed, object: nil)
+        XCTAssertEqual(XCTWaiter().wait(for: [exp], timeout: 6), .completed,
+                       "MCB ქვედა რელსზე უნდა ჩამოჯდეს (იყო y=\(beforeY), არის y=\(face.frame.midY))")
+    }
+
+    /// სავარცხელი სალტე ჯდება ორ მომიჯნავე ავტომატზე — ვიზუალი ჩნდება ფარზე.
+    func testCombSeatsAcrossBreakers() {
+        let app = launchApp()
+        app.buttons["menu-panels"].tap()
+        let row = app.buttons["panel-lvl_panel_basic"]
+        XCTAssertTrue(row.waitForExistence(timeout: 10)); row.tap()
+        XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 10))
+        // ორი ავტომატი ერთ რელსზე
+        let mcb = openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-mcb_b10")
+        mcb.tap(); mcb.tap()
+        XCTAssertTrue(app.otherElements["face-mcb_b10_2"].waitForExistence(timeout: 5))
+        // სავარცხელი — დამხმარეების კატეგორიიდან
+        openPaletteCard(app, header: "palette-cat-auxiliary", card: "palette-card-comb_1p").tap()
+        XCTAssertTrue(app.otherElements["comb-comb_1p_1"].waitForExistence(timeout: 5),
+                      "სავარცხელი უნდა ჩაჯდეს ავტომატებზე")
+        // მომხმარებლის სადენების მთვლელი არ გაიზარდა (კბილები ავტო-კავშირებია)
+        XCTAssertTrue(app.buttons["wires-list"].label.contains("0"),
+                      "comb-ის კბილები მომხმარებლის სადენებში არ ითვლება")
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "Comb-seated"; shot.lifetime = .keepAlways; add(shot)
+    }
+
     /// მრავალწვერა სადენი + ბუნიკი: sleeve ჩანს კლემის ჭდეზე (ვიზუალური დასტური).
     func testFerruleSleeveVisible() {
         let app = launchApp()

@@ -476,6 +476,10 @@
       {
         "templateId": "socket_16",
         "max": 1
+      },
+      {
+        "templateId": "comb_1p",
+        "max": 2
       }
     ],
     "goal": {
@@ -484,7 +488,8 @@
         "socket": 1
       },
       "description": "ორივე ხაზი უნდა მუშაობდეს და ფარი სწორი თანმიმდევრობით იყოს აწყობილი."
-    }
+    },
+    "railCount": 2
   },
   {
     "id": "lvl_ac_unit",
@@ -975,6 +980,10 @@
       {
         "templateId": "boiler_2000",
         "max": 1
+      },
+      {
+        "templateId": "comb_1p",
+        "max": 2
       }
     ],
     "goal": {
@@ -984,7 +993,8 @@
         "boiler": 1
       },
       "description": "სამივე ხაზი უნდა მუშაობდეს და ფარი სწორი თანმიმდევრობით იყოს აწყობილი."
-    }
+    },
+    "railCount": 3
   },
   {
     "id": "lvl_three_phase",
@@ -1136,6 +1146,10 @@
       {
         "templateId": "boiler_2000",
         "max": 1
+      },
+      {
+        "templateId": "comb_1p",
+        "max": 2
       }
     ],
     "goal": {
@@ -1145,7 +1159,8 @@
         "boiler": 1
       },
       "description": "ოთხივე ხაზი უნდა მუშაობდეს და ფარი სწორი თანმიმდევრობით იყოს აწყობილი."
-    }
+    },
+    "railCount": 3
   },
   {
     "id": "lvl_3ph_balanced6",
@@ -1590,12 +1605,17 @@
       {
         "templateId": "battery",
         "max": 2
+      },
+      {
+        "templateId": "comb_1p",
+        "max": 2
       }
     ],
     "goal": {
       "poweredLoads": {},
       "description": "თავისუფალი რეჟიმი — მიზანი არ არის."
-    }
+    },
+    "railCount": 4
   },
   {
     "id": "lvl_sandbox_3ph",
@@ -1695,7 +1715,8 @@
     "goal": {
       "poweredLoads": {},
       "description": "თავისუფალი რეჟიმი — მიზანი არ არის."
-    }
+    },
+    "railCount": 4
   },
   {
     "id": "lvl_panel_basic",
@@ -1708,17 +1729,42 @@
     "difficulty": 1,
     "tier": "free",
     "palette": [
-      { "templateId": "main_2p", "max": 1 },
-      { "templateId": "mcb_b10", "max": 2 },
-      { "templateId": "busbar_l", "max": 1 },
-      { "templateId": "busbar_n", "max": 1 },
-      { "templateId": "busbar_pe", "max": 1 },
-      { "templateId": "lamp_60", "max": 2 }
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b10",
+        "max": 2
+      },
+      {
+        "templateId": "busbar_l",
+        "max": 1
+      },
+      {
+        "templateId": "busbar_n",
+        "max": 1
+      },
+      {
+        "templateId": "busbar_pe",
+        "max": 1
+      },
+      {
+        "templateId": "lamp_60",
+        "max": 2
+      },
+      {
+        "templateId": "comb_1p",
+        "max": 2
+      }
     ],
     "goal": {
-      "poweredLoads": { "lamp": 2 },
+      "poweredLoads": {
+        "lamp": 2
+      },
       "description": "ორივე განათების ხაზი უნდა აანთდეს, ფარი სწორი თანმიმდევრობით აწყობილი."
-    }
+    },
+    "railCount": 2
   },
   {
     "id": "lvl_panel_rcd",
@@ -1731,20 +1777,55 @@
     "difficulty": 2,
     "tier": "free",
     "palette": [
-      { "templateId": "main_2p", "max": 1 },
-      { "templateId": "rcd_30", "max": 1 },
-      { "templateId": "busbar_l", "max": 1 },
-      { "templateId": "busbar_n", "max": 1 },
-      { "templateId": "busbar_pe", "max": 1 },
-      { "templateId": "mcb_b10", "max": 1 },
-      { "templateId": "mcb_b16", "max": 1 },
-      { "templateId": "lamp_60", "max": 1 },
-      { "templateId": "socket_16", "max": 1 }
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "rcd_30",
+        "max": 1
+      },
+      {
+        "templateId": "busbar_l",
+        "max": 1
+      },
+      {
+        "templateId": "busbar_n",
+        "max": 1
+      },
+      {
+        "templateId": "busbar_pe",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b10",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 1
+      },
+      {
+        "templateId": "lamp_60",
+        "max": 1
+      },
+      {
+        "templateId": "socket_16",
+        "max": 1
+      },
+      {
+        "templateId": "comb_1p",
+        "max": 2
+      }
     ],
     "goal": {
-      "poweredLoads": { "lamp": 1, "socket": 1 },
+      "poweredLoads": {
+        "lamp": 1,
+        "socket": 1
+      },
       "description": "განათება და როზეტი უნდა მუშაობდეს; როზეტი 30mA RCD-ის ქვემოთ."
-    }
+    },
+    "railCount": 2
   },
   {
     "id": "lvl_panel_rcbo",
@@ -1757,16 +1838,34 @@
     "difficulty": 3,
     "tier": "pro",
     "palette": [
-      { "templateId": "main_2p", "max": 1 },
-      { "templateId": "rcbo_b16_30", "max": 2 },
-      { "templateId": "busbar_n", "max": 1 },
-      { "templateId": "busbar_pe", "max": 1 },
-      { "templateId": "socket_16", "max": 2 }
+      {
+        "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "rcbo_b16_30",
+        "max": 2
+      },
+      {
+        "templateId": "busbar_n",
+        "max": 1
+      },
+      {
+        "templateId": "busbar_pe",
+        "max": 1
+      },
+      {
+        "templateId": "socket_16",
+        "max": 2
+      }
     ],
     "goal": {
-      "poweredLoads": { "socket": 2 },
+      "poweredLoads": {
+        "socket": 2
+      },
       "description": "ორივე როზეტი უნდა მუშაობდეს, თითო ცალკე RCBO-ით დაცული."
-    }
+    },
+    "railCount": 2
   },
   {
     "id": "lvl_panel_3ph",
@@ -1779,15 +1878,34 @@
     "difficulty": 4,
     "tier": "pro",
     "palette": [
-      { "templateId": "main_4p", "max": 1 },
-      { "templateId": "mpcb_16", "max": 1 },
-      { "templateId": "busbar_pe", "max": 1 },
-      { "templateId": "motor_3ph", "max": 1, "csaOptions": [2.5, 4] }
+      {
+        "templateId": "main_4p",
+        "max": 1
+      },
+      {
+        "templateId": "mpcb_16",
+        "max": 1
+      },
+      {
+        "templateId": "busbar_pe",
+        "max": 1
+      },
+      {
+        "templateId": "motor_3ph",
+        "max": 1,
+        "csaOptions": [
+          2.5,
+          4
+        ]
+      }
     ],
     "goal": {
-      "poweredLoads": { "motor": 1 },
+      "poweredLoads": {
+        "motor": 1
+      },
       "description": "სამფაზა ძრავა უნდა მუშაობდეს, ფაზები დაბალანსებული.",
       "requireBalanced": true
-    }
+    },
+    "railCount": 3
   }
 ]

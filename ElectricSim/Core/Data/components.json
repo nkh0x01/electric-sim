@@ -120,6 +120,14 @@
     "category": "auxiliary"
   },
   {
+    "id": "comb_1p",
+    "kind": "comb",
+    "name": "სავარცხელი სალტე (comb)",
+    "poles": 8,
+    "priceGEL": 9,
+    "category": "auxiliary"
+  },
+  {
     "id": "busbar_n",
     "kind": "busbar",
     "name": "ნულის სალტე (N-bus)",

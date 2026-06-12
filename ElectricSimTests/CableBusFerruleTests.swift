@@ -112,6 +112,68 @@ final class CableBusFerruleTests: XCTestCase {
         XCTAssertFalse(CircuitSolver().solve(b2).contains(.looseTerminal))
     }
 
+    // MARK: სავარცხელი სალტე (comb) — Stage 3
+
+    /// სავარცხელი ხიდავს მომიჯნავე ავტომატების L-შესასვლელებს: mcb2 მხოლოდ
+    /// comb-ით იკვებება და მისი ნათურა მაინც ანთია (junction node).
+    func testCombBridgesAdjacentBreakerInputs() {
+        var b = Board(phase: .single)
+        b.add(ComponentFactory.supply(id: "supply"))
+        b.add(ComponentFactory.mainSwitch(id: "main"))
+        b.add(ComponentFactory.mcb(id: "mcb1", ratingA: 10))
+        b.add(ComponentFactory.mcb(id: "mcb2", ratingA: 10))
+        b.add(ComponentFactory.lamp(id: "lamp1"))
+        b.add(ComponentFactory.lamp(id: "lamp2"))
+        b.add(ComponentFactory.comb(id: "comb", teeth: 8))
+        // L: კვება → მთავარი → mcb1; mcb2-ის შესასვლელი მხოლოდ სავარცხელითაა ნაკვები
+        b.connect("supply.L", "main.Lin", csaMm2: 2.5, color: .brown)
+        b.connect("main.Lout", "mcb1.in", csaMm2: 2.5, color: .brown)
+        b.connect("comb.0", "mcb1.in", csaMm2: 10, color: .brown)
+        b.connect("comb.1", "mcb2.in", csaMm2: 10, color: .brown)
+        b.connect("mcb1.out", "lamp1.L", csaMm2: 1.5, color: .brown)
+        b.connect("mcb2.out", "lamp2.L", csaMm2: 1.5, color: .brown)
+        // N/PE ორივე ნათურას
+        b.connect("supply.N", "main.Nin", csaMm2: 2.5, color: .blue)
+        b.connect("main.Nout", "lamp1.N", csaMm2: 1.5, color: .blue)
+        b.connect("main.Nout", "lamp2.N", csaMm2: 1.5, color: .blue)
+        b.connect("supply.PE", "lamp1.PE", csaMm2: 1.5, color: .yellowGreen)
+        b.connect("supply.PE", "lamp2.PE", csaMm2: 1.5, color: .yellowGreen)
+
+        let r = CircuitSolver().solve(b, energize: true)
+        XCTAssertTrue(r.passed, "შეცდომები: \(r.errors.map(\.code))")
+        XCTAssertEqual(r.loadStates.filter(\.isPowered).count, 2,
+                       "ორივე ნათურა ანთია — mcb2 სავარცხელით მიეწოდება")
+        // ფარის აწყობის ვალიდაციაც იღებს comb-ს მკვებავ ზოლად
+        XCTAssertFalse(PanelAssembly.validate(b).contains { $0.code == .panelBusbarFeed },
+                       "comb-ით ნაკვები ავტომატები ვალიდურია (panelBusbarFeed არ ჩნდება)")
+    }
+
+    /// comb_1p შაბლონი იტვირთება, კონექტორია და უფასო ნაკრებშია.
+    func testCombTemplateLoads() throws {
+        let templates = try GameData.loadTemplates()
+        let t = try XCTUnwrap(templates["comb_1p"])
+        XCTAssertEqual(t.kind, .comb)
+        XCTAssertTrue(ComponentKind.comb.isConnector)
+        XCTAssertTrue(ComponentGating.isBasicFree(.comb), "1-ფაზიანი სავარცხელი უფასოა")
+        let comp = t.makeComponent(instanceID: "comb_1p_1", phase: .single)
+        XCTAssertEqual(comp.ports.count, 8, "8 კბილი")
+    }
+
+    /// კარადის რელსების რაოდენობა: explicit (clamp 2...4) და heuristic.
+    func testRailCountResolution() throws {
+        let levels = try GameData.loadLevels()
+        XCTAssertEqual(levels.first { $0.id == "lvl_panel_basic" }?.resolvedRailCount, 2)
+        XCTAssertEqual(levels.first { $0.id == "lvl_panel_full" }?.resolvedRailCount, 3)
+        XCTAssertEqual(levels.first { $0.id == "lvl_sandbox_1ph" }?.resolvedRailCount, 4)
+        XCTAssertEqual(levels.first { $0.id == "lvl_tutorial" }?.resolvedRailCount, 1,
+                       "heuristic: პატარა Learn-პალიტრა → 1 კომპაქტური რელსი")
+        let jobs = try GameData.loadJobs()
+        XCTAssertEqual(jobs.first { $0.id == "master_hotel_floor_system" }?.makeLevel()
+            .resolvedRailCount, 4, "რთული სამუშაო → 4 რელსი")
+        XCTAssertEqual(jobs.first { $0.id == "job_first_lamp" }?.makeLevel()
+            .resolvedRailCount, 2, "მარტივი სამუშაო → 2 რელსი")
+    }
+
     // MARK: instance-id გენერაცია (კოლიზიის რეგრესია)
 
     /// წაშლა-დამატების შემდეგ id აღარ მეორდება: nextInstanceID = max სუფიქსი + 1

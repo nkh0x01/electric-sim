@@ -151,7 +151,9 @@ public struct Job: Codable, Identifiable, Sendable {
         return Level(id: "career_\(id)", index: 0, title: georgianTitle,
                      brief: jobBrief, hint: "", phase: resolvedPhase,
                      palette: palette, goal: goal, mode: .build,
-                     category: .tutorial, difficulty: difficulty, tier: tier)
+                     category: .tutorial, difficulty: difficulty, tier: tier,
+                     // დიდი სამუშაო — მეტი რელსი კარადაში
+                     railCount: resolvedDifficulty >= 5 ? 4 : (resolvedDifficulty >= 3 ? 3 : 2))
     }
 }
 

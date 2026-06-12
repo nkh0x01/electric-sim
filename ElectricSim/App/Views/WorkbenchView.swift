@@ -160,6 +160,7 @@ final class WorkbenchModel: ObservableObject {
         guard !didConfigure else { return }
         didConfigure = true
         board = level.initialBoard(templates: t)
+        assignDefaultRails()
         startedAt = Date()
         mistakes = 0
         resetResult()
@@ -229,6 +230,19 @@ final class WorkbenchModel: ObservableObject {
         let newID = board.nextInstanceID(forTemplate: e.templateId)
         let inst = t.makeComponent(instanceID: newID, phase: board.phase)
         board.add(inst)
+        if inst.kind == .comb {
+            // სავარცხელი — დაუყოვნებლივ ჯდება ავტომატების რანზე; ვერ ჩაჯდა → უკან.
+            guard seatComb(newID) else {
+                board.components.removeAll { $0.id == newID }
+                inspectNotice = "სავარცხელს სჭირდება მინ. 2 მომიჯნავე ავტომატი ერთ რელსზე"
+                return nil
+            }
+        } else if Self.isRailMounted(inst) {
+            // ახალი მოდული — ზემოდან ქვემოთ ივსება (რეალური მონტაჟის წესით):
+            // პირველი რელსი, რომელზეც ჯერ კიდევ არის ადგილი.
+            let target = (0..<railCount).first { railMembers($0).count < 6 } ?? (railCount - 1)
+            railOf[newID] = target
+        }
         placedCounts[e.templateId] = placed(e.templateId) + 1
         resetResult()
         return newID
@@ -241,20 +255,27 @@ final class WorkbenchModel: ObservableObject {
         let portIDs = Set(comp.ports.map { $0.id })
         board.wires.removeAll { portIDs.contains($0.fromPortID) || portIDs.contains($0.toPortID) }
         board.components.removeAll { $0.id == id }
+        railOf[id] = nil
         if let tid = templates.keys.first(where: { id.hasPrefix($0 + "_") }) {
             placedCounts[tid] = max(0, (placedCounts[tid] ?? 1) - 1)
         }
+        reseatCombs()
         resetResult()
     }
 
     func removeLastWire() {
-        guard let w = board.wires.last else { return }
+        // ბოლო მომხმარებლის სადენი — comb-ის ავტო-კბილებს არ ვეხებით.
+        guard let w = userWires.last else { return }
         if blockedByLiveEdit([w.fromPortID, w.toPortID]) { return }
-        board.wires.removeLast(); resetResult()
+        board.wires.removeAll { $0.id == w.id }
+        resetResult()
     }
     func clearWires() {
-        if blockedByLiveEdit(board.wires.flatMap { [$0.fromPortID, $0.toPortID] }) { return }
-        board.wires.removeAll(); resetResult()
+        let mine = userWires
+        if blockedByLiveEdit(mine.flatMap { [$0.fromPortID, $0.toPortID] }) { return }
+        let mineIDs = Set(mine.map(\.id))
+        board.wires.removeAll { mineIDs.contains($0.id) }
+        resetResult()
     }
 
     /// რედაქტირების შემდეგ ფორმალური შედეგი უქმდება. ჩართულ ფარზე ჩუმი solve
@@ -367,6 +388,7 @@ final class WorkbenchModel: ObservableObject {
         let target = max(0, min(comps.count, firstIdx + shift))
         comps.insert(contentsOf: moving, at: target)
         board.components = comps
+        reseatCombs()   // ჯგუფურმა გადაადგილებამ შეიძლება სავარცხელის რანი დაარღვიოს
         resetResult()
     }
 
@@ -383,6 +405,136 @@ final class WorkbenchModel: ObservableObject {
         comps.insert(comp, at: target)
         board.components = comps
         resetResult()
+    }
+
+    // MARK: - კარადის ფიქსირებული DIN-რელსები (Stage 3)
+
+    /// კომპონენტი → რელსის ინდექსი. დატვირთვები რელსზე არ ჯდება (ქვედა ზოლი).
+    @Published var railOf: [String: Int] = [:]
+
+    var railCount: Int { level.resolvedRailCount }
+
+    /// DIN-რელსზე მჯდომი მოწყობილობაა? (დატვირთვები ქვედა ზოლში იხატება)
+    static func isRailMounted(_ c: Component) -> Bool { !c.kind.isLoad }
+
+    func rail(of comp: Component) -> Int {
+        min(max(railOf[comp.id] ?? 0, 0), railCount - 1)
+    }
+
+    /// რელსის წევრები board.components-ის რიგით (within-rail order). comb ცალკე იხატება.
+    func railMembers(_ r: Int) -> [Component] {
+        board.components.filter { Self.isRailMounted($0) && $0.kind != .comb && rail(of: $0) == r }
+    }
+    var loadStrip: [Component] { board.components.filter { $0.kind.isLoad } }
+    var combs: [Component] { board.components.filter { $0.kind == .comb } }
+
+    /// საწყისი განაწილება: რელს-მოწყობილობები თანმიმდევრობით ივსება რელსებზე
+    /// (კვება ზედა-მარცხნივ); დატვირთვები ზოლში.
+    private func assignDefaultRails() {
+        railOf.removeAll()
+        let mounted = board.components.filter { Self.isRailMounted($0) && $0.kind != .comb }
+        guard !mounted.isEmpty else { return }
+        let perRail = max(4, Int(ceil(Double(mounted.count) / Double(railCount))))
+        for (i, comp) in mounted.enumerated() {
+            railOf[comp.id] = min(i / perRail, railCount - 1)
+        }
+    }
+
+    /// გადატანა კონკრეტულ რელსზე, `afterID`-ის შემდეგ (nil → რელსის ბოლოში).
+    /// ცარიელ რელსზეც მუშაობს — ეს ასწორებს „ქვედა რიგზე ვერ გადამაქვს" შეცდომას.
+    func moveToRail(_ id: String, rail r: Int, afterID: String?) {
+        guard let comp = board.components.first(where: { $0.id == id }) else { return }
+        if blockedByLiveEdit(comp.ports.map { $0.id }) { return }
+        let target = min(max(r, 0), railCount - 1)
+        if comp.kind == .comb {
+            // სავარცხელი — გადაჯდომა სხვა რელსზე ხელახალი ჩასმით
+            if !seatComb(id, preferRail: target) {
+                inspectNotice = "ამ რელსზე სავარცხელს 2 მომიჯნავე ავტომატი სჭირდება"
+            }
+            resetResult()
+            return
+        }
+        railOf[id] = target
+        var comps = board.components
+        comps.removeAll { $0.id == id }
+        if let afterID, let aIdx = comps.firstIndex(where: { $0.id == afterID }) {
+            comps.insert(comp, at: aIdx + 1)
+        } else {
+            comps.append(comp)
+        }
+        board.components = comps
+        reseatCombs()
+        resetResult()
+    }
+
+    // MARK: - სავარცხელი სალტე (comb) — ჩასმა/გადაჯდომა
+
+    /// comb-სადენია? (კბილების ავტო-კავშირები — მომხმარებლის სიაში არ ჩანს)
+    func isCombWire(_ w: Wire) -> Bool {
+        combs.contains { w.fromPortID.hasPrefix($0.id + ".") || w.toPortID.hasPrefix($0.id + ".") }
+    }
+    /// მომხმარებლის სადენები (comb-ის ავტო-კავშირების გარეშე).
+    var userWires: [Wire] { board.wires.filter { !isCombWire($0) } }
+
+    /// სავარცხელის ჩასმა: რელსზე ავტომატების ყველაზე გრძელ უწყვეტ მონაკვეთზე
+    /// (მინ. 2) კბილები მაგრდება L-შესასვლელებზე tightened-სადენებით.
+    /// სხვა სავარცხელის უკვე დაკავებული ავტომატები არ ითვლება (არ ჯდება ზედმეტად);
+    /// ცოცხალ კლემებზე ჩასმა იბლოკება შოკით (live-wire წესი ვრცელდება).
+    @discardableResult
+    func seatComb(_ combID: String, preferRail: Int? = nil) -> Bool {
+        guard let comb = board.components.first(where: { $0.id == combID }) else { return false }
+        // ძველი კბილ-კავშირების მოხსნა
+        board.wires.removeAll {
+            $0.fromPortID.hasPrefix(combID + ".") || $0.toPortID.hasPrefix(combID + ".")
+        }
+        // სხვა სავარცხელების მიერ დაკავებული შესასვლელები
+        let otherCombIDs = combs.map(\.id).filter { $0 != combID }
+        let claimed = Set(board.wires.compactMap { w -> String? in
+            guard otherCombIDs.contains(where: { w.fromPortID.hasPrefix($0 + ".") }) else { return nil }
+            return w.toPortID
+        })
+        var railOrder = Array(0..<railCount)
+        if let p = preferRail { railOrder = [p] + railOrder.filter { $0 != p } }
+        for r in railOrder {
+            // ყველაზე გრძელი უწყვეტი თავისუფალი ავტომატების რანი ამ რელსზე
+            var best: [Component] = [], current: [Component] = []
+            for m in railMembers(r) {
+                let inPort = m.ports.first { $0.side == .input && $0.conductor.isHot }
+                if m.kind.isBreaker, let inPort, !claimed.contains(inPort.id) {
+                    current.append(m)
+                    if current.count > best.count { best = current }
+                } else {
+                    current = []
+                }
+            }
+            guard best.count >= 2 else { continue }
+            let span = Array(best.prefix(comb.ports.count))
+            let spanPorts = span.compactMap { m in
+                m.ports.first { $0.side == .input && $0.conductor.isHot }?.id
+            }
+            // ცოცხალ კლემებზე სავარცხელის დასმა = შოკი (de-energize ჯერ!)
+            if blockedByLiveEdit(spanPorts) { return false }
+            for (i, portID) in spanPorts.enumerated() {
+                board.connect("\(combID).\(i)", portID, csaMm2: 10,
+                              color: .brown, tightened: true)
+            }
+            railOf[combID] = r
+            return true
+        }
+        return false
+    }
+
+    /// ყველა სავარცხელის ხელახალი ჩასმა (გადაადგილების/წაშლის შემდეგ).
+    /// თუ სავარცხელს ადგილი აღარ აქვს — იხსნება ფარიდან.
+    func reseatCombs() {
+        for comb in combs where !seatComb(comb.id, preferRail: railOf[comb.id]) {
+            board.components.removeAll { $0.id == comb.id }
+            railOf[comb.id] = nil
+            if let tid = templates.keys.first(where: { comb.id.hasPrefix($0 + "_") }) {
+                placedCounts[tid] = max(0, (placedCounts[tid] ?? 1) - 1)
+            }
+            inspectNotice = "სავარცხელი მოიხსნა — აღარ აქვს 2 მომიჯნავე ავტომატი ერთ რელსზე"
+        }
     }
 
     /// შემოწმებაზე გაგზავნა — საჭიროა ჩართული კვება (live ფარი). გამორთულზე →
@@ -458,6 +610,22 @@ struct CardFrameKey: PreferenceKey {
     }
 }
 
+/// კარადის ფიქსირებული DIN-რელსების ჩარჩოები "board" სივრცეში (drop-სამიზნეები).
+struct RailFrameKey: PreferenceKey {
+    static let defaultValue: [Int: CGRect] = [:]
+    static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
+        value.merge(nextValue()) { $1 }
+    }
+}
+
+/// ყველაზე განიერი რელსის ბუნებრივი სიგანე — ყველა რელსი თანაბარ სიგანეზე გაიწელოს.
+struct RailWidthKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 /// "board" — საერთო კოორდინატთა სივრცე drag-ისა და ფეხების პოზიციებისთვის.
 let kBoardSpace = "board"
 
@@ -480,10 +648,17 @@ struct WorkbenchView: View {
     // პალიტრის აკორდეონი — ერთდროულად მხოლოდ ერთი კატეგორიაა გახსნილი.
     @State private var expandedCategory: ComponentCategory?
     @State private var didInitPalette = false
-    // ჩაჭდობა (snap-in): გადათრევისას სამიზნე სლოტის ჰაილაითი + დაჯდომის პულსი.
-    private struct DropSlot: Equatable { let anchor: String; let after: Bool }
+    // ჩაჭდობა (snap-in): გადათრევისას სამიზნე რელსის სლოტის ჰაილაითი + დაჯდომის პულსი.
+    private struct DropSlot: Equatable {
+        let rail: Int           // -1 → დატვირთვების ზოლი (anchor-რეჟიმი)
+        let afterID: String?
+        let x: CGFloat
+    }
     @State private var dropSlot: DropSlot?
     @State private var snappedID: String?
+    @State private var railFrames: [Int: CGRect] = [:]
+    @State private var cabinetInnerWidth: CGFloat = 0   // ყველაზე განიერი რელსი (სინქრონი)
+    @State private var didFitCamera = false             // კარადა-პირველი კადრირება (ერთხელ)
     // ფარი-პირველი განლაგება: ბრიფი ერთ ხაზად (გასაშლელით) + ფოკუს-რეჟიმი.
     @State private var briefExpanded = false
     @State private var focusMode = false
@@ -500,32 +675,38 @@ struct WorkbenchView: View {
     @State private var moveID: String?
     @State private var dragCurrent: CGPoint = .zero
     @State private var isZooming = false
-    @State private var railWidth: CGFloat = 0   // ეკრანის სიგანე — რიგზე ბარათების რაოდენობისთვის
+    @State private var railWidth: CGFloat = 0   // ფარის ზონის სიგანე
+    @State private var railAreaSize: CGSize = .zero   // ფარის ზონის ზომა (კადრირებისთვის)
 
-    // MARK: მრავალრიგიანი DIN რელსი
-    /// რამდენი ბარათი ეტევა ერთ რიგზე (ადაპტირდება სიგანეზე; ცარიელ ფარზე 4).
-    private var cardsPerRow: Int {
-        let cellW: CGFloat = 132
-        guard railWidth > 0 else { return 4 }
-        return max(3, min(8, Int((railWidth - 80) / cellW)))
-    }
-    /// board.components დაყოფილი რიგებად (wrapping).
-    private var rows: [[Component]] {
-        let comps = model.board.components
-        let n = max(1, cardsPerRow)
-        return stride(from: 0, to: comps.count, by: n).map {
-            Array(comps[$0 ..< min($0 + n, comps.count)])
+    // MARK: კარადის ფიქსირებული რელსები — drop-სამიზნე
+    /// drop-სამიზნე: უახლოესი ფიქსირებული რელსი (y-ით) + ჩასმის ადგილი წევრებს
+    /// შორის (x-ით). ცარიელი რელსიც ვალიდური სამიზნეა — სწორედ ეს ასწორებს
+    /// „ავტომატი ქვედა რიგზე ვერ გადამაქვს" შეცდომას. დატვირთვებს რელსი არ
+    /// ეხებათ — ისინი ზოლში anchor-ით ლაგდება (rail == -1).
+    private func railDropTarget(for id: String, at p: CGPoint) -> DropSlot? {
+        guard let comp = model.board.components.first(where: { $0.id == id }) else { return nil }
+        if comp.kind.isLoad {
+            // დატვირთვა: ზოლის შიგნით x-ით დალაგება (afterID nil → ზოლის თავში)
+            let members = model.loadStrip.filter { $0.id != id }
+            guard !members.isEmpty else { return nil }
+            let after = members.last { (componentFrames[$0.id]?.midX ?? -.greatestFiniteMagnitude) < p.x }
+            let x: CGFloat
+            if let after, let f = componentFrames[after.id] { x = f.maxX + 14 }
+            else if let f = componentFrames[members[0].id] { x = f.minX - 14 }
+            else { x = p.x }
+            return DropSlot(rail: -1, afterID: after?.id, x: x)
         }
-    }
-    /// drop წერტილთან უახლოესი (სხვა) ბარათი + მისი წინ/შემდეგ — რიგზე/რიგებს შორის გადასატანად.
-    private func dropAnchor(for id: String, at p: CGPoint) -> (anchor: String, after: Bool)? {
-        var best: String?; var bestD = CGFloat.greatestFiniteMagnitude; var bestMidX: CGFloat = 0
-        for (cid, f) in componentFrames where cid != id {
-            let d = hypot(f.midX - p.x, f.midY - p.y)
-            if d < bestD { bestD = d; best = cid; bestMidX = f.midX }
-        }
-        guard let anchor = best else { return nil }
-        return (anchor, p.x > bestMidX)
+        // DIN-მოწყობილობა/სავარცხელი: უახლოესი რელსი
+        guard let (r, frame) = railFrames.min(by: {
+            abs($0.value.midY - p.y) < abs($1.value.midY - p.y)
+        }) else { return nil }
+        let members = model.railMembers(r).filter { $0.id != id }
+        let after = members.last { (componentFrames[$0.id]?.midX ?? -.greatestFiniteMagnitude) < p.x }
+        let x: CGFloat
+        if let after, let f = componentFrames[after.id] { x = f.maxX + 14 }
+        else if let first = members.first, let f = componentFrames[first.id] { x = f.minX - 14 }
+        else { x = frame.minX + 40 }   // ცარიელი რელსი
+        return DropSlot(rail: r, afterID: after?.id, x: x)
     }
 
     /// პალიტრის ელემენტი ჩაკეტილია თუ არა. ფასიანობა იმართება დონის tier-ით —
@@ -745,12 +926,11 @@ struct WorkbenchView: View {
                         + "moveID=\(moveID ?? "-")")
                     #endif
                 }
-                if dragMode == .wire { dragCurrent = toBoard(v.location) }
-                // გადატანისას — სამიზნე სლოტის ჰაილაითი (სად ჩაჯდება).
+                if dragMode == .wire || dragMode == .move { dragCurrent = toBoard(v.location) }
+                // გადატანისას — სამიზნე რელსის სლოტის ჰაილაითი (სად ჩაჯდება).
                 if dragMode == .move, let id = moveID,
                    !(model.selection.contains(id) && model.selection.count > 1) {
-                    dropSlot = dropAnchor(for: id, at: toBoard(v.location))
-                        .map { DropSlot(anchor: $0.anchor, after: $0.after) }
+                    dropSlot = railDropTarget(for: id, at: toBoard(v.location))
                 }
             }
             .onEnded { v in
@@ -767,9 +947,17 @@ struct WorkbenchView: View {
                             let shift = Int((v.translation.width / (140 * max(zoom, 0.01))).rounded())
                             model.moveComponents(model.selection, by: shift)
                             snapPulse(id)
-                        } else if let drop = dropAnchor(for: id, at: toBoard(v.location)) {
-                            // ერთი კომპონენტი — ნებისმიერ რიგზე/პოზიციაზე (drop-თან უახლოეს ბარათთან).
-                            model.moveComponent(id, relativeTo: drop.anchor, after: drop.after)
+                        } else if let drop = railDropTarget(for: id, at: toBoard(v.location)) {
+                            if drop.rail >= 0 {
+                                // DIN-მოწყობილობა — ნებისმიერ (ცარიელ) რელსზეც ჯდება.
+                                model.moveToRail(id, rail: drop.rail, afterID: drop.afterID)
+                            } else if let anchor = drop.afterID {
+                                // დატვირთვა — ზოლში anchor-ის შემდეგ
+                                model.moveComponent(id, relativeTo: anchor, after: true)
+                            } else if let first = model.loadStrip.first(where: { $0.id != id }) {
+                                // დატვირთვა — ზოლის თავში
+                                model.moveComponent(id, relativeTo: first.id, after: false)
+                            }
                             snapPulse(id)                          // ჩაჭდობა: პულსი + კლიკი
                         }
                     }
@@ -1040,8 +1228,14 @@ struct WorkbenchView: View {
         .frame(maxWidth: .infinity, minHeight: 100, maxHeight: .infinity)
         .background(GeometryReader { g in
             Color.clear
-                .onAppear { railWidth = g.size.width }
-                .onChange(of: g.size.width) { railWidth = $0 }
+                .onAppear {
+                    railWidth = g.size.width; railAreaSize = g.size
+                    fitCabinetIfNeeded(content: lastCabinetContent)
+                }
+                .onChange(of: g.size) {
+                    railWidth = $0.width; railAreaSize = $0
+                    fitCabinetIfNeeded(content: lastCabinetContent)
+                }
         })
         .contentShape(Rectangle())
         .clipped()
@@ -1130,61 +1324,136 @@ struct WorkbenchView: View {
     }
 
     private var boardContent: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            let layout = rows
-            ForEach(layout.indices, id: \.self) { r in
-                HStack(alignment: .top, spacing: 28) {
-                    ForEach(layout[r]) { comp in
-                        ComponentCardView(
-                            component: comp,
-                            selectedPort: model.selectedPort,
-                            loadState: model.result?.state(for: comp.id),
-                            isSelected: model.selection.contains(comp.id),
-                            isLive: { model.isLive($0) },
-                            onTapPort: { model.tapPort($0) },
-                            onLongPress: { model.toggleSelect(comp.id) },
-                            onDelete: comp.id == "supply" ? nil : { model.removeComponent(comp.id) },
-                            // ბერკეტი: ჩართულზე ზევით; გაგდებაზე (რომელიმე trip) — ვარდება.
-                            leverUp: model.energized
-                                && !(model.result?.anyTrip ?? false),
-                            isSnapped: snappedID == comp.id,
-                            isUntightened: { model.isPortUntightened($0) },
-                            hasWire: { pid in
-                                model.board.wires.contains { $0.fromPortID == pid || $0.toPortID == pid }
-                            },
-                            onTightenPort: { pid in
-                                if model.tightenPort(pid) { GameFeedback.ratchet() }
-                            },
-                            wireInfo: { pid in
-                                guard let w = model.board.wires.first(where: {
-                                    $0.fromPortID == pid || $0.toPortID == pid
-                                }) else { return nil }
-                                return TerminalWireInfo(color: w.color.swiftUIColor,
-                                                        ferruled: w.ferruled,
-                                                        stranded: w.conductorType == .stranded)
-                            }
-                        )
-                    }
-                }
-                .padding(.horizontal, 12).padding(.vertical, 12)
-                .background(dinRailBackground)
+        VStack(alignment: .leading, spacing: 18) {
+            // ფიქსირებული DIN-რელსები — ცარიელიც drop-სამიზნეა (ქვედა რიგზე გადატანა მუშაობს)
+            ForEach(0..<model.railCount, id: \.self) { r in
+                railRow(r)
             }
+            // დატვირთვების თარო — კარადის ძირში
+            if !model.loadStrip.isEmpty { loadStripRow }
         }
-        // ფარის აწყობის რეჟიმში — მსუბუქი კარადის (enclosure) ჩარჩო ფარის გარშემო.
-        .padding(model.level.isPanelAssembly ? 14 : 0)
-        .background {
-            if model.level.isPanelAssembly {
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(Color(white: 0.93).opacity(0.55))
-                    .overlay(RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color(white: 0.65), lineWidth: 1.5))
-            }
-        }
-        .padding(model.level.isPanelAssembly ? 26 : 40)
+        .padding(20)
+        .background(cabinetBody)   // კარადის კორპუსი კუთხის ხრახნებით
+        .padding(28)
         .coordinateSpace(name: kBoardSpace)
         .overlay { wireOverlay }
+        .overlay { combOverlay }   // სავარცხელები მოდულების ზემოდან
+        .background(GeometryReader { g in
+            Color.clear
+                .onAppear { fitCabinetIfNeeded(content: g.size) }
+                .onChange(of: g.size) { fitCabinetIfNeeded(content: $0) }
+        })
         .onPreferenceChange(PortFrameKey.self) { portPoints = $0 }
         .onPreferenceChange(CardFrameKey.self) { componentFrames = $0 }
+        .onPreferenceChange(RailFrameKey.self) { railFrames = $0 }
+        .onPreferenceChange(RailWidthKey.self) { cabinetInnerWidth = max(cabinetInnerWidth, $0) }
+    }
+
+    /// ერთი ფიქსირებული DIN-რელსი: წევრები მარცხნიდან, ცარიელიც ხილული და მიზანშეწონილი.
+    private func railRow(_ r: Int) -> some View {
+        HStack(alignment: .top, spacing: 24) {
+            ForEach(model.railMembers(r)) { comp in card(for: comp) }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 12)
+        .frame(minHeight: 136, alignment: .leading)
+        .background(GeometryReader { g in
+            Color.clear.preference(key: RailWidthKey.self, value: g.size.width)
+        })
+        .frame(minWidth: max(560, cabinetInnerWidth), alignment: .leading)
+        .background(dinRailBackground)
+        .background(GeometryReader { g in
+            Color.clear.preference(key: RailFrameKey.self,
+                                   value: [r: g.frame(in: .named(kBoardSpace))])
+        })
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("rail-\(r)")
+    }
+
+    /// დატვირთვების ზოლი კარადის ქვედა ნაწილში (რელსები DIN-მოწყობილობებისთვისაა).
+    private var loadStripRow: some View {
+        HStack(alignment: .top, spacing: 24) {
+            ForEach(model.loadStrip) { comp in card(for: comp) }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 10)
+        .frame(minWidth: max(560, cabinetInnerWidth), alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.gray.opacity(0.06))
+                .overlay(RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.gray.opacity(0.18), lineWidth: 1))
+        )
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("load-strip")
+    }
+
+    /// კარადის კორპუსი: ღია ლითონის კედელი, ჩარჩო და კუთხის ხრახნების მინიშნება.
+    private var cabinetBody: some View {
+        RoundedRectangle(cornerRadius: 16)
+            .fill(LinearGradient(colors: [Color(white: 0.97), Color(white: 0.90)],
+                                 startPoint: .top, endPoint: .bottom))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(white: 0.60), lineWidth: 1.6))
+            .overlay(alignment: .topLeading) { cabinetScrew }
+            .overlay(alignment: .topTrailing) { cabinetScrew }
+            .overlay(alignment: .bottomLeading) { cabinetScrew }
+            .overlay(alignment: .bottomTrailing) { cabinetScrew }
+            .shadow(color: .black.opacity(0.18), radius: 5, x: 0, y: 3)
+    }
+    private var cabinetScrew: some View {
+        ZStack {
+            Circle().fill(ModuleStyle.screw).frame(width: 8, height: 8)
+                .overlay(Circle().stroke(Color.black.opacity(0.3), lineWidth: 0.5))
+            Rectangle().fill(Color.black.opacity(0.6)).frame(width: 5.5, height: 1.2)
+                .rotationEffect(.degrees(45))
+        }
+        .padding(7)
+        .allowsHitTesting(false)
+    }
+
+    /// კარადა-პირველი კადრირება (ფარის აწყობა): მთელი კარადა ეტევა ფარის ზონაში.
+    /// content/area ზომები სხვადასხვა დროს ჩნდება — ორივე მხრიდან ვცდით (race-მდგრადი).
+    @State private var lastCabinetContent: CGSize = .zero
+    private func fitCabinetIfNeeded(content: CGSize) {
+        if content.width > 50 { lastCabinetContent = content }
+        guard model.level.isPanelAssembly, !didFitCamera,
+              railAreaSize.width > 50, railAreaSize.height > 50,
+              lastCabinetContent.width > 50, lastCabinetContent.height > 50 else { return }
+        didFitCamera = true
+        let fit = min(railAreaSize.width / lastCabinetContent.width,
+                      railAreaSize.height / lastCabinetContent.height, 1.0)
+        zoom = max(0.3, fit * 0.98)
+        pan = .zero
+    }
+
+    /// კომპონენტის ბარათი — საერთო პარამეტრებით (რელსები/ზოლი ერთნაირად ხატავს).
+    private func card(for comp: Component) -> some View {
+        ComponentCardView(
+            component: comp,
+            selectedPort: model.selectedPort,
+            loadState: model.result?.state(for: comp.id),
+            isSelected: model.selection.contains(comp.id),
+            isLive: { model.isLive($0) },
+            onTapPort: { model.tapPort($0) },
+            onLongPress: { model.toggleSelect(comp.id) },
+            onDelete: comp.id == "supply" ? nil : { model.removeComponent(comp.id) },
+            // ბერკეტი: ჩართულზე ზევით; გაგდებაზე (რომელიმე trip) — ვარდება.
+            leverUp: model.energized && !(model.result?.anyTrip ?? false),
+            isSnapped: snappedID == comp.id,
+            isUntightened: { model.isPortUntightened($0) },
+            hasWire: { pid in
+                model.board.wires.contains { $0.fromPortID == pid || $0.toPortID == pid }
+            },
+            onTightenPort: { pid in
+                if model.tightenPort(pid) { GameFeedback.ratchet() }
+            },
+            wireInfo: { pid in
+                guard let w = model.board.wires.first(where: {
+                    $0.fromPortID == pid || $0.toPortID == pid
+                }) else { return nil }
+                return TerminalWireInfo(color: w.color.swiftUIColor,
+                                        ferruled: w.ferruled,
+                                        stranded: w.conductorType == .stranded)
+            }
+        )
     }
 
     /// DIN 35მმ რელსის ვიზუალი: ლითონის გრადიენტი, ზედა/ქვედა ბაგეები (lips) და
@@ -1231,17 +1500,72 @@ struct WorkbenchView: View {
                     .stroke(Color.gray.opacity(0.7),
                             style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [6, 4]))
             }
-            // ჩაჭდობის სლოტი — სად დაჯდება გადათრეული მოდული (მწვანე მონახაზი).
-            if let slot = dropSlot, let f = componentFrames[slot.anchor] {
+            // ჩაჭდობის სლოტი — სამიზნე რელსში (ცარიელშიც) სად დაჯდება მოდული.
+            if let slot = dropSlot {
+                let railFrame = slot.rail >= 0 ? railFrames[slot.rail] : nil
+                let y = railFrame?.midY
+                    ?? componentFrames[slot.afterID ?? ""]?.midY
+                    ?? dragCurrent.y
                 RoundedRectangle(cornerRadius: 6)
                     .fill(Color.green.opacity(0.12))
                     .overlay(RoundedRectangle(cornerRadius: 6)
                         .stroke(Color.green, style: StrokeStyle(lineWidth: 2.5, dash: [6, 4])))
-                    .frame(width: 16, height: f.height)
-                    .position(x: slot.after ? f.maxX + 14 : f.minX - 14, y: f.midY)
+                    .frame(width: 16, height: (railFrame?.height ?? 132) - 14)
+                    .position(x: slot.x, y: y)
             }
         }
         .allowsHitTesting(false)   // არ ბლოკავს ფეხების/ბარათების ჟესტებს
+    }
+
+    // MARK: სავარცხელი სალტეების ვიზუალი — სპილენძის კბილები + იზოლირებული ზურგი
+
+    private var combOverlay: some View {
+        ZStack {
+            ForEach(model.combs) { comb in combView(comb) }
+        }
+    }
+
+    @ViewBuilder
+    private func combView(_ comb: Component) -> some View {
+        // კბილების სამიზნეები = comb-ის ავტო-სადენების მეორე ბოლოები (L-შესასვლელები)
+        let targets = model.board.wires
+            .filter { $0.fromPortID.hasPrefix(comb.id + ".") }
+            .compactMap { portPoints[$0.toPortID] }
+            .sorted { $0.x < $1.x }
+        if targets.count >= 2, let first = targets.first, let last = targets.last {
+            let spineY = first.y - 16
+            let minX = first.x - 12
+            let maxX = last.x + 12
+            // სპილენძის კბილები — ზურგიდან თითო კლემამდე
+            ForEach(Array(targets.enumerated()), id: \.offset) { _, pt in
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(ModuleStyle.screw)
+                    .frame(width: 5, height: max(10, pt.y - spineY))
+                    .position(x: pt.x, y: (spineY + pt.y) / 2)
+                    .allowsHitTesting(false)
+            }
+            // იზოლირებული (ნაცრისფერი) ზურგი — drag-ისთვის ჩარჩოსაც აწვდის (CardFrame)
+            RoundedRectangle(cornerRadius: 3)
+                .fill(LinearGradient(colors: [Color(white: 0.55), Color(white: 0.33)],
+                                     startPoint: .top, endPoint: .bottom))
+                .overlay(RoundedRectangle(cornerRadius: 3)
+                    .stroke(Color.black.opacity(0.25), lineWidth: 0.6))
+                .frame(width: maxX - minX, height: 8)
+                .position(x: (minX + maxX) / 2, y: spineY)
+                .preference(key: CardFrameKey.self,
+                            value: [comb.id: CGRect(x: minX, y: spineY - 12,
+                                                    width: maxX - minX, height: 24)])
+                .accessibilityElement(children: .ignore)
+                .accessibilityIdentifier("comb-\(comb.id)")
+                .accessibilityLabel("სავარცხელი სალტე")
+            // მოხსნის ღილაკი — ზურგის მარჯვენა ბოლოსთან
+            Button { model.removeComponent(comb.id) } label: {
+                Image(systemName: "minus.circle.fill")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.red).background(Circle().fill(.white))
+            }
+            .position(x: maxX + 12, y: spineY - 10)
+        }
     }
 
     /// ხისტი = მუდმივი ხაზი; მრავალწვერა = ოდნავ სქელი + ზოლიანი (striped).
@@ -1345,7 +1669,7 @@ struct WorkbenchView: View {
                             .accessibilityLabel("ყველას მოჭერა")
                         }
                         Button { model.showWires = true } label: {
-                            Label("\(model.board.wires.count)", systemImage: "list.bullet")
+                            Label("\(model.userWires.count)", systemImage: "list.bullet")
                         }
                         .accessibilityIdentifier("wires-list")
                         Button { model.removeLastWire() } label: { Image(systemName: "arrow.uturn.backward") }
@@ -1800,11 +2124,12 @@ struct WiresListView: View {
     var body: some View {
         NavigationStack {
             List {
-                if model.board.wires.isEmpty {
+                if model.userWires.isEmpty {
                     Text("სადენები ჯერ არ არის.")
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(model.board.wires) { wire in
+                    // მხოლოდ მომხმარებლის სადენები — comb-ის ავტო-კბილები არ ჩანს
+                    ForEach(model.userWires) { wire in
                         VStack(alignment: .leading, spacing: 6) {
                             HStack(spacing: 10) {
                                 Circle()

@@ -18,7 +18,7 @@ public enum ComponentGating {
     /// ნათურა, როზეტი, შინა/სალტე (busbar) (+ კაბელი). Learn-ისა და უფასო ფარის-
     /// აწყობის დონეები ამ კომპონენტებით სრულდება (რეალურ ფარს ყოველთვის აქვს სალტე).
     public static let freeBasicKinds: Set<ComponentKind> = [
-        .mainSwitch, .mcb, .rcd, .lamp, .socket, .busbar
+        .mainSwitch, .mcb, .rcd, .lamp, .socket, .busbar, .comb
     ]
 
     /// kind ბაზისურ (უფასო) ნაკრებშია?

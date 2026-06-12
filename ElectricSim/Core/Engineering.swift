@@ -88,7 +88,7 @@ public enum BOMBuilder {
         case .mpcb: return 70
         case .contactor: return 35
         case .relay, .lightSwitch: return 10
-        case .busbar, .wago: return 8
+        case .busbar, .comb, .wago: return 8
         case .lamp, .dimmer: return 15
         case .socket, .socket3ph: return 12
         case .boiler: return 350

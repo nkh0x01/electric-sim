@@ -75,7 +75,8 @@ public enum PanelAssembly {
         }
         func net(_ id: String) -> String { uf.find(id) }
 
-        let busbars = board.components.filter { $0.kind == .busbar }
+        // ფაზის სალტე ან სავარცხელი (comb) — ორივე ვალიდური მკვებავი ზოლია.
+        let busbars = board.components.filter { $0.kind == .busbar || $0.kind == .comb }
         let busbarNets = Set(busbars.flatMap { $0.ports.map { net($0.id) } })
 
         // ყველა MCB-ის შესასვლელი ზოლზეა?
