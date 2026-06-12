@@ -307,8 +307,10 @@ final class ElectricSimUITests: XCTestCase {
     /// პირველი გაკვეთილის სრული აწყობა UI-დან: MCB + ნათურა + 4 სადენი + მოჭერა.
     /// აბრუნებს მზად ფარს ინსპექციისთვის (კვება ჯერ გამორთულია).
     private func buildTutorialCircuit(_ app: XCUIApplication) {
-        openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-mcb_b10").tap()
+        // ჯერ ნათურა: load კატეგორია საწყისად გახსნილია (მიზნის კატეგორია) — header-ის
+        // შეხება საერთოდ არ გვჭირდება; შემდეგ დამცავები (პირველი, ყოველთვის ხილული header).
         openPaletteCard(app, header: "palette-cat-load", card: "palette-card-lamp_60").tap()
+        openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-mcb_b10").tap()
         dragWire(app, "term-supply.L", "term-mcb_b10_1.in")
         dragWire(app, "term-mcb_b10_1.out", "term-lamp_60_1.L")
         dragWire(app, "term-supply.N", "term-lamp_60_1.N")
@@ -400,10 +402,17 @@ final class ElectricSimUITests: XCTestCase {
         // გადამრთველის (trailing) ზონაში ვეხებით.
         let wiresBtn = app.buttons["wires-list"]
         XCTAssertTrue(wiresBtn.waitForExistence(timeout: 8)); wiresBtn.tap()
-        let ferrule = app.descendants(matching: .any)
+        XCTAssertTrue(app.navigationBars["სადენები"].waitForExistence(timeout: 8),
+                      "სადენების სია უნდა გაიხსნას")
+        // identifier-ის გავრცელება Toggle-ზე OS-ვერსიაზეა დამოკიდებული — ჯერ id-ით,
+        // ვერადა ტიპით (ფურცელზე ერთადერთი ტოგლია).
+        var ferrule = app.descendants(matching: .any)
             .matching(identifier: "ferrule-toggle").firstMatch
-        XCTAssertTrue(ferrule.waitForExistence(timeout: 8), "მრავალწვერა სადენს უნდა ჰქონდეს ბუნიკის ტოგლი")
-        ferrule.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+        if !ferrule.waitForExistence(timeout: 4) {
+            ferrule = app.switches.firstMatch
+        }
+        XCTAssertTrue(ferrule.waitForExistence(timeout: 6), "მრავალწვერა სადენს უნდა ჰქონდეს ბუნიკის ტოგლი")
+        ferrule.tap()
         app.buttons["დახურვა"].tap()
         // ახლო ხედი sleeve-ით
         XCTAssertTrue(app.buttons["plus.magnifyingglass"].waitForExistence(timeout: 8))

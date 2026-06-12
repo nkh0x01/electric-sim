@@ -574,13 +574,22 @@ struct WorkbenchView: View {
     }
 
     /// კატეგორიის ჩამოსაშლელი სათაური: ხატულა + სახელი + რაოდენობა + chevron.
-    private func categoryHeader(_ cat: ComponentCategory) -> some View {
+    private func categoryHeader(_ cat: ComponentCategory, proxy: ScrollViewProxy? = nil) -> some View {
         let isOpen = expandedCategory == cat
         let count = paletteEntries(in: cat).count
         return Button {
             withAnimation(.easeInOut(duration: 0.22)) {
                 // აკორდეონი: ერთის გახსნა წინას კეტავს; ხელახლა შეხება — კეტავს.
                 expandedCategory = isOpen ? nil : cat
+            }
+            // გახსნისას კატეგორია ხედში შემოგვაქვს — ქვედა header-ის გაშლილი
+            // რიგი ზღვრული კლასტერის ჩარჩოს მიღმა არ უნდა დარჩეს.
+            if !isOpen {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        proxy?.scrollTo(cat, anchor: .top)
+                    }
+                }
             }
         } label: {
             HStack(spacing: 6) {
@@ -1285,6 +1294,7 @@ struct WorkbenchView: View {
 
             // შიდა გადახვევადი ნაწილი — კლასტერი ზღვრულია (ფარი-პირველი განლაგება).
             ScrollView(.vertical, showsIndicators: false) {
+                ScrollViewReader { paletteProxy in
                 VStack(spacing: 8) {
                     Text(model.tool.hint).font(.caption2).foregroundStyle(.secondary)
 
@@ -1292,7 +1302,8 @@ struct WorkbenchView: View {
                     if !paletteCategories.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
                             ForEach(paletteCategories, id: \.self) { cat in
-                                categoryHeader(cat)
+                                categoryHeader(cat, proxy: paletteProxy)
+                                    .id(cat)
                                 if expandedCategory == cat {
                                     ScrollView(.horizontal, showsIndicators: false) {
                                         HStack(spacing: 8) {
@@ -1370,6 +1381,7 @@ struct WorkbenchView: View {
                     }
                 }
                 .padding(.bottom, 4)
+                }
             }
 
             // ფიქსირებული ქვედა მოქმედება — ყოველთვის ხილული (არ გადაიხვევა)
