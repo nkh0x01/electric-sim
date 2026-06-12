@@ -236,21 +236,11 @@ final class ElectricSimUITests: XCTestCase {
         let tutorial = tutorialCell(app)
         XCTAssertTrue(tutorial.waitForExistence(timeout: 10))
         tutorial.tap()
-        // პალიტრიდან MCB (აკორდეონი: ჯერ დამცავების კატეგორია)
-        let protection = app.buttons["palette-cat-protection"]
-        XCTAssertTrue(protection.waitForExistence(timeout: 10))
-        protection.tap()
-        let mcbCard = app.buttons["palette-card-mcb_b10"]
-        XCTAssertTrue(mcbCard.waitForExistence(timeout: 5))
-        mcbCard.tap()
+        // პალიტრიდან MCB (აკორდეონი: იდემპოტენტური გახსნა)
+        openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-mcb_b10").tap()
         // სადენი: კვების L → MCB-ის შესასვლელი (drag; ნაგულისხმევი ხელსაწყო „სადენი")
-        let from = app.otherElements["term-supply.L"]
         let to = app.otherElements["term-mcb_b10_1.in"]
-        XCTAssertTrue(from.waitForExistence(timeout: 5), "კვების L კლემა უნდა ჩანდეს")
-        XCTAssertTrue(to.waitForExistence(timeout: 5), "MCB-ის IN კლემა უნდა ჩანდეს")
-        let start = from.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35))
-        let end = to.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35))
-        start.press(forDuration: 0.05, thenDragTo: end)
+        dragWire(app, "term-supply.L", "term-mcb_b10_1.in")
         // ახალი შეერთება მოუჭერელია
         let loose = NSPredicate(format: "value == 'მოსაჭერია'")
         let looseExp = XCTNSPredicateExpectation(predicate: loose, object: to)
@@ -282,32 +272,52 @@ final class ElectricSimUITests: XCTestCase {
         shot.name = "Tighten-interaction"; shot.lifetime = .keepAlways; add(shot)
     }
 
-    /// კლემიდან კლემამდე სადენის გავლება (drag) — term-<portID> ელემენტებით.
+    /// კლემიდან კლემამდე სადენის გავლება — ნელი, გამოკვეთილი drag-ით, რომ ძველ/ნელ
+    /// CI-სიმულატორებზეც (iOS 17.x) საიმედოდ იცნოს ფარის ჟესტმა.
     private func dragWire(_ app: XCUIApplication, _ fromID: String, _ toID: String) {
         let from = app.otherElements[fromID]
         let to = app.otherElements[toID]
-        XCTAssertTrue(from.waitForExistence(timeout: 5), "კლემა \(fromID) უნდა არსებობდეს")
-        XCTAssertTrue(to.waitForExistence(timeout: 5), "კლემა \(toID) უნდა არსებობდეს")
-        from.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35))
-            .press(forDuration: 0.05,
-                   thenDragTo: to.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35)))
+        XCTAssertTrue(from.waitForExistence(timeout: 10), "კლემა \(fromID) უნდა არსებობდეს")
+        XCTAssertTrue(to.waitForExistence(timeout: 10), "კლემა \(toID) უნდა არსებობდეს")
+        let start = from.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35))
+        let end = to.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35))
+        start.press(forDuration: 0.15, thenDragTo: end,
+                    withVelocity: .slow, thenHoldForDuration: 0.2)
+    }
+
+    /// პალიტრის ბარათის გახსნა იდემპოტენტურად: თუ ბარათი უკვე ჩანს, header-ს არ
+    /// ვეხებით; თუ header-ის შეხებამ ღია კატეგორია დაკეტა (აკორდეონი) ან ანიმაცია
+    /// ნელია — კიდევ ერთხელ ვცდილობთ, დიდი მოთმინებით (CI-ის ნელი სიმულატორები).
+    @discardableResult
+    private func openPaletteCard(_ app: XCUIApplication, header: String, card: String) -> XCUIElement {
+        let cardEl = app.buttons[card]
+        if cardEl.waitForExistence(timeout: 1.5), cardEl.isHittable { return cardEl }
+        let headerEl = app.buttons[header]
+        XCTAssertTrue(headerEl.waitForExistence(timeout: 10), "პალიტრის სათაური \(header)")
+        headerEl.tap()
+        if !cardEl.waitForExistence(timeout: 8) {
+            // პირველმა შეხებამ უკვე ღია კატეგორია დაკეტა — ხელახლა გავხსნათ.
+            headerEl.tap()
+            XCTAssertTrue(cardEl.waitForExistence(timeout: 8),
+                          "ბარათი \(card) ვერ გამოჩნდა (\(header))")
+        }
+        return cardEl
     }
 
     /// პირველი გაკვეთილის სრული აწყობა UI-დან: MCB + ნათურა + 4 სადენი + მოჭერა.
     /// აბრუნებს მზად ფარს ინსპექციისთვის (კვება ჯერ გამორთულია).
     private func buildTutorialCircuit(_ app: XCUIApplication) {
-        app.buttons["palette-cat-protection"].tap()
-        let mcb = app.buttons["palette-card-mcb_b10"]
-        XCTAssertTrue(mcb.waitForExistence(timeout: 5)); mcb.tap()
-        app.buttons["palette-cat-load"].tap()
-        let lamp = app.buttons["palette-card-lamp_60"]
-        XCTAssertTrue(lamp.waitForExistence(timeout: 5)); lamp.tap()
+        openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-mcb_b10").tap()
+        openPaletteCard(app, header: "palette-cat-load", card: "palette-card-lamp_60").tap()
         dragWire(app, "term-supply.L", "term-mcb_b10_1.in")
         dragWire(app, "term-mcb_b10_1.out", "term-lamp_60_1.L")
         dragWire(app, "term-supply.N", "term-lamp_60_1.N")
         dragWire(app, "term-supply.PE", "term-lamp_60_1.PE")
+        // „ყველას მოჭერა" მხოლოდ მოუჭერელ (ახალ) სადენებზე ჩანს — სადენების შექმნის დასტურიც.
         let tighten = app.buttons["tighten-all"]
-        XCTAssertTrue(tighten.waitForExistence(timeout: 5)); tighten.tap()
+        XCTAssertTrue(tighten.waitForExistence(timeout: 10),
+                      "სადენების შემდეგ უნდა გამოჩნდეს მოჭერის ღილაკი (drag-ებმა იმუშავა?)")
+        tighten.tap()
     }
 
     /// ფარი-პირველი განლაგება: ფარის ზონა ეკრანის ≥45%-ია (ბრიფი ჩაკეცილი).
@@ -374,27 +384,37 @@ final class ElectricSimUITests: XCTestCase {
         XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 10))
         // მრავალწვერა კაბელი (სეგმენტი ჩანს, რადგან სადენის ხელსაწყო აქტიურია)
         let stranded = app.buttons["Stranded"]
-        XCTAssertTrue(stranded.waitForExistence(timeout: 5), "კაბელის ტიპის სეგმენტი უნდა ჩანდეს")
+        XCTAssertTrue(stranded.waitForExistence(timeout: 8), "კაბელის ტიპის სეგმენტი უნდა ჩანდეს")
         stranded.tap()
         // MCB + სადენი
-        app.buttons["palette-cat-protection"].tap()
-        let mcb = app.buttons["palette-card-mcb_b10"]
-        XCTAssertTrue(mcb.waitForExistence(timeout: 5)); mcb.tap()
+        openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-mcb_b10").tap()
         dragWire(app, "term-supply.L", "term-mcb_b10_1.in")
-        // ბუნიკის დადება სადენების სიიდან
-        app.buttons["wires-list"].tap()
-        let ferrule = app.switches["ferrule-toggle"].firstMatch
-        XCTAssertTrue(ferrule.waitForExistence(timeout: 5), "მრავალწვერა სადენს უნდა ჰქონდეს ბუნიკის ტოგლი")
-        ferrule.tap()
+        // სინქრონიზაცია: სადენი მართლა შეიქმნა (კლემა მოუჭერელ-შეერთებულია)
+        let inTerm = app.otherElements["term-mcb_b10_1.in"]
+        let wiredExp = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "value == 'მოსაჭერია'"), object: inTerm)
+        XCTAssertEqual(XCTWaiter().wait(for: [wiredExp], timeout: 8), .completed,
+                       "drag-მა სადენი უნდა შექმნას")
+        // ბუნიკის დადება სადენების სიიდან — ტოგლის ტიპის ექსპოზიცია OS-ზეა
+        // დამოკიდებული (switch/other), ამიტომ ნებისმიერი ტიპით ვეძებთ და
+        // გადამრთველის (trailing) ზონაში ვეხებით.
+        let wiresBtn = app.buttons["wires-list"]
+        XCTAssertTrue(wiresBtn.waitForExistence(timeout: 8)); wiresBtn.tap()
+        let ferrule = app.descendants(matching: .any)
+            .matching(identifier: "ferrule-toggle").firstMatch
+        XCTAssertTrue(ferrule.waitForExistence(timeout: 8), "მრავალწვერა სადენს უნდა ჰქონდეს ბუნიკის ტოგლი")
+        ferrule.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
         app.buttons["დახურვა"].tap()
         // ახლო ხედი sleeve-ით
-        XCTAssertTrue(app.buttons["plus.magnifyingglass"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["plus.magnifyingglass"].waitForExistence(timeout: 8))
         app.buttons["plus.magnifyingglass"].tap()
         app.buttons["plus.magnifyingglass"].tap()
         let shot = XCTAttachment(screenshot: app.screenshot())
         shot.name = "Ferrule-sleeve-closeup"; shot.lifetime = .keepAlways; add(shot)
         // მოჭერის შემდეგ — ჩასმული (flush) ხრახნის ახლო ხედი
-        app.buttons["tighten-all"].tap()
+        let tightenAll = app.buttons["tighten-all"]
+        XCTAssertTrue(tightenAll.waitForExistence(timeout: 8), "მოუჭერელ სადენზე მოჭერის ღილაკი ჩანს")
+        tightenAll.tap()
         let tightShot = XCTAttachment(screenshot: app.screenshot())
         tightShot.name = "Tightened-screw-closeup"; tightShot.lifetime = .keepAlways; add(tightShot)
     }
@@ -409,12 +429,12 @@ final class ElectricSimUITests: XCTestCase {
         XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 10))
         buildTutorialCircuit(app)
         let face = app.otherElements["face-lamp_60_1"]
-        XCTAssertTrue(face.waitForExistence(timeout: 5))
+        XCTAssertTrue(face.waitForExistence(timeout: 8))
         XCTAssertEqual(face.value as? String, "გამორთულია", "კვებამდე ნათურა არ ანათებს")
         app.buttons["power-toggle"].tap()
         let lit = XCTNSPredicateExpectation(
             predicate: NSPredicate(format: "value == 'ანთია'"), object: face)
-        XCTAssertEqual(XCTWaiter().wait(for: [lit], timeout: 5), .completed,
+        XCTAssertEqual(XCTWaiter().wait(for: [lit], timeout: 8), .completed,
                        "კვების ჩართვაზე მუშა ნათურა უნდა აანთდეს")
     }
 
