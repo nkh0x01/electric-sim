@@ -90,6 +90,16 @@ public enum CareerRank: String, Codable, Sendable, CaseIterable {
 
 // MARK: - Job (jobs.json)
 
+/// სამუშაოს ფაზურობა jobs.json-ში ("singlePhase"/"threePhase"). ცალკე ენუმი,
+/// რომ JSON-მნიშვნელობები სქემის სპეციფიკაციას ემთხვეოდეს (და არა Core-ის Phase-ს).
+public enum JobPhase: String, Codable, Sendable {
+    case singlePhase
+    case threePhase
+
+    /// შესაბამისი ძრავის (solver) ფაზა.
+    public var enginePhase: Phase { self == .threePhase ? .three : .single }
+}
+
 public struct Job: Codable, Identifiable, Sendable {
     public let id: String
     public let georgianTitle: String
@@ -105,16 +115,25 @@ public struct Job: Codable, Identifiable, Sendable {
     public let cashReward: Int
     public let unlocks: [String]          // რას ხსნის (კომპონენტი/ხელსაწყო id)
     public let goal: LevelGoal            // წარმატების კრიტერიუმი — იგივე, რაც დონეებში
+    // გაფართოებული (advanced) სამუშაოების ველები — არასავალდებულო, ძველი jobs.json
+    // უცვლელად იშიფრება (nil → ნაგულისხმევები ქვემოთ).
+    public var phase: JobPhase? = nil          // nil → singlePhase
+    public var csaOptions: [Double]? = nil     // nil → [1.5, 2.5, 4]
 
     public var resolvedDifficulty: Int { min(5, max(1, difficulty)) }
+
+    /// სამუშაოს ფაზა — ნაგულისხმევად ერთფაზიანი.
+    public var resolvedPhase: Phase { (phase ?? .singlePhase).enginePhase }
+    /// კაბელის დასაშვები კვეთები — 6/10მმ² მხოლოდ მაშინ, თუ job-ი ცხადად უშვებს.
+    public var resolvedCsaOptions: [Double] { csaOptions ?? [1.5, 2.5, 4] }
 
     /// სამუშაოდან workbench-ის დონის აგება (იყენებს არსებულ Level/solver-ს — არ იფორკება).
     public func makeLevel() -> Level {
         let palette = componentsAvailable.map {
-            PaletteEntry(templateId: $0, max: 3, csaOptions: [1.5, 2.5, 4])
+            PaletteEntry(templateId: $0, max: 4, csaOptions: resolvedCsaOptions)
         }
         return Level(id: "career_\(id)", index: 0, title: georgianTitle,
-                     brief: jobBrief, hint: "", phase: .single,
+                     brief: jobBrief, hint: "", phase: resolvedPhase,
                      palette: palette, goal: goal, mode: .build,
                      category: .tutorial, difficulty: difficulty, tier: tier)
     }

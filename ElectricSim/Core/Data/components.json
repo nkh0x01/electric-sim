@@ -39,6 +39,16 @@
     "category": "protection"
   },
   {
+    "id": "rcbo_b32_30",
+    "kind": "rcbo",
+    "name": "დიფ-ავტომატი (RCBO) B32 30mA",
+    "ratingA": 32,
+    "curve": "B",
+    "mAtrip": 30,
+    "priceGEL": 55,
+    "category": "protection"
+  },
+  {
     "id": "mcb_b10",
     "kind": "mcb",
     "name": "ავტომატი (MCB) B10 — განათება",

@@ -183,6 +183,68 @@ final class CareerTests: XCTestCase {
         XCTAssertEqual(s.currentRank, .residential)
     }
 
+    // MARK: - Job schema extension (phase / csaOptions / RCBO 32A)
+
+    /// ძველი (legacy) job-ები — phase/csaOptions-ის გარეშე — იშიფრება და
+    /// ნაგულისხმევებს იღებს. ვამოწმებთ მხოლოდ nil-phase სამუშაოებს, რომ
+    /// მომავალი advanced (threePhase/6-10მმ²) job-ები ტესტს არ ეჯახებოდეს.
+    func testOldJobsDecodeWithDefaults() throws {
+        let jobs = try GameData.loadJobs()
+        let legacy = jobs.filter { $0.phase == nil && $0.csaOptions == nil }
+        XCTAssertGreaterThanOrEqual(legacy.count, 7, "7 საწყისი სამუშაო ძველი სქემით უნდა დარჩეს")
+        for job in legacy {
+            XCTAssertEqual(job.resolvedPhase, .single, "\(job.id): ნაგულისხმევი ფაზა ერთფაზიანია")
+            XCTAssertEqual(job.resolvedCsaOptions, [1.5, 2.5, 4],
+                           "\(job.id): ნაგულისხმევი კვეთები [1.5, 2.5, 4]")
+            let level = job.makeLevel()
+            XCTAssertEqual(level.phase, .single)
+            for entry in level.palette {
+                XCTAssertEqual(entry.csaOptions ?? [], [1.5, 2.5, 4],
+                               "\(job.id): პალიტრაში 6/10მმ² არ უნდა გამოჩნდეს უთხოვნელად")
+            }
+        }
+    }
+
+    /// JSON "phase":"threePhase" იშიფრება და სამფაზიან დონეს აგენერირებს.
+    func testThreePhaseJobGeneratesThreePhaseLevel() throws {
+        let json = """
+        {"id":"j3p","georgianTitle":"ტესტი","customerName":"ტ","location":"ტ",
+         "category":"industrial","difficulty":5,"tier":"pro","jobBrief":"ტ",
+         "componentsAvailable":["main_4p","mcb_b16"],"requiredComponents":[],
+         "xpReward":10,"cashReward":10,"unlocks":[],
+         "goal":{"poweredLoads":{"motor":1},"description":"ტ","requireBalanced":true},
+         "phase":"threePhase","csaOptions":[1.5,2.5,4,6]}
+        """.data(using: .utf8)!
+        let job = try JSONDecoder().decode(Job.self, from: json)
+        XCTAssertEqual(job.phase, .threePhase)
+        XCTAssertEqual(job.resolvedPhase, .three)
+        let level = job.makeLevel()
+        XCTAssertEqual(level.phase, .three, "სამფაზიანი job → სამფაზიანი დონე")
+        // 6მმ² მხოლოდ იმიტომ ჩანს, რომ job-მა ცხადად მოითხოვა
+        XCTAssertEqual(level.palette.first?.csaOptions ?? [], [1.5, 2.5, 4, 6])
+    }
+
+    /// csaOptions [..6,10] მხოლოდ მოთხოვნისას აღწევს პალიტრამდე.
+    func testCsaOptionsThreadedToPalette() {
+        var job = sampleJob()
+        XCTAssertEqual(job.makeLevel().palette.first?.csaOptions ?? [], [1.5, 2.5, 4])
+        job.csaOptions = [1.5, 2.5, 4, 6, 10]
+        for entry in job.makeLevel().palette {
+            XCTAssertEqual(entry.csaOptions ?? [], [1.5, 2.5, 4, 6, 10])
+        }
+    }
+
+    /// RCBO 32A შაბლონი არსებობს და ამპერაჟი 6მმ²-ს ეტევა (EV-ტიპის ხაზებისთვის).
+    func testRcbo32TemplateExists() throws {
+        let templates = try GameData.loadTemplates()
+        let t = try XCTUnwrap(templates["rcbo_b32_30"], "უნდა არსებობდეს rcbo_b32_30")
+        XCTAssertEqual(t.kind, .rcbo)
+        XCTAssertEqual(t.ratingA, 32)
+        XCTAssertEqual(t.mAtrip, 30)
+        XCTAssertLessThanOrEqual(32, Ampacity.maxBreaker(forCsa: 6.0),
+                                 "32A ≤ 6მმ²-ის დასაშვები (ampacity)")
+    }
+
     // 9) არსებული დონეები/გაკვეთილი კვლავ იტვირთება (რეგრესია)
     func testExistingLevelsStillLoad() throws {
         let levels = try GameData.loadLevels()
