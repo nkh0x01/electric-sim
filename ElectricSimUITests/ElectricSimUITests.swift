@@ -256,6 +256,10 @@ final class ElectricSimUITests: XCTestCase {
         let looseExp = XCTNSPredicateExpectation(predicate: loose, object: to)
         XCTAssertEqual(XCTWaiter().wait(for: [looseExp], timeout: 5), .completed,
                        "ახალი შეერთება მოუჭერელი უნდა იყოს")
+        // ნაკლული ჭერა (0.2წმ < 0.45წმ) — ხრახნი უკან ბრუნდება, კვლავ მოსაჭერია
+        to.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35)).press(forDuration: 0.2)
+        XCTAssertEqual(to.value as? String, "მოსაჭერია",
+                       "ადრე აშვებაზე კლემა მოუჭერელი უნდა დარჩეს (პროგრესული მოჭერა)")
         // ინსპექცია (კვება ჩართული) → მოჭერის შეცდომა ჩანს
         app.buttons["power-toggle"].tap()
         app.buttons["inspect"].tap()
@@ -349,10 +353,50 @@ final class ElectricSimUITests: XCTestCase {
                       "კომპონენტი ფარზე უნდა დაჯდეს")
         let shot = XCTAttachment(screenshot: app.screenshot())
         shot.name = "Focus-mode"; shot.lifetime = .keepAlways; add(shot)
+        // ახლო ხედი — მოდულის დეტალები (ბერკეტი, ხრახნები, იარლიყი) ფოკუს-რეჟიმში
+        app.buttons["plus.magnifyingglass"].tap()
+        app.buttons["plus.magnifyingglass"].tap()
+        let closeup = XCTAttachment(screenshot: app.screenshot())
+        closeup.name = "Focus-module-closeup"; closeup.lifetime = .keepAlways; add(closeup)
         // გამოსვლა — ჩვეულებრივი კონტროლები ბრუნდება
         app.buttons["focus-toggle"].tap()
         XCTAssertTrue(app.buttons["brief-toggle"].waitForExistence(timeout: 5),
                       "ფოკუსიდან გამოსვლის შემდეგ ბრიფი ბრუნდება")
+    }
+
+    /// მრავალწვერა სადენი + ბუნიკი: sleeve ჩანს კლემის ჭდეზე (ვიზუალური დასტური).
+    func testFerruleSleeveVisible() {
+        let app = launchApp()
+        openLearn(app)
+        let tutorial = tutorialCell(app)
+        XCTAssertTrue(tutorial.waitForExistence(timeout: 10))
+        tutorial.tap()
+        XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 10))
+        // მრავალწვერა კაბელი (სეგმენტი ჩანს, რადგან სადენის ხელსაწყო აქტიურია)
+        let stranded = app.buttons["Stranded"]
+        XCTAssertTrue(stranded.waitForExistence(timeout: 5), "კაბელის ტიპის სეგმენტი უნდა ჩანდეს")
+        stranded.tap()
+        // MCB + სადენი
+        app.buttons["palette-cat-protection"].tap()
+        let mcb = app.buttons["palette-card-mcb_b10"]
+        XCTAssertTrue(mcb.waitForExistence(timeout: 5)); mcb.tap()
+        dragWire(app, "term-supply.L", "term-mcb_b10_1.in")
+        // ბუნიკის დადება სადენების სიიდან
+        app.buttons["wires-list"].tap()
+        let ferrule = app.switches["ferrule-toggle"].firstMatch
+        XCTAssertTrue(ferrule.waitForExistence(timeout: 5), "მრავალწვერა სადენს უნდა ჰქონდეს ბუნიკის ტოგლი")
+        ferrule.tap()
+        app.buttons["დახურვა"].tap()
+        // ახლო ხედი sleeve-ით
+        XCTAssertTrue(app.buttons["plus.magnifyingglass"].waitForExistence(timeout: 5))
+        app.buttons["plus.magnifyingglass"].tap()
+        app.buttons["plus.magnifyingglass"].tap()
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "Ferrule-sleeve-closeup"; shot.lifetime = .keepAlways; add(shot)
+        // მოჭერის შემდეგ — ჩასმული (flush) ხრახნის ახლო ხედი
+        app.buttons["tighten-all"].tap()
+        let tightShot = XCTAttachment(screenshot: app.screenshot())
+        tightShot.name = "Tightened-screw-closeup"; tightShot.lifetime = .keepAlways; add(tightShot)
     }
 
     /// კვების ჩართვაზე მუშა ნათურა ანათებს (ინსპექციის გარეშეც) — accessibility state.

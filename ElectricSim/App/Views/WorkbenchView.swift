@@ -40,6 +40,37 @@ enum GameFeedback {
     }
 }
 
+// MARK: - DIN-მოდულის სტილი (Stage 2 — სტატიკური გრადიენტები, იაფი ხატვა)
+
+/// რეალისტური მოდულის ფერები/გრადიენტები — ერთხელ შექმნილი სტატიკური მნიშვნელობები,
+/// რომ დეტალური ხატვა pan/zoom-ზე იაფი დარჩეს (ანიმაცია მხოლოდ ბერკეტზე/ხრახნზე).
+enum ModuleStyle {
+    static let casing = LinearGradient(colors: [Color(white: 0.97), Color(white: 0.88)],
+                                       startPoint: .top, endPoint: .bottom)
+    static let body = LinearGradient(colors: [Color(red: 0.99, green: 0.98, blue: 0.95),
+                                              Color(white: 0.87)],
+                                     startPoint: .top, endPoint: .bottom)
+    static let brass = LinearGradient(colors: [Color(red: 0.84, green: 0.71, blue: 0.38),
+                                               Color(red: 0.60, green: 0.47, blue: 0.20)],
+                                      startPoint: .top, endPoint: .bottom)
+    static let screw = LinearGradient(colors: [Color(red: 0.92, green: 0.81, blue: 0.50),
+                                               Color(red: 0.68, green: 0.54, blue: 0.25)],
+                                      startPoint: .topLeading, endPoint: .bottomTrailing)
+    static let lever = LinearGradient(colors: [Color(white: 0.32), Color(white: 0.08)],
+                                      startPoint: .top, endPoint: .bottom)
+    static let rail = LinearGradient(colors: [Color(white: 0.88), Color(white: 0.58)],
+                                     startPoint: .top, endPoint: .bottom)
+    static let ferrule = LinearGradient(colors: [Color(white: 0.88), Color(white: 0.58)],
+                                        startPoint: .leading, endPoint: .trailing)
+}
+
+/// კლემაში შესული სადენის ვიზუალური ინფო: იზოლაციის ფერი + ბუნიკი (sleeve).
+struct TerminalWireInfo {
+    let color: Color
+    let ferruled: Bool
+    let stranded: Bool
+}
+
 // MARK: - Tools
 
 enum Tool: String, CaseIterable, Identifiable {
@@ -1114,6 +1145,14 @@ struct WorkbenchView: View {
                             },
                             onTightenPort: { pid in
                                 if model.tightenPort(pid) { GameFeedback.ratchet() }
+                            },
+                            wireInfo: { pid in
+                                guard let w = model.board.wires.first(where: {
+                                    $0.fromPortID == pid || $0.toPortID == pid
+                                }) else { return nil }
+                                return TerminalWireInfo(color: w.color.swiftUIColor,
+                                                        ferruled: w.ferruled,
+                                                        stranded: w.conductorType == .stranded)
                             }
                         )
                     }
@@ -1122,19 +1161,44 @@ struct WorkbenchView: View {
                 .background(dinRailBackground)
             }
         }
-        .padding(40)
+        // ფარის აწყობის რეჟიმში — მსუბუქი კარადის (enclosure) ჩარჩო ფარის გარშემო.
+        .padding(model.level.isPanelAssembly ? 14 : 0)
+        .background {
+            if model.level.isPanelAssembly {
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color(white: 0.93).opacity(0.55))
+                    .overlay(RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color(white: 0.65), lineWidth: 1.5))
+            }
+        }
+        .padding(model.level.isPanelAssembly ? 26 : 40)
         .coordinateSpace(name: kBoardSpace)
         .overlay { wireOverlay }
         .onPreferenceChange(PortFrameKey.self) { portPoints = $0 }
         .onPreferenceChange(CardFrameKey.self) { componentFrames = $0 }
     }
 
-    /// DIN რელსის ვიზუალი (თითო რიგის ფონი + ცენტრალური ლითონის ზოლი).
+    /// DIN 35მმ რელსის ვიზუალი: ლითონის გრადიენტი, ზედა/ქვედა ბაგეები (lips) და
+    /// დამახასიათებელი მონტაჟის ნახვრეტები — მოდულები ვიზუალურად ამაზე „სხდება".
     private var dinRailBackground: some View {
         RoundedRectangle(cornerRadius: 10)
             .fill(Color.gray.opacity(0.10))
             .overlay(alignment: .center) {
-                Rectangle().fill(Color.gray.opacity(0.28)).frame(height: 3)
+                VStack(spacing: 0) {
+                    Rectangle().fill(Color(white: 0.52)).frame(height: 1)      // ზედა ბაგე
+                    Rectangle().fill(ModuleStyle.rail).frame(height: 9)
+                        .overlay(
+                            HStack(spacing: 16) {
+                                ForEach(0..<14, id: \.self) { _ in
+                                    Capsule().fill(Color.black.opacity(0.13))
+                                        .frame(width: 6, height: 3.2)
+                                }
+                            }
+                        )
+                        .clipped()
+                    Rectangle().fill(Color(white: 0.42)).frame(height: 1)      // ქვედა ბაგე
+                }
+                .allowsHitTesting(false)
             }
     }
 
@@ -1272,6 +1336,7 @@ struct WorkbenchView: View {
                         Button { model.showWires = true } label: {
                             Label("\(model.board.wires.count)", systemImage: "list.bullet")
                         }
+                        .accessibilityIdentifier("wires-list")
                         Button { model.removeLastWire() } label: { Image(systemName: "arrow.uturn.backward") }
                         Button(role: .destructive) { model.clearWires() } label: { Image(systemName: "trash") }
                     }.padding(.horizontal)
@@ -1341,6 +1406,11 @@ struct ComponentCardView: View {
     var isUntightened: (String) -> Bool = { _ in false }
     var hasWire: (String) -> Bool = { _ in false }
     var onTightenPort: (String) -> Void = { _ in }
+    /// კლემაში შესული სადენის ფერი/ბუნიკი — ვიზუალური ჭდისთვის (nil → სადენი არ არის).
+    var wireInfo: (String) -> TerminalWireInfo? = { _ in nil }
+
+    /// რომელი კლემაა ამჟამად დაჭერილი (პროგრესული მოჭერის ანიმაცია).
+    @State private var pressingPort: String?
 
     private var inputs: [Port] { component.ports.filter { $0.side == .input } }
     private var outputs: [Port] { component.ports.filter { $0.side == .output } }
@@ -1350,12 +1420,12 @@ struct ComponentCardView: View {
     var body: some View {
         VStack(spacing: 5) {
             // ზედა კიდე — შემავალი ხრახნიანი კლემები (კვების მხარე)
-            if !inputs.isEmpty { terminalRow(inputs) }
+            if !inputs.isEmpty { terminalRow(inputs, edge: .top) }
             // მოდულის სახე (კონექტორებს ცალკე სახე არ აქვთ — სალტეა)
             if !isConnector { moduleFace }
             // ქვედა კიდე — გამავალი/დატვირთვის კლემები
             let bottom = outputs + singles
-            if !bottom.isEmpty { terminalRow(bottom) }
+            if !bottom.isEmpty { terminalRow(bottom, edge: .bottom) }
             // ქართული სახელი — მოდულის ქვეშ
             Text(component.name)
                 .font(.system(size: 8)).foregroundStyle(Color.black.opacity(0.55))
@@ -1363,11 +1433,19 @@ struct ComponentCardView: View {
                 .frame(maxWidth: max(faceWidth + 36, 88))
         }
         .padding(7)
-        // DIN-მოდულის კორპუსი: ღია კედელი + მსუბუქი ჩრდილი
+        // DIN-მოდულის კორპუსი: სპილოსძვლისფერი გრადიენტი + მსუბუქი ჩრდილი რელსზე;
+        // ცენტრში — რელსის ჩამჭიდის ღარი (კონტენტის ქვეშ, სახეს არ კვეთს).
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(isConnector ? Color(white: 0.88) : Color(white: 0.95))
-                .shadow(color: .black.opacity(0.18), radius: 2, x: 0, y: 1)
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isConnector ? AnyShapeStyle(Color(white: 0.88)) : AnyShapeStyle(ModuleStyle.casing))
+                    .shadow(color: .black.opacity(0.20), radius: 2.5, x: 0, y: 1.5)
+                if !isConnector {
+                    Rectangle().fill(Color.black.opacity(0.10))
+                        .frame(height: 1.6)
+                        .padding(.horizontal, 2)
+                }
+            }
         )
         .overlay(RoundedRectangle(cornerRadius: 8)
             .stroke(isSelected ? Color.brand : Color.gray.opacity(0.35), lineWidth: isSelected ? 2 : 1))
@@ -1418,20 +1496,38 @@ struct ComponentCardView: View {
 
     private var moduleFace: some View {
         ZStack {
+            // კორპუსი: ვერტიკალური გრადიენტი + გვერდითი ბევლები + ფასადის ნაკერები
             RoundedRectangle(cornerRadius: 5)
-                .fill(Color(white: 0.98))
-                .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.gray.opacity(0.3), lineWidth: 0.8))
+                .fill(ModuleStyle.body)
+                .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.gray.opacity(0.35), lineWidth: 0.8))
+                .overlay(alignment: .leading) {   // შუქის ბევლი
+                    RoundedRectangle(cornerRadius: 0.8).fill(Color.white.opacity(0.75))
+                        .frame(width: 1.1).padding(.vertical, 2.5).padding(.leading, 1.2)
+                }
+                .overlay(alignment: .trailing) {  // ჩრდილის ბევლი
+                    RoundedRectangle(cornerRadius: 0.8).fill(Color.black.opacity(0.10))
+                        .frame(width: 1.1).padding(.vertical, 2.5).padding(.trailing, 1.2)
+                }
+                .overlay(alignment: .top) {       // ზედა ნაკერი
+                    Rectangle().fill(Color.black.opacity(0.08)).frame(height: 0.7)
+                        .padding(.horizontal, 2.5).padding(.top, 4.5)
+                }
+                .overlay(alignment: .bottom) {    // ქვედა ნაკერი
+                    Rectangle().fill(Color.black.opacity(0.08)).frame(height: 0.7)
+                        .padding(.horizontal, 2.5).padding(.bottom, 4.5)
+                }
             // მდგომარეობის შეფერილობა (გაგდება/კვება) — სახეზე
             RoundedRectangle(cornerRadius: 5).fill(faceTint)
             if component.kind.isSeriesDevice {
-                VStack(spacing: 3) {
-                    Text(techLabel)
-                        .font(.system(size: 7, weight: .bold))
-                        .foregroundStyle(Color.black.opacity(0.6))
-                        .lineLimit(1).minimumScaleFactor(0.7)
-                    lever
+                VStack(spacing: 2) {
+                    brandPlate
+                    if component.kind == .rcd || component.kind == .rcbo {
+                        HStack(spacing: 5) { lever; testButton }
+                    } else {
+                        lever
+                    }
                 }
-                .padding(.vertical, 3)
+                .padding(.vertical, 2)
             } else {
                 VStack(spacing: 2) {
                     if component.kind.hasArtwork {
@@ -1442,11 +1538,7 @@ struct ComponentCardView: View {
                             .font(.body)
                             .foregroundStyle(iconColor)
                     }
-                    if !techLabel.isEmpty {
-                        Text(techLabel)
-                            .font(.system(size: 7, weight: .bold))
-                            .foregroundStyle(Color.black.opacity(0.6))
-                    }
+                    if !techLabel.isEmpty { brandPlate }
                 }
                 .padding(2)
             }
@@ -1466,18 +1558,54 @@ struct ComponentCardView: View {
                             ? (loadState?.isPowered == true ? "ანთია" : "გამორთულია") : "")
     }
 
-    /// შავი გადამრთველი ბერკეტი — ზევით ON, ქვევით OFF (ვიზუალური მდგომარეობა).
+    /// ამოტვიფრული/დაბეჭდილი იარლიყი მოდულის სახეზე (brand plate).
+    private var brandPlate: some View {
+        Text(techLabel)
+            .font(.system(size: 7, weight: .bold))
+            .foregroundStyle(Color.black.opacity(0.58))
+            .shadow(color: .white.opacity(0.9), radius: 0, x: 0, y: 0.7)   // ამოტვიფრულის ეფექტი
+            .lineLimit(1).minimumScaleFactor(0.7)
+            .padding(.horizontal, 3).padding(.vertical, 1)
+            .background(RoundedRectangle(cornerRadius: 2).fill(Color.white.opacity(0.55)))
+    }
+
+    /// RCD/RCBO-ის TEST ღილაკი (დეკორატიული).
+    private var testButton: some View {
+        Text("T")
+            .font(.system(size: 6, weight: .heavy)).foregroundStyle(.white)
+            .frame(width: 10, height: 10)
+            .background(RoundedRectangle(cornerRadius: 2)
+                .fill(Color(red: 0.78, green: 0.56, blue: 0.12)))
+            .overlay(RoundedRectangle(cornerRadius: 2)
+                .stroke(Color.black.opacity(0.25), lineWidth: 0.5))
+    }
+
+    /// შავი გადამრთველი ბერკეტი — ბრუნავს საყრდენზე (3D გადახრა), I/0 აღნიშვნებით.
     private var lever: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 2.5)
-                .fill(Color(white: 0.18))
-                .frame(width: 12, height: 24)
-            RoundedRectangle(cornerRadius: 1)
-                .fill(Color(white: 0.45))
-                .frame(width: 8, height: 7)
-                .offset(y: leverUp ? -6 : 6)
+        VStack(spacing: 0.5) {
+            Text("I").font(.system(size: 5, weight: .heavy))
+                .foregroundStyle(Color.black.opacity(0.45))
+            ZStack {
+                // საყრდენი (pivot)
+                Circle().fill(Color(white: 0.35)).frame(width: 5, height: 5)
+                // ბერკეტი — გლუვი 3D ბრუნვა ზევით/ქვევით (არა სვაპი), ჰაილაითით
+                RoundedRectangle(cornerRadius: 2.5)
+                    .fill(ModuleStyle.lever)
+                    .frame(width: 11, height: 21)
+                    .overlay(alignment: .top) {
+                        RoundedRectangle(cornerRadius: 1).fill(Color.white.opacity(0.30))
+                            .frame(width: 7, height: 2).padding(.top, 2)
+                    }
+                    .rotation3DEffect(.degrees(leverUp ? -28 : 28),
+                                      axis: (x: 1, y: 0, z: 0),
+                                      anchor: .center, perspective: 0.55)
+                    .offset(y: leverUp ? -1.5 : 1.5)
+            }
+            .frame(width: 20, height: 22)
+            Text("0").font(.system(size: 5, weight: .heavy))
+                .foregroundStyle(Color.black.opacity(0.45))
         }
-        .animation(.easeInOut(duration: 0.15), value: leverUp)
+        .animation(.easeInOut(duration: 0.22), value: leverUp)
     }
 
     /// ტექნიკური იარლიყი მოდულის სახეზე (მაგ. "C16", "30mA", "2P").
@@ -1502,10 +1630,13 @@ struct ComponentCardView: View {
 
     // MARK: ხრახნიანი კლემები (ზედა/ქვედა კიდე) + სალტის ლითონის ზოლი
 
+    /// კლემის მხარე — სადენის ღრუ/ჭდე მოდულისგან გარეთ იყურება.
+    enum TerminalEdge { case top, bottom }
+
     @ViewBuilder
-    private func terminalRow(_ ports: [Port]) -> some View {
+    private func terminalRow(_ ports: [Port], edge: TerminalEdge = .bottom) -> some View {
         let row = HStack(alignment: .top, spacing: 7) {
-            ForEach(ports) { terminal($0) }
+            ForEach(ports) { terminal($0, edge: edge) }
         }
         if isConnector {
             // სალტე (busbar): ლითონის ზოლი ხრახნებით + გამტარის ფერის მინიშნება
@@ -1537,31 +1668,67 @@ struct ComponentCardView: View {
         }
     }
 
-    /// ხრახნიანი კლემა: ლითონის ბუდე გამტარის ფერის კოდით + ხრახნის თავი ჭრილით.
-    /// მოუჭერელი (ახალი შეერთება): ჭრილი 45°-ზე, ნარინჯისფერი, 🔧 მინიშნება.
-    private func terminal(_ port: Port) -> some View {
+    /// რეალისტური ხრახნიანი კლემა: სპილენძის ბუდე მუქი სადენის-ღრუთი, დაჭრილი
+    /// სპილენძის ხრახნი (45° + ამოწეული = მოუჭერელი; 0° + ჩასმული = მოჭერილი),
+    /// შესული სადენის იზოლაციის ჭდე და ბუნიკის sleeve. ჭერისას ხრახნი
+    /// პროგრესულად ბრუნავს — ადრე აშვება = რჩება მოუჭერელი.
+    private func terminal(_ port: Port, edge: TerminalEdge = .bottom) -> some View {
         let selected = selectedPort == port.id
         let live = isLive(port.id)
         let loose = isUntightened(port.id)
         let wired = hasWire(port.id)
+        let info = wireInfo(port.id)
+        let pressing = pressingPort == port.id
+        // ჭრილის კუთხე: მოჭერილი 0°; მოუჭერელი 45°; ჭერისას 45°→4° (პროგრესი)
+        let slotAngle: Double = loose ? (pressing ? 4 : 45) : 0
+        let outward: CGFloat = edge == .top ? -1 : 1
         return VStack(spacing: 1) {
             ZStack {
+                // შესული სადენი: იზოლაციის ფერადი ჭდე (+ ბუნიკის sleeve) ღრუსკენ —
+                // ორივე მთლიანად ბუდის გარეთ, რომ ბლოკმა არ დაფაროს.
+                if let info {
+                    RoundedRectangle(cornerRadius: 1.5)
+                        .fill(info.color)
+                        .frame(width: 5, height: 8)
+                        .offset(y: outward * (info.ferruled ? 17 : 13.5))
+                    if info.ferruled {
+                        Rectangle()
+                            .fill(ModuleStyle.ferrule)
+                            .frame(width: 4.4, height: 4)
+                            .offset(y: outward * 11)
+                    }
+                }
+                // სპილენძის კლემის ბუდე გამტარის ფერის კოდით + მუქი სადენის ღრუ
                 RoundedRectangle(cornerRadius: 3)
-                    .fill(LinearGradient(colors: [Color(white: 0.8), Color(white: 0.58)],
-                                         startPoint: .top, endPoint: .bottom))
-                    .frame(width: 17, height: 17)
+                    .fill(ModuleStyle.brass)
+                    .frame(width: 18, height: 18)
                     .overlay(RoundedRectangle(cornerRadius: 3)
-                        .stroke(port.conductor.swiftUIColor, lineWidth: 1.6))
-                Circle()
-                    .fill(loose ? Color.orange.opacity(0.9) : Color(white: 0.4))
-                    .frame(width: 10, height: 10)
-                Rectangle()
-                    .fill(Color(white: 0.12))
-                    .frame(width: 8, height: 1.6)
-                    .rotationEffect(.degrees(loose ? 45 : 0))
+                        .stroke(port.conductor.swiftUIColor, lineWidth: 1.5))
+                    .overlay(alignment: edge == .top ? .top : .bottom) {
+                        RoundedRectangle(cornerRadius: 1.5)
+                            .fill(Color(white: 0.13))
+                            .frame(width: 8, height: 4.5)
+                            .padding(edge == .top ? .top : .bottom, 1.2)
+                    }
+                // დაჭრილი სპილენძის ხრახნი — ამოწეული სანამ მოუჭერელია
+                ZStack {
+                    Circle().fill(ModuleStyle.screw).frame(width: 11, height: 11)
+                        .overlay(Circle().stroke(Color.black.opacity(0.30), lineWidth: 0.6))
+                    if loose {
+                        Circle().fill(Color.orange.opacity(0.45)).frame(width: 11, height: 11)
+                    }
+                    Rectangle().fill(Color.black.opacity(0.75))
+                        .frame(width: 8.5, height: 1.6)
+                        .rotationEffect(.degrees(slotAngle))
+                }
+                .scaleEffect(loose ? 1.12 : 1.0)                 // ამოწეული თავი
+                .offset(y: -outward * 2.2)                       // ღრუს მოპირდაპირედ
+                .animation(.linear(duration: 0.42), value: slotAngle)
+                .animation(.easeOut(duration: 0.18), value: loose)
             }
+            .frame(width: 18, height: 18)
             .overlay(Circle().stroke(selected ? Color.yellow : .clear, lineWidth: 3)
-                .frame(width: 21, height: 21))
+                .frame(width: 22, height: 22))
             .overlay { if live { Circle().stroke(Color.yellow, lineWidth: 2).blur(radius: 2) } }
             .overlay(alignment: .topTrailing) {
                 if loose { Text("🔧").font(.system(size: 7)).offset(x: 7, y: -6) }
@@ -1572,16 +1739,21 @@ struct ComponentCardView: View {
                     value: [port.id: CGPoint(x: g.frame(in: .named(kBoardSpace)).midX,
                                              y: g.frame(in: .named(kBoardSpace)).midY)])
             })
-            .animation(.easeInOut(duration: 0.2), value: loose)
             Text(port.name).font(.system(size: 8))
                 .foregroundStyle(Color.black.opacity(0.5)).lineLimit(1)
         }
         .contentShape(Rectangle())
         .onTapGesture { onTapPort(port.id) }
-        // tap-and-hold (~0.4წმ) — კლემის მოჭერა; მოჭერილზე — ბარათის მონიშვნა
-        // (კონექტორებს სახე არ აქვთ და მონიშვნა კლემებიდანაც უნდა შეიძლებოდეს).
-        .onLongPressGesture(minimumDuration: 0.4) {
+        // tap-and-hold (~0.45წმ) — ხრახნი პროგრესულად იჭერა; ადრე აშვება = უკან
+        // ბრუნდება. მოჭერილზე გრძელი დაჭერა — ბარათის მონიშვნა (კონექტორებს
+        // სახე არ აქვთ და მონიშვნა კლემებიდანაც უნდა შეიძლებოდეს).
+        .onLongPressGesture(minimumDuration: 0.45, maximumDistance: 14) {
+            pressingPort = nil
             if loose { onTightenPort(port.id) } else { onLongPress() }
+        } onPressingChanged: { p in
+            // აშვებაზე ყოველთვის ვასუფთავებთ — თუნდაც loose შუა ჭერისას შეიცვალოს.
+            if p { if loose { pressingPort = port.id } }
+            else if pressingPort == port.id { pressingPort = nil }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityIdentifier("term-\(port.id)")
