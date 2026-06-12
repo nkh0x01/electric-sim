@@ -17,7 +17,8 @@ struct CareerBoardView: View {
     private var presentCategories: [JobCategory] {
         var seen: [JobCategory] = []
         for j in game.jobs where !seen.contains(j.category) { seen.append(j.category) }
-        return seen.sorted { $0.rawValue < $1.rawValue }
+        // პროგრესიის რიგი: შესავალი → საცხოვრებელი → ... → ოსტატი
+        return seen.sorted { $0.order < $1.order }
     }
     private func jobs(in category: JobCategory) -> [Job] {
         game.jobs.filter { $0.category == category }.sorted { $0.difficulty < $1.difficulty }

@@ -221,5 +221,246 @@
       },
       "description": "განათება და ორივე როზეტი უნდა მუშაობდეს."
     }
+  },
+  {
+    "id": "residential_full_apartment_board",
+    "georgianTitle": "4-ოთახიანი ბინის მთავარი ფარი",
+    "customerName": "ბექა კაპანაძე",
+    "location": "ბინა ვაკეში",
+    "category": "residential",
+    "difficulty": 3,
+    "tier": "pro",
+    "jobBrief": "ახალი ბინა ჩავიბარე. მინდა ყველა ოთახი ცალკე ხაზებზე იყოს, სამზარეულოც ცალკე და აბაზანაც უსაფრთხოდ გაკეთდეს. მთავარი ჩამრთველი იყოს 63A. სველი და როზეტიანი ხაზები გაანაწილე ორ დაცულ ჯგუფად (ორი RCD ან RCBO-ები) — ერთ RCD-ზე ზედმეტი წრე არ ჩამოკიდო. განათება B10/1.5მმ², როზეტები B16-B20/2.5მმ², ნული და მიწა — N-bus/PE-bus სალტეებზე.",
+    "componentsAvailable": ["main_2p", "rcd_30", "rcbo_b16_30", "busbar_l", "busbar_n", "busbar_pe", "mcb_b10", "mcb_b16", "mcb_b20", "lamp_60", "socket_16", "boiler_2000", "ac_1500"],
+    "requiredComponents": ["main_2p", "rcd_30", "busbar_n", "busbar_pe", "mcb_b10", "mcb_b16", "lamp_60", "socket_16", "boiler_2000", "ac_1500"],
+    "xpReward": 800,
+    "cashReward": 1200,
+    "unlocks": [],
+    "goal": {
+      "poweredLoads": { "lamp": 2, "socket": 3, "boiler": 1, "airConditioner": 1 },
+      "description": "ყველა ხაზი მუშაობს: 2 განათება, 3 როზეტის ჯგუფი 30mA დაცვით, ბოილერი და კონდიციონერი — შეცდომების გარეშე."
+    }
+  },
+  {
+    "id": "residential_duplex_distribution",
+    "georgianTitle": "დუპლექსის ორსართულიანი ფარი",
+    "customerName": "ნინო აბაშიძე",
+    "location": "კერძო სახლი საგურამოში",
+    "category": "residential",
+    "difficulty": 3,
+    "tier": "pro",
+    "jobBrief": "ქვედა და ზედა სართულები ცალ-ცალკე მინდა იმართებოდეს. როზეტები იყოს 30mA დაცვაზე, ნეიტრალები და დამიწება სწორად გადანაწილდეს N-bus და PE-bus-ზე. რეკომენდებულია ორი RCD ჯგუფი — დაცულ ჯგუფებს შორის საერთო ნული არ გააკეთო. ჭიშკრის ავტომატიკა ცალკე B10 ხაზზე (სასიგნალო ნათურით მოდელირდება).",
+    "componentsAvailable": ["main_2p", "rcd_30", "busbar_l", "busbar_n", "busbar_pe", "mcb_b10", "mcb_b16", "mcb_b20", "lamp_60", "socket_16", "boiler_2000", "indicator"],
+    "requiredComponents": ["main_2p", "rcd_30", "busbar_n", "busbar_pe", "mcb_b10", "mcb_b16", "lamp_60", "socket_16", "boiler_2000", "indicator"],
+    "xpReward": 950,
+    "cashReward": 1450,
+    "unlocks": [],
+    "goal": {
+      "poweredLoads": { "lamp": 2, "socket": 2, "boiler": 1, "indicatorLight": 1 },
+      "description": "ორი სართულის განათება და როზეტები (30mA), ბოილერი და ჭიშკრის ხაზი მუშაობს."
+    }
+  },
+  {
+    "id": "residential_luxury_apartment",
+    "georgianTitle": "პრემიუმ ბინის ენერგოსისტემა",
+    "customerName": "ლაშა ბურჯანაძე",
+    "location": "ბინა კრწანისში",
+    "category": "residential",
+    "difficulty": 4,
+    "tier": "pro",
+    "jobBrief": "ყველა ძლიერი მოწყობილობა ცალკე ხაზზე მინდა და დაცვაც მაქსიმალური. ღუმელი C25/4მმ², სარეცხი/საშრობი/ჭურჭლის სარეცხი — 30mA დაცვით (გამოიყენე ცალკე RCBO-ები სადაც საჭიროა), განათების ორი ჯგუფი B10/1.5მმ².",
+    "componentsAvailable": ["main_2p", "rcd_30", "rcbo_b16_30", "busbar_l", "busbar_n", "busbar_pe", "mcb_b10", "mcb_b20", "mcb_c25", "lamp_60", "socket_16", "oven_3500", "heater_2000"],
+    "requiredComponents": ["main_2p", "rcd_30", "busbar_n", "busbar_pe", "mcb_b10", "mcb_c25", "lamp_60", "socket_16", "oven_3500", "heater_2000"],
+    "xpReward": 1200,
+    "cashReward": 1800,
+    "unlocks": [],
+    "goal": {
+      "poweredLoads": { "oven": 1, "socket": 3, "lamp": 2, "heater": 1 },
+      "description": "ღუმელი (C25/4მმ²), 3 როზეტის ხაზი 30mA დაცვით, საშრობი და ორი განათების ჯგუფი მუშაობს."
+    }
+  },
+  {
+    "id": "residential_garden_house_subboard",
+    "georgianTitle": "ეზოს სახლის ქვეფარი",
+    "customerName": "თამარ გოგუაძე",
+    "location": "კერძო სახლი ბათუმში",
+    "category": "residential",
+    "difficulty": 4,
+    "tier": "pro",
+    "jobBrief": "ეზოში პატარა სახლი ავაშენე და ცალკე ფარი მინდა. მთავარი ფარიდან ქვეფარამდე გამოიყენე 40A ფიდერი (C40) და 10მმ² კაბელი — ფიდერის სწორი ზომა ისწავლე. ქვეფარში ცალკე N-bus და PE-bus; PE უწყვეტად უნდა მივიდეს ქვეფარამდე. განათება B10, როზეტი B16 (30mA), წყლის ტუმბო B20 (2კვტ დატვირთვით მოდელირდება).",
+    "componentsAvailable": ["main_2p", "mcb_c40", "rcd_30", "busbar_l", "busbar_n", "busbar_pe", "mcb_b10", "mcb_b16", "mcb_b20", "lamp_60", "socket_16", "heater_2000"],
+    "requiredComponents": ["main_2p", "mcb_c40", "rcd_30", "busbar_n", "busbar_pe", "mcb_b10", "mcb_b16", "mcb_b20", "lamp_60", "socket_16", "heater_2000"],
+    "xpReward": 1400,
+    "cashReward": 2200,
+    "unlocks": [],
+    "goal": {
+      "poweredLoads": { "lamp": 1, "socket": 1, "heater": 1 },
+      "description": "ქვეფარის სამივე ხაზი მუშაობს: განათება, როზეტი 30mA დაცვით და ტუმბო — ფიდერი 40A/10მმ²."
+    },
+    "csaOptions": [1.5, 2.5, 4, 6, 10]
+  },
+  {
+    "id": "commercial_cafe_kitchen_board",
+    "georgianTitle": "კაფის სამზარეულოს ფარი",
+    "customerName": "გიორგი თოფურია",
+    "location": "კაფე ბათუმში",
+    "category": "commercial",
+    "difficulty": 4,
+    "tier": "pro",
+    "jobBrief": "ახალი კაფე გავხსენი. ყავის აპარატი, ღუმელი, მაცივრები და სამზარეულო ერთდროულად უნდა მუშაობდეს. დატვირთვები გაანაწილე L1/L2/L3-ზე ისე, რომ ფაზები ბალანსში იყოს. ბარის/მაცივრების/ჭურჭლის სარეცხის როზეტები — 30mA დაცვით, ღუმელი C25/4მმ², განათება B10.",
+    "componentsAvailable": ["main_4p", "rcd_30", "busbar_l", "busbar_n", "busbar_pe", "mcb_b10", "mcb_b20", "mcb_c25", "socket_16", "oven_3500", "lamp_60"],
+    "requiredComponents": ["main_4p", "rcd_30", "busbar_n", "busbar_pe", "mcb_b10", "mcb_b20", "mcb_c25", "socket_16", "oven_3500", "lamp_60"],
+    "xpReward": 1800,
+    "cashReward": 3200,
+    "unlocks": [],
+    "goal": {
+      "poweredLoads": { "socket": 3, "oven": 1, "lamp": 1 },
+      "description": "სამი როზეტის ხაზი (30mA), ღუმელი და განათება მუშაობს; ფაზები დაბალანსებულია.",
+      "requireBalanced": true
+    },
+    "phase": "threePhase"
+  },
+  {
+    "id": "commercial_office_floor_distribution",
+    "georgianTitle": "საოფისე სართულის განაწილების ფარი",
+    "customerName": "თინა შავიშვილი",
+    "location": "ბიზნეს ცენტრი თბილისში",
+    "category": "commercial",
+    "difficulty": 4,
+    "tier": "pro",
+    "jobBrief": "სართულზე 40 თანამშრომელი გვყავს. კომპიუტერები და განათება ცალ-ცალკე მინდა. ოფისის A/B და სერვერის როზეტები დაიცავი 30mA-ით (RCBO-ები ან RCD ჯგუფი), განათების ორი ჯგუფი B10 ხაზებზე.",
+    "componentsAvailable": ["main_2p", "rcd_30", "rcbo_b16_30", "busbar_l", "busbar_n", "busbar_pe", "mcb_b10", "mcb_b20", "lamp_60", "socket_16"],
+    "requiredComponents": ["main_2p", "rcd_30", "busbar_n", "busbar_pe", "mcb_b10", "lamp_60", "socket_16"],
+    "xpReward": 2200,
+    "cashReward": 3800,
+    "unlocks": [],
+    "goal": {
+      "poweredLoads": { "socket": 3, "lamp": 2 },
+      "description": "ოფისის სამი როზეტის ხაზი 30mA დაცვით და ორი განათების ჯგუფი მუშაობს."
+    }
+  },
+  {
+    "id": "industrial_machine_workshop",
+    "georgianTitle": "მეტალის სახელოსნოს მთავარი ფარი",
+    "customerName": "რევაზ ჯავახაძე",
+    "location": "სახელოსნო დიდუბეში",
+    "category": "industrial",
+    "difficulty": 5,
+    "tier": "pro",
+    "jobBrief": "მაქვს სამფაზა დაზგები და კომპრესორი. მინდა სწორად იყოს დაცული. ორი დაზგა C25/4მმ² ხაზებზე, კომპრესორი ჩართე კონტაქტორით (3P) და სამფაზა ძრავით — დამცავად MPCB. სამუშაო როზეტები 30mA დაცვით, განათება B10. დატვირთვა ფაზებზე დააბალანსე.",
+    "componentsAvailable": ["main_4p", "mcb_c25", "mpcb_16", "contactor_3p", "rcd_30", "busbar_l", "busbar_n", "busbar_pe", "mcb_b20", "mcb_b10", "motor_3ph", "socket_16", "lamp_60"],
+    "requiredComponents": ["main_4p", "mcb_c25", "mpcb_16", "contactor_3p", "rcd_30", "busbar_pe", "mcb_b10", "motor_3ph", "socket_16", "lamp_60"],
+    "xpReward": 3000,
+    "cashReward": 5500,
+    "unlocks": [],
+    "goal": {
+      "poweredLoads": { "motor": 3, "socket": 1, "lamp": 1 },
+      "description": "სამივე სამფაზა მანქანა (კომპრესორი — კონტაქტორით), როზეტი 30mA დაცვით და განათება მუშაობს; ფაზები დაბალანსებულია.",
+      "requireBalanced": true
+    },
+    "phase": "threePhase"
+  },
+  {
+    "id": "industrial_warehouse_distribution",
+    "georgianTitle": "საწყობის სამფაზა განაწილება",
+    "customerName": "ზვიად მჭედლიშვილი",
+    "location": "საწყობი ფოთში",
+    "category": "industrial",
+    "difficulty": 5,
+    "tier": "pro",
+    "jobBrief": "საწყობში დატვირთვა თანაბრად უნდა გადანაწილდეს. თითო ფაზაზე — განათების ჯგუფი (B10/1.5მმ²) და სამუშაო დატვირთვა: დამტენების როზეტები B16/2.5მმ² 30mA დაცვით, შესაფუთი უბნის როზეტი B16 30mA-თი, კონვეიერი B20/2.5მმ². ისე გადაანაწილე, რომ ფაზები ბალანსში იყოს.",
+    "componentsAvailable": ["main_4p", "rcd_30", "rcbo_b16_30", "busbar_l", "busbar_n", "busbar_pe", "mcb_b10", "mcb_b16", "mcb_b20", "lamp_60", "socket_16", "heater_2000"],
+    "requiredComponents": ["main_4p", "rcd_30", "busbar_n", "busbar_pe", "mcb_b10", "mcb_b16", "mcb_b20", "lamp_60", "socket_16", "heater_2000"],
+    "xpReward": 3200,
+    "cashReward": 6000,
+    "unlocks": [],
+    "goal": {
+      "poweredLoads": { "lamp": 3, "socket": 2, "heater": 1 },
+      "description": "სამი განათების ჯგუფი, ორი როზეტის ხაზი (30mA) და კონვეიერი მუშაობს; ფაზები დაბალანსებულია.",
+      "requireBalanced": true
+    },
+    "phase": "threePhase"
+  },
+  {
+    "id": "renewable_solar_hybrid_home",
+    "georgianTitle": "მზის ჰიბრიდული სახლი",
+    "customerName": "დავით კობახიძე",
+    "location": "კერძო სახლი კახეთში",
+    "category": "renewable",
+    "difficulty": 5,
+    "tier": "pro",
+    "jobBrief": "მინდა მზის სისტემა და ქსელთან სწორად შეერთება. გამოიყენე ქსელზე მიერთებული (grid-tied) ინვერტორი მზის პანელით და ფარი ისე ააწყვე, რომ ძირითადი სახლის ხაზები სწორად იყოს დაცული: განათება B10, მაცივრისა და საერთო როზეტები 30mA დაცვით, ღუმელი C25/4მმ², კონდიციონერი B20.",
+    "componentsAvailable": ["solar", "inverter", "main_2p", "rcd_30", "busbar_l", "busbar_n", "busbar_pe", "mcb_b10", "mcb_b16", "mcb_b20", "mcb_c25", "lamp_60", "socket_16", "oven_3500", "ac_1500"],
+    "requiredComponents": ["solar", "inverter", "main_2p", "rcd_30", "busbar_n", "busbar_pe", "mcb_b10", "mcb_b16", "lamp_60", "socket_16", "oven_3500", "ac_1500"],
+    "xpReward": 3800,
+    "cashReward": 7200,
+    "unlocks": [],
+    "goal": {
+      "poweredLoads": { "lamp": 1, "socket": 2, "oven": 1, "airConditioner": 1 },
+      "description": "მზის სისტემით კვებადი ფარი: განათება, ორი როზეტის ხაზი (30mA), ღუმელი და კონდიციონერი მუშაობს."
+    }
+  },
+  {
+    "id": "renewable_commercial_rooftop",
+    "georgianTitle": "კომერციული სახურავის მზის სადგური",
+    "customerName": "ნიკა ბარბაქაძე",
+    "location": "ქარხანა რუსთავში",
+    "category": "renewable",
+    "difficulty": 5,
+    "tier": "pro",
+    "jobBrief": "მინდა საწარმოსთვის სამფაზა მზის სისტემა. მზის პანელი და ინვერტორი ცალკე (კუნძულოვან) წრედად ააწყვე — ინვერტორის ქსელში პირდაპირი ჩართვა ჯერ არ მოდელირდება, PE კი აუცილებლად მიაერთე დამიწების სალტეს. ქსელის სამფაზა მხარეს სისტემის გამართულობას სამფაზა როზეტის ხაზით ამოწმებ: 3P 32A დაცვა (C32), 6მმ² კაბელი, 30mA დაცვის ქვეშ და დაბალანსებული ფაზებით.",
+    "componentsAvailable": ["solar", "inverter", "main_4p", "mcb_c32", "rcd_30", "busbar_n", "busbar_pe", "socket3ph_16"],
+    "requiredComponents": ["solar", "inverter", "main_4p", "mcb_c32", "rcd_30", "busbar_pe", "socket3ph_16"],
+    "xpReward": 4200,
+    "cashReward": 8200,
+    "unlocks": [],
+    "goal": {
+      "poweredLoads": { "socket3ph": 1 },
+      "description": "სამფაზა სისტემა მუშაობს: 3P 32A/6მმ² მიერთება და სამფაზა როზეტი 30mA დაცვით; ფაზები დაბალანსებულია.",
+      "requireBalanced": true
+    },
+    "phase": "threePhase",
+    "csaOptions": [1.5, 2.5, 4, 6]
+  },
+  {
+    "id": "master_ev_charging_hub",
+    "georgianTitle": "EV დამტენების სადგური",
+    "customerName": "ირაკლი ხუციშვილი",
+    "location": "სავაჭრო ცენტრი თბილისში",
+    "category": "master",
+    "difficulty": 5,
+    "tier": "pro",
+    "jobBrief": "მჭირდება ოთხი EV დამტენი, რომლებიც ერთდროულად იმუშავებენ. თითოეული დამტენი იყოს ცალკე 32A RCBO-ზე და 6მმ² კაბელზე, ფაზებზე თანაბრად გადანაწილებული. Type A + 6mA DC დეტექცია სავალდებულოა — ეს ტექსტური მოთხოვნაა, რადგან თამაშის ინსპექტორი ჯერ DC დეტექციას არ ამოწმებს.",
+    "componentsAvailable": ["main_4p", "rcbo_b32_30", "busbar_l", "busbar_n", "busbar_pe", "ev_charger_7kw"],
+    "requiredComponents": ["main_4p", "rcbo_b32_30", "busbar_n", "busbar_pe", "ev_charger_7kw"],
+    "xpReward": 5000,
+    "cashReward": 10000,
+    "unlocks": [],
+    "goal": {
+      "poweredLoads": { "heater": 4 },
+      "description": "ოთხივე დამტენი მუშაობს — თითო ცალკე 32A RCBO-ზე, 6მმ² კაბელით; ფაზები დაბალანსებულია.",
+      "requireBalanced": true
+    },
+    "phase": "threePhase",
+    "csaOptions": [1.5, 2.5, 4, 6]
+  },
+  {
+    "id": "master_hotel_floor_system",
+    "georgianTitle": "სასტუმროს სართულის სრული სისტემა",
+    "customerName": "გურამ ქავთარაძე",
+    "location": "სასტუმრო ბაკურიანში",
+    "category": "master",
+    "difficulty": 5,
+    "tier": "pro",
+    "jobBrief": "ერთი სართულის მთელი ელექტროსისტემა თავიდან უნდა ააწყო. ეს არის ყველაზე დიდი დაფა თამაშში: 4 ოთახის როზეტები (B16, 30mA) და განათება (B10), სამრეცხაო და ბოილერი (B20, 30mA), დერეფნის/საევაკუაციო განათება. საევაკუაციო განათება ამ ეტაპზე ჩვეულებრივ განათების ხაზად მოდელირდება (LED პანელი). ყველგან გამოიყენე N-bus და PE-bus.",
+    "componentsAvailable": ["main_2p", "spd", "rcd_30", "rcbo_b16_30", "busbar_l", "busbar_n", "busbar_pe", "mcb_b10", "mcb_b16", "mcb_b20", "lamp_60", "led_panel", "socket_16", "heater_2000", "boiler_2000"],
+    "requiredComponents": ["main_2p", "rcd_30", "busbar_n", "busbar_pe", "mcb_b10", "mcb_b16", "mcb_b20", "lamp_60", "led_panel", "socket_16", "heater_2000", "boiler_2000"],
+    "xpReward": 6500,
+    "cashReward": 14000,
+    "unlocks": [],
+    "goal": {
+      "poweredLoads": { "lamp": 5, "socket": 4, "heater": 1, "boiler": 1 },
+      "description": "სართულის 11-ვე ხაზი მუშაობს: 4 ოთახის როზეტი (30mA) და განათება, სამრეცხაო, ბოილერი და დერეფნის/საევაკუაციო განათება."
+    }
   }
 ]

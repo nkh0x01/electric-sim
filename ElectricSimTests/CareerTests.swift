@@ -130,19 +130,136 @@ final class CareerTests: XCTestCase {
         }
     }
 
-    // 8) Apprentice (placeholder) სამუშაოები უფასოა; მაღალი წოდების — Pro-ჩაკეტილი
+    // 8) Apprentice (tutorial) სამუშაოები უფასოა; advanced (მაღალი წოდების) — Pro
     func testApprenticeFreeLaterRanksProGated() throws {
         let s = CareerState(defaults: freshDefaults())
         let jobs = try GameData.loadJobs()
-        // placeholder სამუშაოები ყველა უფასოა → არ-ჩაკეტილი უფასო მომხმარებლისთვის
         for job in jobs {
-            XCTAssertEqual(job.tier, .free, "Phase 1 placeholder სამუშაო უნდა იყოს უფასო: \(job.id)")
-            XCTAssertFalse(s.isProLocked(job, isPro: false))
+            if job.category == .tutorial {
+                XCTAssertEqual(job.tier, .free, "Apprentice სამუშაო უნდა იყოს უფასო: \(job.id)")
+                XCTAssertFalse(s.isProLocked(job, isPro: false))
+            } else {
+                XCTAssertEqual(job.tier, .pro, "Advanced სამუშაო უნდა იყოს Pro: \(job.id)")
+                XCTAssertTrue(s.isProLocked(job, isPro: false))
+                XCTAssertFalse(s.isProLocked(job, isPro: true))
+            }
         }
-        // Pro სამუშაო — ჩაკეტილია უფასოსთვის, ღიაა Pro-სთვის (gating არ იფორკება)
-        let proJob = sampleJob(id: "job_pro", tier: .pro)
-        XCTAssertTrue(s.isProLocked(proJob, isPro: false))
-        XCTAssertFalse(s.isProLocked(proJob, isPro: true))
+    }
+
+    // MARK: - Advanced career jobs (Phase B)
+
+    private static let advancedThreePhaseIDs: Set<String> = [
+        "commercial_cafe_kitchen_board", "industrial_machine_workshop",
+        "industrial_warehouse_distribution", "renewable_commercial_rooftop",
+        "master_ev_charging_hub"
+    ]
+
+    /// 12 advanced სამუშაო: რაოდენობა, წოდებები, ფაზები, კვეთები, შიდა თანმიმდევრულობა.
+    func testAdvancedJobsContent() throws {
+        let templates = try GameData.loadTemplates()
+        let jobs = try GameData.loadJobs()
+        XCTAssertEqual(jobs.count, 19, "7 apprentice + 12 advanced = 19")
+
+        let advanced = jobs.filter { $0.category != .tutorial }
+        XCTAssertEqual(advanced.count, 12, "12-ვე advanced სამუშაო უნდა იშიფრებოდეს")
+
+        // წოდებები (კატეგორიები) სწორია
+        let expectedCategory: [String: JobCategory] = [
+            "residential_full_apartment_board": .residential,
+            "residential_duplex_distribution": .residential,
+            "residential_luxury_apartment": .residential,
+            "residential_garden_house_subboard": .residential,
+            "commercial_cafe_kitchen_board": .commercial,
+            "commercial_office_floor_distribution": .commercial,
+            "industrial_machine_workshop": .industrial,
+            "industrial_warehouse_distribution": .industrial,
+            "renewable_solar_hybrid_home": .renewable,
+            "renewable_commercial_rooftop": .renewable,
+            "master_ev_charging_hub": .master,
+            "master_hotel_floor_system": .master
+        ]
+        for (id, cat) in expectedCategory {
+            let job = try XCTUnwrap(jobs.first { $0.id == id }, "აკლია \(id)")
+            XCTAssertEqual(job.category, cat, "\(id): წოდება")
+            XCTAssertEqual(job.tier, .pro, "\(id): advanced → Pro")
+        }
+
+        // ფაზები: სამფაზიანებს phase == threePhase და .three დონე; დანარჩენებს single
+        for job in advanced {
+            let expect3 = Self.advancedThreePhaseIDs.contains(job.id)
+            XCTAssertEqual(job.phase == .threePhase, expect3, "\(job.id): ფაზა")
+            XCTAssertEqual(job.makeLevel().phase, expect3 ? .three : .single, "\(job.id): დონის ფაზა")
+        }
+
+        // 6/10მმ² მხოლოდ იქ, სადაც სპეცი ითხოვს
+        XCTAssertTrue(try XCTUnwrap(jobs.first { $0.id == "residential_garden_house_subboard" })
+            .resolvedCsaOptions.contains(10))
+        for id in ["renewable_commercial_rooftop", "master_ev_charging_hub"] {
+            XCTAssertTrue(try XCTUnwrap(jobs.first { $0.id == id }).resolvedCsaOptions.contains(6),
+                          "\(id): 6მმ² საჭიროა")
+        }
+
+        for job in advanced {
+            // ვერც ერთი ავტომატი არ აღემატება job-ის მაქს. კვეთის ampacity-ს
+            let allowed = Ampacity.maxBreaker(forCsa: job.resolvedCsaOptions.max() ?? 4)
+            for id in job.componentsAvailable {
+                guard let t = templates[id] else { XCTFail("\(job.id): უცნობი შაბლონი \(id)"); continue }
+                if t.kind.isBreaker, let r = t.ratingA {
+                    XCTAssertLessThanOrEqual(r, allowed,
+                        "\(job.id): \(id) (\(Int(r))A) > დასაშვები \(Int(allowed))A")
+                }
+            }
+            // როზეტიან მიზნებს 30mA დაცვა აქვთ პალიტრაში
+            let goalKinds = Set(job.goal.poweredLoads.keys)
+            if goalKinds.contains("socket") || goalKinds.contains("socket3ph") {
+                let hasRCD = job.componentsAvailable.contains {
+                    templates[$0]?.kind == .rcd || templates[$0]?.kind == .rcbo
+                }
+                XCTAssertTrue(hasRCD, "\(job.id): როზეტის ხაზს სჭირდება 30mA დაცვა")
+            }
+            // makeLevel მუშაობს; მიზნის ყველა kind პალიტრაშია და მიღწევადია (max 4/შაბლონი)
+            let level = job.makeLevel()
+            XCTAssertFalse(level.palette.isEmpty, "\(job.id): პალიტრა ცარიელია")
+            for (kindStr, count) in job.goal.poweredLoads {
+                let kind = try XCTUnwrap(ComponentKind(rawValue: kindStr), "\(job.id): kind \(kindStr)")
+                let nTemplates = job.componentsAvailable.filter { templates[$0]?.kind == kind }.count
+                XCTAssertGreaterThan(nTemplates, 0, "\(job.id): მიზნის \(kindStr) პალიტრაში არ არის")
+                XCTAssertLessThanOrEqual(count, nTemplates * 4, "\(job.id): \(kindStr) მიზანი მიუღწეველია")
+            }
+            for need in job.requiredComponents {
+                XCTAssertTrue(job.componentsAvailable.contains(need),
+                              "\(job.id): საჭირო \(need) პალიტრაში არ არის")
+            }
+        }
+
+        // Learn რეჟიმი უცვლელია: 6 უფასო tutorial დონე ისევ იტვირთება
+        let levels = try GameData.loadLevels()
+        XCTAssertEqual(levels.filter { $0.resolvedTier == .free && $0.resolvedCategory == .tutorial }.count, 6,
+                       "Learn-ის უფასო გაკვეთილები უცვლელი უნდა დარჩეს")
+    }
+
+    /// EV-ჰაბის ბალანსის საზღვარი: 4 იდენტური 7კვტ დამტენი 2/1/1 ფაზებზე ზუსტად
+    /// imbalance-ზღვარზეა ((max-min) == 0.5·max) და გაგდება არ უნდა მოხდეს.
+    /// იცავს master_ev_charging_hub-ს solver-ის წესის მომავალი ცვლილებისგან.
+    func testFourIdenticalChargersTwoOneOneIsBalanced() throws {
+        let templates = try GameData.loadTemplates()
+        let charger = try XCTUnwrap(templates["ev_charger_7kw"])
+        let rcbo = try XCTUnwrap(templates["rcbo_b32_30"])
+        var b = Board(phase: .three)
+        b.add(ComponentFactory.supply(id: "supply", phase: .three))
+        for (i, ph) in ["L1", "L1", "L2", "L3"].enumerated() {
+            let evID = "ev_charger_7kw_\(i + 1)", brkID = "rcbo_b32_30_\(i + 1)"
+            b.add(rcbo.makeComponent(instanceID: brkID, phase: .three))
+            b.add(charger.makeComponent(instanceID: evID, phase: .three))
+            b.connect("supply.\(ph)", "\(brkID).in", csaMm2: 6, color: .brown)
+            b.connect("\(brkID).out", "\(evID).L", csaMm2: 6, color: .brown)
+            b.connect("supply.N", "\(evID).N", csaMm2: 6, color: .blue)
+            b.connect("supply.PE", "\(evID).PE", csaMm2: 6, color: .yellowGreen)
+        }
+        let r = CircuitSolver().solve(b, energize: true)
+        XCTAssertFalse(r.contains(.phaseImbalance), "2/1/1 ზუსტად ზღვარია — ბალანსად უნდა ჩაითვალოს")
+        XCTAssertTrue(r.passed, "შეცდომები: \(r.errors.map(\.code))")
+        XCTAssertEqual(r.loadStates.filter(\.isPowered).count, 4, "ოთხივე დამტენი მუშაობს")
     }
 
     // Phase 2 — job → level bridge solvable + completion wiring (award once)

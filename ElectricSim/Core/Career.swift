@@ -21,6 +21,7 @@ public enum JobCategory: String, Codable, Sendable, CaseIterable {
     case faultfinding
     case renewable
     case inspection
+    case master       // ოსტატის დონის სამუშაოები (advanced)
 
     public var georgian: String {
         switch self {
@@ -31,6 +32,21 @@ public enum JobCategory: String, Codable, Sendable, CaseIterable {
         case .faultfinding: return "დეფექტის ძებნა"
         case .renewable:    return "განახლებადი ენერგია"
         case .inspection:   return "ინსპექცია"
+        case .master:       return "ოსტატი"
+        }
+    }
+
+    /// ჩვენების რიგი კარიერის დაფაზე — პროგრესიის მიხედვით (შესავალი პირველი).
+    public var order: Int {
+        switch self {
+        case .tutorial:     return 0
+        case .residential:  return 1
+        case .commercial:   return 2
+        case .industrial:   return 3
+        case .renewable:    return 4
+        case .master:       return 5
+        case .faultfinding: return 6
+        case .inspection:   return 7
         }
     }
 }

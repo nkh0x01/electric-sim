@@ -76,6 +76,15 @@
     "category": "protection"
   },
   {
+    "id": "mcb_c25",
+    "kind": "mcb",
+    "name": "ავტომატი (MCB) C25 — ღუმელი",
+    "ratingA": 25,
+    "curve": "C",
+    "priceGEL": 15,
+    "category": "protection"
+  },
+  {
     "id": "mcb_c32",
     "kind": "mcb",
     "name": "ავტომატი (MCB) C32 — ბოილერი",
@@ -83,6 +92,24 @@
     "curve": "C",
     "priceGEL": 16,
     "category": "protection"
+  },
+  {
+    "id": "mcb_c40",
+    "kind": "mcb",
+    "name": "ავტომატი (MCB) C40 — ფიდერი",
+    "ratingA": 40,
+    "curve": "C",
+    "priceGEL": 18,
+    "category": "protection"
+  },
+  {
+    "id": "ev_charger_7kw",
+    "kind": "heater",
+    "name": "დამტენი EV 7kW",
+    "powerW": 7000,
+    "requiresPE": true,
+    "priceGEL": 1200,
+    "category": "load"
   },
   {
     "id": "busbar_l",
