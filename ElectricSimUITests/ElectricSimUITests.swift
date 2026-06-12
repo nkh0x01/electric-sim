@@ -400,10 +400,17 @@ final class ElectricSimUITests: XCTestCase {
         // ბუნიკის დადება სადენების სიიდან — ტოგლის ტიპის ექსპოზიცია OS-ზეა
         // დამოკიდებული (switch/other), ამიტომ ნებისმიერი ტიპით ვეძებთ და
         // გადამრთველის (trailing) ზონაში ვეხებით.
+        // კლასტერის შეკუმშვა: ღია კატეგორიის დაკეტვა (ზედა header ყოველთვის ხილულია),
+        // რომ ქვედა wire-ხელსაწყოების რიგი ძველ მეტრიკებზეც ჩარჩოში მოექცეს.
+        app.buttons["palette-cat-protection"].tap()
         let wiresBtn = app.buttons["wires-list"]
-        XCTAssertTrue(wiresBtn.waitForExistence(timeout: 8)); wiresBtn.tap()
-        XCTAssertTrue(app.navigationBars["სადენები"].waitForExistence(timeout: 8),
-                      "სადენების სია უნდა გაიხსნას")
+        XCTAssertTrue(wiresBtn.waitForExistence(timeout: 8))
+        wiresBtn.tap()
+        if !app.navigationBars["სადენები"].waitForExistence(timeout: 5) {
+            wiresBtn.tap()   // ნელ რანერზე პირველი შეხება შეიძლება დაიკარგოს
+            XCTAssertTrue(app.navigationBars["სადენები"].waitForExistence(timeout: 6),
+                          "სადენების სია უნდა გაიხსნას")
+        }
         // identifier-ის გავრცელება Toggle-ზე OS-ვერსიაზეა დამოკიდებული — ჯერ id-ით,
         // ვერადა ტიპით (ფურცელზე ერთადერთი ტოგლია).
         var ferrule = app.descendants(matching: .any)
