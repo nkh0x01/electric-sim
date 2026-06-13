@@ -66,8 +66,9 @@ public struct CircuitSolver {
         }
 
         // --- 3. მიმდევრობითი მოწყობილობების კიდეები (closed) ---
+        // გამორთული (isOpen) მოწყობილობა ღია კონტაქტია — დენს არ ატარებს (SPD-ის მსგავსად).
         var seriesEdges: [SeriesEdge] = []
-        for comp in board.components where comp.kind.isSeriesDevice {
+        for comp in board.components where comp.kind.isSeriesDevice && !comp.isOpen {
             // თითო პოლუსზე input ↔ output (SPD-ს არ ვითვლით — ის შუნტია და ჩვეულებრივ ღიაა)
             let compConductors = Set(comp.ports.map { $0.conductor })
             for c in compConductors {

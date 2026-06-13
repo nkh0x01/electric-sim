@@ -38,6 +38,55 @@ final class ElectricSimUITests: XCTestCase {
         shot.name = "PhotoModulePilot"; shot.lifetime = .keepAlways; add(shot)
     }
 
+    private func shot(_ app: XCUIApplication, _ name: String) {
+        let a = XCTAttachment(screenshot: app.screenshot())
+        a.name = name; a.lifetime = .keepAlways; add(a)
+    }
+
+    /// ფოტო-კლემის ინტერაქცია: სადენი ფოტოს კლემაში „შედის" (ორმაგი ხრახნის გარეშე),
+    /// მოუჭერელი → მოჭერილი, და ბერკეტი ON→OFF. + screenshot-ები შესაფასებლად.
+    func testPhotoTerminalInteractionScreenshots() {
+        let app = launchApp()
+        app.buttons["menu-panels"].tap()
+        let row = app.buttons["panel-lvl_panel_basic"]
+        XCTAssertTrue(row.waitForExistence(timeout: 15)); row.tap()
+        XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 15))
+        let mcb = openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-mcb_b10")
+        mcb.tap(); mcb.tap()
+        XCTAssertTrue(app.otherElements["face-mcb_b10_2"].waitForExistence(timeout: 5))
+
+        // 1) სადენი → ფოტო-კლემაში (cable-in) — კლემა მოუჭერელ-შეერთებული ხდება
+        dragWire(app, "term-supply.L", "term-mcb_b10_1.in")
+        let inTerm = app.otherElements["term-mcb_b10_1.in"]
+        let looseExp = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "value == 'მოსაჭერია'"), object: inTerm)
+        XCTAssertEqual(XCTWaiter().wait(for: [looseExp], timeout: 10), .completed,
+                       "სადენი ფოტო-კლემაში — მოუჭერელი")
+        shot(app, "PhotoTerminal-CableIn-Loose")
+
+        // 2) მოჭერა — tighten-all ღილაკი (req #3). ღია აკორდეონი ჯერ ვკეცოთ, რომ ღილაკი ჩანდეს.
+        app.buttons["palette-cat-protection"].tap()
+        let tightenAll = app.buttons["tighten-all"]
+        XCTAssertTrue(tightenAll.waitForExistence(timeout: 8), "მოუჭერელ სადენზე მოჭერის ღილაკი ჩანს")
+        tightenAll.tap()
+        // მოჭერის დადასტურება: მოჭერის ღილაკი ქრება (აღარაა მოუჭერელი სადენი)
+        let goneExp = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "exists == false"), object: tightenAll)
+        XCTAssertEqual(XCTWaiter().wait(for: [goneExp], timeout: 10), .completed,
+                       "მოჭერის შემდეგ ღილაკი ქრება")
+        shot(app, "PhotoTerminal-Tightened")
+
+        // 3) ბერკეტი ON→OFF (მე-2 ავტომატი) — dim + ქვედა ბერკეტი
+        let lever = app.otherElements["lever-mcb_b10_2"]
+        XCTAssertTrue(lever.waitForExistence(timeout: 5), "ფოტო-ბერკეტი უნდა იყოს")
+        XCTAssertEqual(lever.label, "ჩართული ბერკეტი")
+        lever.tap()
+        let offExp = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "label == 'გამორთული ბერკეტი'"), object: lever)
+        XCTAssertEqual(XCTWaiter().wait(for: [offExp], timeout: 5), .completed, "ბერკეტი გამოირთო")
+        shot(app, "PhotoLever-Off")
+    }
+
     /// მთავარ მენიუში „სწავლება“-ს გახსნა.
     private func openLearn(_ app: XCUIApplication) {
         let learn = app.buttons["menu-learn"]

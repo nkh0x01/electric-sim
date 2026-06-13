@@ -33,10 +33,10 @@ extension CircuitSolver {
             }
         }
 
-        // მიმდევრობითი მოწყობილობების კიდეები
+        // მიმდევრობითი მოწყობილობების კიდეები (გამორთული isOpen — ღია, არ ატარებს)
         struct E { let inNet: String; let outNet: String }
         var edges: [E] = []
-        for comp in board.components where comp.kind.isSeriesDevice {
+        for comp in board.components where comp.kind.isSeriesDevice && !comp.isOpen {
             for c in Set(comp.ports.map { $0.conductor }) {
                 guard let i = comp.port(side: .input, conductor: c),
                       let o = comp.port(side: .output, conductor: c) else { continue }

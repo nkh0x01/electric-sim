@@ -190,6 +190,17 @@ final class WorkbenchModel: ObservableObject {
         liveAnalysis = energized ? solver.analyze(board) : nil
     }
 
+    /// ბერკეტის გადართვა — ავტომატი/RCD/მთავარი ჩაირთვება/გამოირთვება. გამორთული
+    /// ღია კონტაქტია (დენი არ გადის). ცოცხალ ფარზეც დაშვებულია — ეს უსაფრთხო
+    /// კომუტაციაა (ბერკეტი სწორედ რომ რთავს/თიშავს).
+    func toggleDevice(_ id: String) {
+        guard let idx = board.components.firstIndex(where: { $0.id == id }),
+              board.components[idx].kind.isToggleable else { return }
+        board.components[idx].isOpen.toggle()
+        GameFeedback.snap()       // მექანიკური კლიკი
+        resetResult()             // ჩართულზე ხელახლა solve → ნათება მაშინვე განახლდება
+    }
+
     /// ცოცხალ ნაწილზე რედაქტირების მცველი. true → ქმედება დაბლოკილია (და დარეგისტრირდა შოკი).
     private func blockedByLiveEdit(_ ports: [String]) -> Bool {
         guard energized else { return false }
@@ -1573,8 +1584,10 @@ struct WorkbenchView: View {
             onTapPort: { model.tapPort($0) },
             onLongPress: { model.toggleSelect(comp.id) },
             onDelete: comp.id == "supply" ? nil : { model.removeComponent(comp.id) },
-            // ბერკეტი: ჩართულზე ზევით; გაგდებაზე (რომელიმე trip) — ვარდება.
-            leverUp: model.energized && !(model.result?.anyTrip ?? false),
+            // ბერკეტი = ამომრთველის მდგომარეობა: ჩართული (closed) → ზევით, გამორთული → ქვევით.
+            leverUp: !comp.isOpen,
+            // ბერკეტის გადართვა — მხოლოდ toggleable მოწყობილობებზე.
+            onToggleLever: comp.kind.isToggleable ? { model.toggleDevice(comp.id) } : nil,
             isSnapped: snappedID == comp.id,
             isUntightened: { model.isPortUntightened($0) },
             hasWire: { pid in
@@ -1892,6 +1905,8 @@ struct ComponentCardView: View {
     // რეალისტური DIN-მოდული — default-ებით, რომ read-only ჩვენებებმა (FaultBoardView)
     // უცვლელად იმუშაოს: ბერკეტი, ჩაჭდობის პულსი, კლემის მოჭერა.
     var leverUp: Bool = false
+    /// ბერკეტის გადართვა (ჩართვა/გამორთვა) — nil → არა-toggleable (read-only ჩვენებებიც).
+    var onToggleLever: (() -> Void)? = nil
     var isSnapped: Bool = false
     var isUntightened: (String) -> Bool = { _ in false }
     var hasWire: (String) -> Bool = { _ in false }
@@ -2013,26 +2028,118 @@ struct ComponentCardView: View {
         let w = CGFloat(moduleUnits) * kSlotPt
         let h = w / photoAspect            // სრული სიმაღლე — თორემ მშობელი ჭყლეტს
         let bottom = outputs + singles
+        let leverPt = CGPoint(x: photoLeverAnchor.x * w, y: photoLeverAnchor.y * h)
         return ZStack {
             // სურათი = მოდულის სახე (ერთი accessibility ელემენტი — face-<id>)
             Image(name).resizable().scaledToFit().frame(width: w, height: h)
-                // გაგდება/კვება — მსუბუქი შეფერილობა ფოტოზე (ბერკეტი სტატიკურია)
-                .overlay(RoundedRectangle(cornerRadius: 4).fill(faceTint))
                 .accessibilityElement(children: .ignore)
                 .accessibilityIdentifier("face-\(component.id)")
-            // ფეხების ინტერაქცია (ანკრი/მოჭერა/სადენი) ფოტოს კლემებზე გასწორებული —
-            // ცალკე accessibility ელემენტებად (term-<portid>), რომ მოჭერა/სადენი მუშაობდეს.
+            // გაგდება/კვება — მსუბუქი შეფერილობა (clear → უჩინარი)
+            RoundedRectangle(cornerRadius: 4).fill(faceTint).frame(width: w, height: h)
+            // გამორთული — ბნელდება + შავი ბერკეტი ქვევით ფოტოს „ON"-ს ფარავს
+            if component.isOpen {
+                RoundedRectangle(cornerRadius: 4).fill(Color.black.opacity(0.40))
+                    .frame(width: w, height: h)
+                photoOffLever.position(leverPt)
+            }
+            // ფეხების უხილავი hit-zone — ფოტოს ნამდვილ კლემებზე (ცალკე term-<id> ელემენტებად)
             VStack(spacing: 0) {
                 if !inputs.isEmpty {
-                    HStack(spacing: 7) { ForEach(inputs) { terminal($0, edge: .top) } }
+                    HStack(spacing: 7) { ForEach(inputs) { photoTerminal($0, edge: .top) } }
                 }
                 Spacer(minLength: 0)
                 if !bottom.isEmpty {
-                    HStack(spacing: 7) { ForEach(bottom) { terminal($0, edge: .bottom) } }
+                    HStack(spacing: 7) { ForEach(bottom) { photoTerminal($0, edge: .bottom) } }
                 }
             }
-            .padding(.vertical, 9)   // ფოტოს კლემების ჩაზნექაზე გასწორება
+            .padding(.vertical, 9)
+            // ბერკეტის შეხების ზონა — ჩართვა/გამორთვა (ფოტოს ბერკეტზე)
+            if let onToggleLever {
+                Color.clear.frame(width: max(24, w * 0.55), height: 28)
+                    .contentShape(Rectangle())
+                    .position(leverPt)
+                    .onTapGesture { onToggleLever() }
+                    .accessibilityIdentifier("lever-\(component.id)")
+                    .accessibilityLabel(component.isOpen ? "გამორთული ბერკეტი" : "ჩართული ბერკეტი")
+            }
         }
+        .frame(width: w, height: h)
+    }
+
+    /// ფოტოს ბერკეტის ნორმალიზებული პოზიცია (asset-ის მიხედვით) — OFF-ბერკეტისა და
+    /// შეხების ზონისთვის. (პილოტში მცირე per-asset მორგება შესაძლოა დასჭირდეს.)
+    private var photoLeverAnchor: CGPoint {
+        switch component.kind {
+        case .mcb: return CGPoint(x: 0.50, y: 0.56)
+        case .rcd: return CGPoint(x: 0.33, y: 0.60)
+        default:   return CGPoint(x: 0.50, y: 0.55)
+        }
+    }
+
+    /// გამორთული ფოტო-მოდულის ბერკეტი ქვედა (OFF) მდგომარეობაში.
+    private var photoOffLever: some View {
+        VStack(spacing: 1) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(Color(white: 0.10))
+                .frame(width: 11, height: 17)
+                .overlay(alignment: .bottom) {
+                    RoundedRectangle(cornerRadius: 1).fill(Color.white.opacity(0.30))
+                        .frame(width: 7, height: 2).padding(.bottom, 2)
+                }
+            Text("OFF").font(.system(size: 6, weight: .heavy)).foregroundStyle(.white)
+        }
+    }
+
+    /// ფოტო-მოდულის კლემა — უხილავი hit-zone ფოტოს ნამდვილ კლემაზე. ხატული ბუდე/ხრახნი
+    /// არ ჩანს (ფოტოს თავისი აქვს); შესული სადენი კი ფოტოს კლემაში „შედის".
+    private func photoTerminal(_ port: Port, edge: TerminalEdge) -> some View {
+        let selected = selectedPort == port.id
+        let live = isLive(port.id)
+        let loose = isUntightened(port.id)
+        let wired = hasWire(port.id)
+        let info = wireInfo(port.id)
+        let pressing = pressingPort == port.id
+        let outward: CGFloat = edge == .top ? -1 : 1
+        return ZStack {
+            // შესული სადენი — ფერადი წვერი ფოტოს კლემის ღრუში; ფერული შესასვლელის ბაგესთან
+            if let info {
+                if info.ferruled {
+                    Rectangle().fill(ModuleStyle.ferrule)
+                        .frame(width: 4.4, height: 5).offset(y: outward * 6)
+                }
+                RoundedRectangle(cornerRadius: 1.5).fill(info.color)
+                    .frame(width: 5, height: 12).offset(y: -outward * 1)   // შიგნით, კლემაში
+            }
+            // მოჭერის მინიშნება — ნარინჯისფერი რგოლი კლემაზე (ხრახნის გარეშე); ჭერისას ქრება
+            if loose {
+                Circle().stroke(Color.orange, lineWidth: 2)
+                    .frame(width: 16, height: 16).opacity(pressing ? 0.3 : 0.95)
+                Text("🔧").font(.system(size: 7)).offset(x: 8, y: outward * -7)
+            }
+            if selected { Circle().stroke(Color.yellow, lineWidth: 3).frame(width: 19, height: 19) }
+            if live { Circle().stroke(Color.yellow, lineWidth: 2).blur(radius: 2).frame(width: 16, height: 16) }
+            // უხილავი hit-zone + board-სივრცის ანკრი (სადენი აქ მიება)
+            Color.clear.frame(width: 22, height: 20)
+                .background(GeometryReader { g in
+                    Color.clear.preference(key: PortFrameKey.self,
+                        value: [port.id: CGPoint(x: g.frame(in: .named(kBoardSpace)).midX,
+                                                 y: g.frame(in: .named(kBoardSpace)).midY)])
+                })
+        }
+        .frame(width: 22, height: 20)
+        .contentShape(Rectangle())
+        .onTapGesture { onTapPort(port.id) }
+        .onLongPressGesture(minimumDuration: 0.45, maximumDistance: 14) {
+            pressingPort = nil
+            if loose { onTightenPort(port.id) } else { onLongPress() }
+        } onPressingChanged: { p in
+            if p { if loose { pressingPort = port.id } }
+            else if pressingPort == port.id { pressingPort = nil }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier("term-\(port.id)")
+        .accessibilityLabel("კლემა \(port.name)")
+        .accessibilityValue(loose ? "მოსაჭერია" : (wired ? "მოჭერილია" : "თავისუფალია"))
     }
 
     private var moduleFace: some View {
@@ -2147,6 +2254,9 @@ struct ComponentCardView: View {
                 .foregroundStyle(Color.black.opacity(0.45))
         }
         .animation(.easeInOut(duration: 0.22), value: leverUp)
+        // ბერკეტზე შეხება — ამომრთველის ჩართვა/გამორთვა (toggleable მოწყობილობებზე).
+        .contentShape(Rectangle())
+        .onTapGesture { onToggleLever?() }
     }
 
     /// ტექნიკური იარლიყი მოდულის სახეზე (მაგ. "C16", "30mA", "2P").

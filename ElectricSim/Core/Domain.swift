@@ -213,6 +213,17 @@ public enum ComponentKind: String, Codable, CaseIterable, Sendable {
     /// დამცავი ავტომატია (ampacity/ნომინალის შემოწმებისთვის)?
     public var isBreaker: Bool { self == .mcb || self == .mpcb || self == .rcbo || self == .fuse }
 
+    /// ბერკეტით ხელით ჩართვა/გამორთვაა შესაძლებელი? (ავტომატები + მთავარი + RCD +
+    /// გამთიშველები). კონტაქტორი/რელე კოჭით იმართება — ხელით არ გადაირთვება.
+    public var isToggleable: Bool {
+        switch self {
+        case .mcb, .mpcb, .rcbo, .rcd, .mainSwitch, .lightSwitch, .selectorSwitch:
+            return true
+        default:
+            return false
+        }
+    }
+
     /// DIN-მოდულის სიგანე 18მმ სლოტებში (რელსზე ადგილის გათვლა — v1.1 Pro Panel).
     /// 1 მოდული = 18მმ. ერთპოლუსიანი ავტომატი = 1; RCD/RCBO/მთავარი = 2; MPCB/VFD = 3.
     public var moduleWidthUnits: Int {
@@ -288,6 +299,9 @@ public struct Component: Identifiable, Hashable, Codable, Sendable {
     /// fault-finding მარკერი: არა-ელექტრული დეფექტის ნიშანი (FaultType rawValue),
     /// მაგ. looseNeutral/failedSPD/sharedNeutral, რომელსაც solver ვერ აღმოაჩენს.
     public var faultFlag: String?
+    /// ბერკეტი გამორთულია? (true → ღია კონტაქტი — დენი არ გადის input→output).
+    /// მხოლოდ toggleable მოწყობილობებზე (ავტომატი/RCD/მთავარი…). default: ჩართული.
+    public var isOpen: Bool = false
     public var ports: [Port]
 
     public init(id: String,
@@ -303,6 +317,7 @@ public struct Component: Identifiable, Hashable, Codable, Sendable {
                 faultShortToN: Bool = false,
                 priceGEL: Double? = nil,
                 faultFlag: String? = nil,
+                isOpen: Bool = false,
                 ports: [Port]) {
         self.id = id
         self.kind = kind
@@ -317,6 +332,7 @@ public struct Component: Identifiable, Hashable, Codable, Sendable {
         self.leakageMa = leakageMa
         self.faultShortToN = faultShortToN
         self.priceGEL = priceGEL
+        self.isOpen = isOpen
         self.ports = ports
     }
 

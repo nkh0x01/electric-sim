@@ -258,6 +258,48 @@ final class CableBusFerruleTests: XCTestCase {
             .resolvedRailCount, 2, "მარტივი სამუშაო → 2 რელსი")
     }
 
+    // MARK: ბერკეტი — ხელით ჩართვა/გამორთვა (per-device open/closed)
+
+    /// გამორთული ავტომატი ღია კონტაქტია — მისი დატვირთვა ქრება; ჩართვისას ბრუნდება.
+    func testOpenBreakerCutsDownstreamCurrent() {
+        func build(mcbOpen: Bool) -> SimulationResult {
+            var b = Board(phase: .single)
+            b.add(ComponentFactory.supply(id: "supply"))
+            var mcb = ComponentFactory.mcb(id: "mcb1", ratingA: 10)
+            mcb.isOpen = mcbOpen
+            b.add(mcb)
+            b.add(ComponentFactory.lamp(id: "lamp1"))
+            b.connect("supply.L", "mcb1.in", csaMm2: 1.5, color: .brown)
+            b.connect("mcb1.out", "lamp1.L", csaMm2: 1.5, color: .brown)
+            b.connect("supply.N", "lamp1.N", csaMm2: 1.5, color: .blue)
+            b.connect("supply.PE", "lamp1.PE", csaMm2: 1.5, color: .yellowGreen)
+            return CircuitSolver().solve(b, energize: true)
+        }
+        XCTAssertEqual(build(mcbOpen: false).loadStates.filter(\.isPowered).count, 1,
+                       "ჩართული ავტომატი — ნათურა ანთია")
+        XCTAssertEqual(build(mcbOpen: true).loadStates.filter(\.isPowered).count, 0,
+                       "გამორთული ავტომატი — დენი არ გადის, ნათურა ჩამქრალია")
+        // toggleable სიმრავლე
+        XCTAssertTrue(ComponentKind.mcb.isToggleable)
+        XCTAssertTrue(ComponentKind.rcd.isToggleable)
+        XCTAssertTrue(ComponentKind.mainSwitch.isToggleable)
+        XCTAssertFalse(ComponentKind.lamp.isToggleable)
+        XCTAssertFalse(ComponentKind.busbar.isToggleable)
+    }
+
+    /// გამორთული ფეხი ცოცხალი აღარ არის (live-wire უსაფრთხოება — ანალიზიც პატივს სცემს).
+    func testOpenBreakerKillsDownstreamLive() {
+        var b = Board(phase: .single)
+        b.add(ComponentFactory.supply(id: "supply"))
+        var mcb = ComponentFactory.mcb(id: "mcb1", ratingA: 10)
+        mcb.isOpen = true
+        b.add(mcb)
+        b.connect("supply.L", "mcb1.in", csaMm2: 1.5, color: .brown)
+        let solver = CircuitSolver()
+        XCTAssertTrue(solver.isLive(b, "mcb1.in"), "შესასვლელი ფაზაზეა (კვების მხარე)")
+        XCTAssertFalse(solver.isLive(b, "mcb1.out"), "გამორთულის გამოსასვლელი მკვდარია")
+    }
+
     // MARK: კარადა (Enclosure) — ფიზიკური მოდელი (v1.1 Pro Panel)
 
     /// სტანდარტული ზომები სწორ რიგებსა და per-row მოდულებს იძლევა.
