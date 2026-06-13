@@ -23,11 +23,7 @@ extension CircuitSolver {
             uf.makeSet(wire.fromPortID); uf.makeSet(wire.toPortID)
             uf.union(wire.fromPortID, wire.toPortID)
         }
-        for comp in board.components where comp.kind.isConnector {
-            if let first = comp.ports.first {
-                for p in comp.ports.dropFirst() { uf.union(first.id, p.id) }
-            }
-        }
+        uf.unionConnectors(board)
         func net(_ id: String) -> String { uf.find(id) }
 
         var labels: [String: Set<Conductor>] = [:]

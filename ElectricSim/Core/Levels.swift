@@ -112,7 +112,8 @@ public struct ComponentTemplate: Codable, Identifiable, Sendable {
             return ComponentFactory.busbar(id: instanceID, conductor: conductor ?? .L,
                                            slots: poles ?? 4, name: name)
         case .comb:
-            return ComponentFactory.comb(id: instanceID, teeth: poles ?? 8)
+            // ბორდის ფაზა → 3-ფაზიან ფარზე სავარცხელი ბრუნავს L1/L2/L3-ს
+            return ComponentFactory.comb(id: instanceID, teeth: poles ?? 8, phase: phase)
         case .lamp:
             return ComponentFactory.lamp(id: instanceID, powerW: powerW ?? 60,
                                          requiresPE: requiresPE ?? true, leakageMa: leakageMa)

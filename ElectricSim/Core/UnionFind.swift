@@ -54,3 +54,24 @@ public final class UnionFind {
         find(a) == find(b)
     }
 }
+
+public extension UnionFind {
+    /// აერთიანებს ბორდის კონექტორების ფეხებს ერთ ელექტრულ ქსელში.
+    /// busbar / wago / terminalBlock → ყველა ფეხი ერთ კვანძში.
+    /// comb (სავარცხელი) → კბილები *გამტარის (ფაზის) მიხედვით* ცალკე ჯგუფდება,
+    /// ასე რომ 3-ფაზიანი სავარცხელი L1/L2/L3-ს არ ამოკლებს ერთმანეთში.
+    /// (იდემპოტენტურია — union თვითონ ქმნის set-ებს.)
+    func unionConnectors(_ board: Board) {
+        for comp in board.components where comp.kind.isConnector {
+            if comp.kind == .comb {
+                var firstOfConductor: [Conductor: String] = [:]
+                for p in comp.ports {
+                    if let head = firstOfConductor[p.conductor] { union(head, p.id) }
+                    else { firstOfConductor[p.conductor] = p.id }
+                }
+            } else if let first = comp.ports.first {
+                for p in comp.ports.dropFirst() { union(first.id, p.id) }
+            }
+        }
+    }
+}

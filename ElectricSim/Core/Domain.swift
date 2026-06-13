@@ -407,14 +407,18 @@ public enum ComponentFactory {
         return Component(id: id, kind: .busbar, name: title, poles: slots, ports: ports)
     }
 
-    /// სავარცხელი სალტე (comb busbar): `teeth` კბილი, ყველა ერთ კვანძში (L).
-    /// კბილები აპლიკაციის მხრიდან მავთულდება მომიჯნავე მოდულების L-შესასვლელებზე.
-    public static func comb(id: String, teeth: Int) -> Component {
-        let ports = (0..<teeth).map {
-            Port(id: pid(id, "\($0)"), conductor: .L, side: .single, name: "T\($0 + 1)")
+    /// სავარცხელი სალტე (comb busbar): `teeth` კბილი.
+    /// ერთფაზიანი — ყველა კბილი L-ზე; სამფაზიანი — კბილები ბრუნავს L1/L2/L3.
+    /// კბილები აპლიკაციის მხრიდან მავთულდება მომიჯნავე მოდულების L-შესასვლელებზე;
+    /// solver-ი მათ *გამტარის მიხედვით* აჯგუფებს ცალკე ქსელებად (ფაზები არ ერთდება).
+    public static func comb(id: String, teeth: Int, phase: Phase = .single) -> Component {
+        let rotation: [Conductor] = [.L1, .L2, .L3]
+        let ports = (0..<teeth).map { i -> Port in
+            let conductor: Conductor = phase == .three ? rotation[i % 3] : .L
+            return Port(id: pid(id, "\(i)"), conductor: conductor, side: .single, name: "T\(i + 1)")
         }
-        return Component(id: id, kind: .comb, name: "სავარცხელი სალტე (comb)",
-                         poles: teeth, ports: ports)
+        let title = phase == .three ? "3-ფაზიანი სავარცხელი (comb)" : "სავარცხელი სალტე (comb)"
+        return Component(id: id, kind: .comb, name: title, poles: teeth, ports: ports)
     }
 
     public static func lamp(id: String, powerW: Double = 60, requiresPE: Bool = true, leakageMa: Double? = nil) -> Component {

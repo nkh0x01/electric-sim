@@ -128,6 +128,14 @@
     "category": "auxiliary"
   },
   {
+    "id": "comb_3p",
+    "kind": "comb",
+    "name": "3-ფაზიანი სავარცხელი (comb)",
+    "poles": 9,
+    "priceGEL": 18,
+    "category": "auxiliary"
+  },
+  {
     "id": "busbar_n",
     "kind": "busbar",
     "name": "ნულის სალტე (N-bus)",

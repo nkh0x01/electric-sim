@@ -92,13 +92,11 @@ extension CircuitSolver {
         var perPhase: [Conductor: Double] = [.L: 0, .L1: 0, .L2: 0, .L3: 0]
         var totalPower = 0.0
 
-        // wire-only union-find — ხაზის კაბელის კვეთის/სიგრძის დასათვლელად.
+        // union-find (სადენები + კონექტორები) — ხაზის კაბელის კვეთის/სიგრძის დასათვლელად.
         let uf = UnionFind()
         for c in board.components { for p in c.ports { uf.makeSet(p.id) } }
         for w in board.wires { uf.union(w.fromPortID, w.toPortID) }
-        for c in board.components where c.kind.isConnector {
-            if let f = c.ports.first { for p in c.ports.dropFirst() { uf.union(f.id, p.id) } }
-        }
+        uf.unionConnectors(board)
         func lineSegments(of comp: Component) -> [Wire] {
             let port = comp.port(conductor: comp.kind.isThreePhaseLoad ? .L1 : .L)
             guard let net = port.map({ uf.find($0.id) }) else { return [] }
@@ -148,13 +146,11 @@ extension CircuitSolver {
 
     /// ცალხაზოვანი ნახაზი — ფარის სტრუქტურა (კვება → დაცვები → ხაზები).
     public func singleLineDiagram(_ board: Board) -> SingleLineDiagram {
-        // wire-only union-find (breaker-ის გამოსავალი ↔ დატვირთვის ხაზი ერთ კვანძში).
+        // union-find (სადენები + კონექტორები; breaker-ის გამოსავალი ↔ დატვირთვის ხაზი).
         let uf = UnionFind()
         for c in board.components { for p in c.ports { uf.makeSet(p.id) } }
         for w in board.wires { uf.union(w.fromPortID, w.toPortID) }
-        for c in board.components where c.kind.isConnector {
-            if let f = c.ports.first { for p in c.ports.dropFirst() { uf.union(f.id, p.id) } }
-        }
+        uf.unionConnectors(board)
         func net(_ id: String) -> String { uf.find(id) }
 
         // საერთო შემომავალი (წყაროები → მთავარი → SPD → RCD)

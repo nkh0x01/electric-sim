@@ -148,6 +148,90 @@ final class CableBusFerruleTests: XCTestCase {
                        "comb-ით ნაკვები ავტომატები ვალიდურია (panelBusbarFeed არ ჩნდება)")
     }
 
+    /// 3-ფაზიანი სავარცხელი: კბილები ბრუნავს L1/L2/L3 და solver მათ *ცალკე*
+    /// ქსელებად აჯგუფებს — ფაზა-ფაზა მოკლედება არ ხდება, ხოლო თითო ფაზის
+    /// კვება მთელ თავის ჯგუფს ანათებს (rotating distribution).
+    func testThreePhaseCombKeepsPhasesSeparate() {
+        var b = Board(phase: .three)
+        b.add(ComponentFactory.supply(id: "supply", phase: .three))
+        b.add(ComponentFactory.mainSwitch(id: "main", phase: .three))
+        // 6 ერთპოლუსიანი ავტომატი (L-შესასვლელი); სავარცხელი ანაწილებს ფაზებს
+        for i in 0..<6 { b.add(ComponentFactory.mcb(id: "mcb\(i)", ratingA: 10)) }
+        for i in 0..<6 { b.add(ComponentFactory.lamp(id: "lamp\(i)")) }
+        b.add(ComponentFactory.comb(id: "comb", teeth: 6, phase: .three))
+
+        // შემომავალი: supply → main (სამივე ფაზა + N)
+        for c in ["L1", "L2", "L3", "N"] {
+            b.connect("supply.\(c)", "main.\(c)in", csaMm2: 6, color: .brown)
+        }
+        // სავარცხელი ჯდება ავტომატებზე: tooth i → mcb_i.in (ბრუნვა L1,L2,L3,L1,L2,L3)
+        for i in 0..<6 { b.connect("comb.\(i)", "mcb\(i).in", csaMm2: 10, color: .brown, tightened: true) }
+        // მხოლოდ 3 კვება — თითო ფაზა ერთხელ; სავარცხელი დანარჩენებს ანაწილებს
+        b.connect("main.L1out", "mcb0.in", csaMm2: 10, color: .brown)
+        b.connect("main.L2out", "mcb1.in", csaMm2: 10, color: .black)
+        b.connect("main.L3out", "mcb2.in", csaMm2: 10, color: .grey)
+        // დატვირთვები: თითო ავტომატის გამოსასვლელი → ნათურის L; N/PE საერთო
+        for i in 0..<6 {
+            b.connect("mcb\(i).out", "lamp\(i).L", csaMm2: 1.5, color: .brown)
+            b.connect("main.Nout", "lamp\(i).N", csaMm2: 1.5, color: .blue)
+            b.connect("supply.PE", "lamp\(i).PE", csaMm2: 1.5, color: .yellowGreen)
+        }
+
+        let r = CircuitSolver().solve(b, energize: true)
+        XCTAssertFalse(r.issues.contains { $0.code == .shortPhasePhase },
+                       "ფაზები ცალკეა — სავარცხელი L1/L2/L3-ს არ ამოკლებს")
+        XCTAssertEqual(r.loadStates.filter(\.isPowered).count, 6,
+                       "სამივე ფაზის კვება სავარცხელით 6-ვე ნათურამდე ნაწილდება")
+    }
+
+    /// ბაგ-რეგრესია: ერთ ფაზა-ჯგუფში ორი სხვადასხვა ფაზის შეყვანა = მოკლედება.
+    /// (mcb0 და mcb3 ერთ L1-ჯგუფშია; თუ mcb3-ს L2-ით ვკვებავთ → ფაზა-ფაზა short.)
+    func testThreePhaseCombMisfeedShorts() {
+        var b = Board(phase: .three)
+        b.add(ComponentFactory.supply(id: "supply", phase: .three))
+        b.add(ComponentFactory.mainSwitch(id: "main", phase: .three))
+        for i in 0..<4 { b.add(ComponentFactory.mcb(id: "mcb\(i)", ratingA: 10)) }
+        b.add(ComponentFactory.comb(id: "comb", teeth: 4, phase: .three))
+        for c in ["L1", "L2", "L3", "N"] { b.connect("supply.\(c)", "main.\(c)in", csaMm2: 6, color: .brown) }
+        for i in 0..<4 { b.connect("comb.\(i)", "mcb\(i).in", csaMm2: 10, color: .brown, tightened: true) }
+        // mcb0 (tooth0=L1) ← L1; mcb3 (tooth3=L1, იმავე ჯგუფში) ← L2 ❌
+        b.connect("main.L1out", "mcb0.in", csaMm2: 10, color: .brown)
+        b.connect("main.L2out", "mcb3.in", csaMm2: 10, color: .black)
+        let r = CircuitSolver().solve(b, energize: true)
+        XCTAssertTrue(r.issues.contains { $0.code == .shortPhasePhase },
+                      "ერთ comb-ფაზაში L1+L2 → ფაზა-ფაზა მოკლედება")
+    }
+
+    /// comb_3p შაბლონი + ახალი 3-ფაზიანი დონე იტვირთება და ბორდის ფაზით
+    /// ინსტანცირებისას სავარცხელი მართლა 3-ფაზიანი ხდება.
+    func testThreePhaseCombLevelLoads() throws {
+        let templates = try GameData.loadTemplates()
+        let t = try XCTUnwrap(templates["comb_3p"])
+        XCTAssertEqual(t.kind, .comb)
+        // 3-ფაზიან ბორდზე ინსტანცირება → კბილები ბრუნავს L1/L2/L3
+        let inst = t.makeComponent(instanceID: "comb_3p_1", phase: .three)
+        XCTAssertEqual(Array(inst.ports.prefix(3)).map(\.conductor), [.L1, .L2, .L3])
+
+        let levels = try GameData.loadLevels()
+        let lv = try XCTUnwrap(levels.first { $0.id == "lvl_panel_3ph_comb" })
+        XCTAssertEqual(lv.phase, .three)
+        XCTAssertTrue(lv.isPanelAssembly)
+        XCTAssertTrue(lv.palette.contains { $0.templateId == "comb_3p" })
+        // დონის პალიტრის ყველა შაბლონი არსებობს
+        for e in lv.palette { XCTAssertNotNil(templates[e.templateId], "ნაკლული: \(e.templateId)") }
+    }
+
+    /// 3-ფაზიანი სავარცხელის ფაბრიკა: კბილები მართლა ბრუნავს L1/L2/L3.
+    func testThreePhaseCombFactoryRotates() {
+        let comb = ComponentFactory.comb(id: "c", teeth: 7, phase: .three)
+        let conds = comb.ports.map(\.conductor)
+        XCTAssertEqual(conds, [.L1, .L2, .L3, .L1, .L2, .L3, .L1])
+        XCTAssertTrue(comb.name.contains("3-ფაზიანი"))
+        // ერთფაზიანი უცვლელია — ყველა კბილი L
+        let one = ComponentFactory.comb(id: "c1", teeth: 4)
+        XCTAssertEqual(Set(one.ports.map(\.conductor)), [.L])
+    }
+
     /// comb_1p შაბლონი იტვირთება, კონექტორია და უფასო ნაკრებშია.
     func testCombTemplateLoads() throws {
         let templates = try GameData.loadTemplates()

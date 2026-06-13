@@ -47,12 +47,8 @@ public struct CircuitSolver {
             uf.makeSet(wire.toPortID)
             uf.union(wire.fromPortID, wire.toPortID)
         }
-        // კონექტორები (busbar) — ყველა ფეხი ერთ ქსელში
-        for comp in board.components where comp.kind.isConnector {
-            if let first = comp.ports.first {
-                for p in comp.ports.dropFirst() { uf.union(first.id, p.id) }
-            }
-        }
+        // კონექტორები — busbar ერთ ქსელში; comb ფაზებად (იხ. unionConnectors)
+        uf.unionConnectors(board)
 
         func net(_ portID: String) -> String { uf.find(portID) }
 

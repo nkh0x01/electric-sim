@@ -242,6 +242,9 @@ final class WorkbenchModel: ObservableObject {
             // პირველი რელსი, რომელზეც ჯერ კიდევ არის ადგილი.
             let target = (0..<railCount).first { railMembers($0).count < 6 } ?? (railCount - 1)
             railOf[newID] = target
+            // ახალი ავტომატი არსებული სავარცხელის რანის გვერდით → ხელახლა გადაჯდომა,
+            // რომ comb ახალ მომიჯნავე ავტომატსაც მოედოს (დამატების რიგი აღარ აზიანებს).
+            if inst.kind.isBreaker { reseatCombs() }
         }
         placedCounts[e.templateId] = placed(e.templateId) + 1
         resetResult()
@@ -515,8 +518,10 @@ final class WorkbenchModel: ObservableObject {
             // ცოცხალ კლემებზე სავარცხელის დასმა = შოკი (de-energize ჯერ!)
             if blockedByLiveEdit(spanPorts) { return false }
             for (i, portID) in spanPorts.enumerated() {
+                // tooth-ის გამტარი (3-ფაზიანზე ბრუნავს L1/L2/L3) → შესაბამისი ფერი
+                let cond = comb.ports.indices.contains(i) ? comb.ports[i].conductor : .L
                 board.connect("\(combID).\(i)", portID, csaMm2: 10,
-                              color: .brown, tightened: true)
+                              color: WireColor.standard(for: cond), tightened: true)
             }
             railOf[combID] = r
             return true
@@ -1525,23 +1530,35 @@ struct WorkbenchView: View {
         }
     }
 
+    /// კბილის შევსება: ერთფაზიანი — სპილენძის გრადიენტი; სამფაზიანი — IEC ფაზის
+    /// ფერი (L1 ყავისფერი, L2 შავი, L3 ნაცრისფერი).
+    private func combToothFill(_ c: Conductor) -> AnyShapeStyle {
+        c == .L ? AnyShapeStyle(ModuleStyle.screw)
+                : AnyShapeStyle(WireColor.standard(for: c).swiftUIColor)
+    }
+
     @ViewBuilder
     private func combView(_ comb: Component) -> some View {
-        // კბილების სამიზნეები = comb-ის ავტო-სადენების მეორე ბოლოები (L-შესასვლელები)
-        let targets = model.board.wires
+        // კბილები: სამიზნე წერტილი + გამტარი (ფაზის ფერისთვის). სამიზნე = comb-ის
+        // ავტო-სადენის მეორე ბოლო (მოდულის L-შესასვლელი); გამტარი — comb-ის პორტიდან.
+        let teeth: [(pt: CGPoint, cond: Conductor)] = model.board.wires
             .filter { $0.fromPortID.hasPrefix(comb.id + ".") }
-            .compactMap { portPoints[$0.toPortID] }
-            .sorted { $0.x < $1.x }
-        if targets.count >= 2, let first = targets.first, let last = targets.last {
+            .compactMap { w in
+                guard let pt = portPoints[w.toPortID] else { return nil }
+                let cond = comb.ports.first { $0.id == w.fromPortID }?.conductor ?? .L
+                return (pt, cond)
+            }
+            .sorted { $0.pt.x < $1.pt.x }
+        if teeth.count >= 2, let first = teeth.first?.pt, let last = teeth.last?.pt {
             let spineY = first.y - 16
             let minX = first.x - 12
             let maxX = last.x + 12
-            // სპილენძის კბილები — ზურგიდან თითო კლემამდე
-            ForEach(Array(targets.enumerated()), id: \.offset) { _, pt in
+            // კბილები — ზურგიდან თითო კლემამდე (ფაზის ფერით)
+            ForEach(Array(teeth.enumerated()), id: \.offset) { _, t in
                 RoundedRectangle(cornerRadius: 1)
-                    .fill(ModuleStyle.screw)
-                    .frame(width: 5, height: max(10, pt.y - spineY))
-                    .position(x: pt.x, y: (spineY + pt.y) / 2)
+                    .fill(combToothFill(t.cond))
+                    .frame(width: 5, height: max(10, t.pt.y - spineY))
+                    .position(x: t.pt.x, y: (spineY + t.pt.y) / 2)
                     .allowsHitTesting(false)
             }
             // იზოლირებული (ნაცრისფერი) ზურგი — drag-ისთვის ჩარჩოსაც აწვდის (CardFrame)
@@ -1557,7 +1574,7 @@ struct WorkbenchView: View {
                                                     width: maxX - minX, height: 24)])
                 .accessibilityElement(children: .ignore)
                 .accessibilityIdentifier("comb-\(comb.id)")
-                .accessibilityLabel("სავარცხელი სალტე")
+                .accessibilityLabel(comb.name)
             // მოხსნის ღილაკი — ზურგის მარჯვენა ბოლოსთან
             Button { model.removeComponent(comb.id) } label: {
                 Image(systemName: "minus.circle.fill")

@@ -146,9 +146,7 @@ extension CircuitSolver {
         let uf = UnionFind()
         for c in board.components { for p in c.ports { uf.makeSet(p.id) } }
         for w in board.wires { uf.union(w.fromPortID, w.toPortID) }
-        for c in board.components where c.kind.isConnector {
-            if let f = c.ports.first { for p in c.ports.dropFirst() { uf.union(f.id, p.id) } }
-        }
+        uf.unionConnectors(board)
         func net(_ id: String) -> String { uf.find(id) }
 
         struct Edge { let comp: Component; let inNet: String; let outNet: String }

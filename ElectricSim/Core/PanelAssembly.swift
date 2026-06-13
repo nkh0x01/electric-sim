@@ -68,11 +68,7 @@ public enum PanelAssembly {
             uf.makeSet(w.fromPortID); uf.makeSet(w.toPortID)
             uf.union(w.fromPortID, w.toPortID)
         }
-        for comp in board.components where comp.kind.isConnector {
-            if let first = comp.ports.first {
-                for p in comp.ports.dropFirst() { uf.union(first.id, p.id) }
-            }
-        }
+        uf.unionConnectors(board)
         func net(_ id: String) -> String { uf.find(id) }
 
         // ფაზის სალტე ან სავარცხელი (comb) — ორივე ვალიდური მკვებავი ზოლია.

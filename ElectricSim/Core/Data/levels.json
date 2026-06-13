@@ -1710,6 +1710,10 @@
       {
         "templateId": "generator",
         "max": 2
+      },
+      {
+        "templateId": "comb_3p",
+        "max": 2
       }
     ],
     "goal": {
@@ -1907,5 +1911,53 @@
       "requireBalanced": true
     },
     "railCount": 3
+  },
+  {
+    "id": "lvl_panel_3ph_comb",
+    "index": 38,
+    "title": "სამფაზა განაწილება — სავარცხელით",
+    "brief": "ააწყვე სამფაზა განაწილების ფარი: მთავარი 4P → 3-ფაზიანი სავარცხელი ოთხ ერთფაზა ხაზზე. სავარცხელი ფაზებს (L1/L2/L3) ბრუნავს, ასე რომ მე-4 ხაზი მხოლოდ სავარცხელით იკვებება — პირდაპირი კვების გარეშე.",
+    "hint": "მთავარის L1/L2/L3 → პირველ სამ ავტომატს (თითო ფაზაზე ერთი). სავარცხელი მე-4 ავტომატს L1-ით აკვებებს. ნული N-სალტედან, მიწა PE-სალტედან ყველა ნათურას. სავარცხელი ოთხ ავტომატზე უნდა დაჯდეს — ერთ რელსზე.",
+    "phase": "three",
+    "category": "panelAssembly",
+    "difficulty": 5,
+    "tier": "pro",
+    "railCount": 3,
+    "palette": [
+      {
+        "templateId": "main_4p",
+        "max": 1
+      },
+      {
+        "templateId": "comb_3p",
+        "max": 1
+      },
+      {
+        "templateId": "mcb_b16",
+        "max": 4,
+        "csaOptions": [
+          1.5,
+          2.5
+        ]
+      },
+      {
+        "templateId": "busbar_n",
+        "max": 1
+      },
+      {
+        "templateId": "busbar_pe",
+        "max": 1
+      },
+      {
+        "templateId": "lamp_60",
+        "max": 4
+      }
+    ],
+    "goal": {
+      "poweredLoads": {
+        "lamp": 4
+      },
+      "description": "ოთხივე ხაზი უნდა მუშაობდეს — სამფაზა განაწილება სავარცხელით (მე-4 ხაზი მხოლოდ სავარცხელით)."
+    }
   }
 ]
