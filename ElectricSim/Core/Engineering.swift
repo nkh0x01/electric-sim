@@ -112,6 +112,7 @@ public enum BOMBuilder {
         case .inverter: return 900
         case .battery: return 500
         case .supply: return 0
+        case .blank: return 3
         }
     }
 

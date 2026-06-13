@@ -212,6 +212,7 @@ extension ComponentKind {
         case .rcbo: return "დიფ-ავტომატი (RCBO)"
         case .mcb: return "ავტომატი (MCB)"
         case .comb: return "სავარცხელი სალტე"
+        case .blank: return "ცარიელი მოდული"
         case .mpcb: return "ძრავის დამცავი (MPCB)"
         case .contactor: return "კონტაქტორი"
         case .relay: return "რელე"

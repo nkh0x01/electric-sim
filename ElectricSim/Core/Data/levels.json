@@ -480,6 +480,10 @@
       {
         "templateId": "comb_1p",
         "max": 2
+      },
+      {
+        "templateId": "blank_1",
+        "max": 6
       }
     ],
     "goal": {
@@ -984,6 +988,10 @@
       {
         "templateId": "comb_1p",
         "max": 2
+      },
+      {
+        "templateId": "blank_1",
+        "max": 6
       }
     ],
     "goal": {
@@ -1150,6 +1158,10 @@
       {
         "templateId": "comb_1p",
         "max": 2
+      },
+      {
+        "templateId": "blank_1",
+        "max": 6
       }
     ],
     "goal": {
@@ -1609,6 +1621,10 @@
       {
         "templateId": "comb_1p",
         "max": 2
+      },
+      {
+        "templateId": "blank_1",
+        "max": 6
       }
     ],
     "goal": {
@@ -1714,6 +1730,10 @@
       {
         "templateId": "comb_3p",
         "max": 2
+      },
+      {
+        "templateId": "blank_1",
+        "max": 6
       }
     ],
     "goal": {
@@ -1735,6 +1755,10 @@
     "palette": [
       {
         "templateId": "main_2p",
+        "max": 1
+      },
+      {
+        "templateId": "rcd_30",
         "max": 1
       },
       {
@@ -1760,6 +1784,10 @@
       {
         "templateId": "comb_1p",
         "max": 2
+      },
+      {
+        "templateId": "blank_1",
+        "max": 6
       }
     ],
     "goal": {
@@ -1820,6 +1848,10 @@
       {
         "templateId": "comb_1p",
         "max": 2
+      },
+      {
+        "templateId": "blank_1",
+        "max": 6
       }
     ],
     "goal": {
@@ -1861,6 +1893,10 @@
       {
         "templateId": "socket_16",
         "max": 2
+      },
+      {
+        "templateId": "blank_1",
+        "max": 6
       }
     ],
     "goal": {
@@ -1901,6 +1937,10 @@
           2.5,
           4
         ]
+      },
+      {
+        "templateId": "blank_1",
+        "max": 6
       }
     ],
     "goal": {
@@ -1951,6 +1991,10 @@
       {
         "templateId": "lamp_60",
         "max": 4
+      },
+      {
+        "templateId": "blank_1",
+        "max": 6
       }
     ],
     "goal": {

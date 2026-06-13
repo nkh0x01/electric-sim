@@ -38,6 +38,13 @@ enum GameFeedback {
         #endif
         if soundOn { AudioServicesPlaySystemSound(1103) }   // tink
     }
+    /// ცემის (knockout) გახსნა — მკვეთრი პოპი + მოკლე კლიკი.
+    static func tick() {
+        #if canImport(UIKit)
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        #endif
+        if soundOn { AudioServicesPlaySystemSound(1105) }   // tock pop
+    }
 }
 
 // MARK: - DIN-მოდულის სტილი (Stage 2 — სტატიკური გრადიენტები, იაფი ხატვა)
@@ -160,6 +167,7 @@ final class WorkbenchModel: ObservableObject {
         guard !didConfigure else { return }
         didConfigure = true
         board = level.initialBoard(templates: t)
+        enclosure = level.resolvedEnclosure
         assignDefaultRails()
         startedAt = Date()
         mistakes = 0
@@ -238,9 +246,13 @@ final class WorkbenchModel: ObservableObject {
                 return nil
             }
         } else if Self.isRailMounted(inst) {
-            // ახალი მოდული — ზემოდან ქვემოთ ივსება (რეალური მონტაჟის წესით):
-            // პირველი რელსი, რომელზეც ჯერ კიდევ არის ადგილი.
-            let target = (0..<railCount).first { railMembers($0).count < 6 } ?? (railCount - 1)
+            // ახალი მოდული — პირველი რელსი, რომელზეც სიგანის სლოტები თავისუფალია.
+            let w = widthUnits(of: inst)
+            guard let target = (0..<railCount).first(where: { railHasRoom($0, width: w) }) else {
+                board.components.removeAll { $0.id == newID }
+                inspectNotice = "რიგზე ადგილი აღარ არის"
+                return nil
+            }
             railOf[newID] = target
             // ახალი ავტომატი არსებული სავარცხელის რანის გვერდით → ხელახლა გადაჯდომა,
             // რომ comb ახალ მომიჯნავე ავტომატსაც მოედოს (დამატების რიგი აღარ აზიანებს).
@@ -410,12 +422,45 @@ final class WorkbenchModel: ObservableObject {
         resetResult()
     }
 
-    // MARK: - კარადის ფიქსირებული DIN-რელსები (Stage 3)
+    // MARK: - კარადა + ფიქსირებული DIN-რელსები (Stage 3 → v1.1 Pro Panel)
 
     /// კომპონენტი → რელსის ინდექსი. დატვირთვები რელსზე არ ჯდება (ქვედა ზოლი).
     @Published var railOf: [String: Int] = [:]
+    /// დონის კარადა (ზომა/მონტაჟი + გახსნილი ცემები) — runtime მდგომარეობა.
+    @Published var enclosure: Enclosure = Enclosure(size: .m12)
 
     var railCount: Int { level.resolvedRailCount }
+    /// მოდულების ტევადობა თითო რელსზე (კარადის ზომიდან).
+    var modulesPerRow: Int { enclosure.modulesPerRow }
+
+    /// მოდულის სიგანე სლოტებში (18მმ ერთეული).
+    func widthUnits(of comp: Component) -> Int { comp.kind.moduleWidthUnits }
+
+    /// მოდულის მარცხენა სლოტი — მარცხნივ ჩაწყობით (preceding წევრების ჯამური სიგანე).
+    /// რეალური ფარივით ღრეჩოები არ რჩება; ღრეჩო = ცარიელი მოდული.
+    func leadingSlot(of comp: Component) -> Int {
+        let r = rail(of: comp)
+        var acc = 0
+        for m in railMembers(r) {
+            if m.id == comp.id { return acc }
+            acc += widthUnits(of: m)
+        }
+        return acc
+    }
+    /// რელსზე დაკავებული სლოტების ჯამი.
+    func usedSlots(rail r: Int, excluding id: String? = nil) -> Int {
+        railMembers(r).filter { $0.id != id }.reduce(0) { $0 + widthUnits(of: $1) }
+    }
+    /// რელსზე `width` სლოტი თავისუფალია (ტევადობის წესი — Core).
+    func railHasRoom(_ r: Int, width: Int, excluding id: String? = nil) -> Bool {
+        enclosure.rowHasRoom(usedSlots: usedSlots(rail: r, excluding: id), adding: width)
+    }
+
+    /// ცემის გახსნა/დახურვა (tap) — პოპ + ჰაპტიკა.
+    func toggleKnockout(_ k: Knockout) {
+        enclosure.toggle(k)
+        GameFeedback.tick()
+    }
 
     /// DIN-რელსზე მჯდომი მოწყობილობაა? (დატვირთვები ქვედა ზოლში იხატება)
     static func isRailMounted(_ c: Component) -> Bool { !c.kind.isLoad }
@@ -431,15 +476,19 @@ final class WorkbenchModel: ObservableObject {
     var loadStrip: [Component] { board.components.filter { $0.kind.isLoad } }
     var combs: [Component] { board.components.filter { $0.kind == .comb } }
 
-    /// საწყისი განაწილება: რელს-მოწყობილობები თანმიმდევრობით ივსება რელსებზე
-    /// (კვება ზედა-მარცხნივ); დატვირთვები ზოლში.
+    /// საწყისი განაწილება: რელს-მოწყობილობები მარცხნიდან ივსება, რიგ-რიგობით
+    /// (კვება ზედა-მარცხნივ); რელსის ტევადობის ამოწურვისას — შემდეგ რელსზე.
     private func assignDefaultRails() {
         railOf.removeAll()
         let mounted = board.components.filter { Self.isRailMounted($0) && $0.kind != .comb }
         guard !mounted.isEmpty else { return }
-        let perRail = max(4, Int(ceil(Double(mounted.count) / Double(railCount))))
-        for (i, comp) in mounted.enumerated() {
-            railOf[comp.id] = min(i / perRail, railCount - 1)
+        var cursor = Array(repeating: 0, count: railCount)   // ჯამური სიგანე თითო რელსზე
+        var r = 0
+        for comp in mounted {
+            let w = widthUnits(of: comp)
+            if cursor[r] + w > modulesPerRow && r < railCount - 1 { r += 1 }   // ვერ ეტევა → შემდეგი
+            railOf[comp.id] = r
+            cursor[r] += w
         }
     }
 
@@ -455,6 +504,12 @@ final class WorkbenchModel: ObservableObject {
                 inspectNotice = "ამ რელსზე სავარცხელს 2 მომიჯნავე ავტომატი სჭირდება"
             }
             resetResult()
+            return
+        }
+        // ტევადობა: სამიზნე რელსზე უნდა დარჩეს ადგილი (იმავე რელსზე გადაადგილება
+        // ტევადობას არ ცვლის — excluding: id).
+        guard railHasRoom(target, width: widthUnits(of: comp), excluding: id) else {
+            inspectNotice = "რიგზე ადგილი აღარ არის"
             return
         }
         railOf[id] = target
@@ -623,16 +678,13 @@ struct RailFrameKey: PreferenceKey {
     }
 }
 
-/// ყველაზე განიერი რელსის ბუნებრივი სიგანე — ყველა რელსი თანაბარ სიგანეზე გაიწელოს.
-struct RailWidthKey: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = max(value, nextValue())
-    }
-}
 
 /// "board" — საერთო კოორდინატთა სივრცე drag-ისა და ფეხების პოზიციებისთვის.
 let kBoardSpace = "board"
+
+/// ერთი DIN-სლოტის სიგანე წერტილებში (18მმ-ის ვიზუალური ეკვივალენტი).
+/// მოდულები ზუსტად `moduleWidthUnits * kSlotPt` სიგანისაა და ერთმანეთს ებჯინება.
+let kSlotPt: CGFloat = 44
 
 /// ფარზე ერთიანი drag-ის რეჟიმი.
 enum BoardDragMode { case none, wire, move, pan }
@@ -662,8 +714,8 @@ struct WorkbenchView: View {
     @State private var dropSlot: DropSlot?
     @State private var snappedID: String?
     @State private var railFrames: [Int: CGRect] = [:]
-    @State private var cabinetInnerWidth: CGFloat = 0   // ყველაზე განიერი რელსი (სინქრონი)
     @State private var didFitCamera = false             // კარადა-პირველი კადრირება (ერთხელ)
+    @State private var knockoutPulseID: Knockout?       // ცემის გახსნის პულსი
     // ფარი-პირველი განლაგება: ბრიფი ერთ ხაზად (გასაშლელით) + ფოკუს-რეჟიმი.
     @State private var briefExpanded = false
     @State private var focusMode = false
@@ -893,7 +945,14 @@ struct WorkbenchView: View {
         var bestDist = CGFloat.greatestFiniteMagnitude
         for comp in model.board.components {
             let pts = comp.ports.compactMap { portPoints[$0.id] }
-            guard !pts.isEmpty else { continue }
+            guard !pts.isEmpty else {
+                // ფეხების გარეშე მოდული (ცარიელი) — ბარათის ჩარჩოთი hit-test.
+                if let f = componentFrames[comp.id], f.contains(p) {
+                    let d = hypot(f.midX - p.x, f.midY - p.y)
+                    if d < bestDist { bestDist = d; bestID = comp.id }
+                }
+                continue
+            }
             let xs = pts.map(\.x), ys = pts.map(\.y)
             let minX = xs.min()!, maxX = xs.max()!
             let minY = ys.min()!, maxY = ys.max()!
@@ -1328,17 +1387,22 @@ struct WorkbenchView: View {
         .presentationDetents([.medium])
     }
 
+    /// რელსის შიდა სიგანე — კარადის ზომით ფიქსირებული (modulesPerRow × სლოტი).
+    private var railContentWidth: CGFloat { CGFloat(model.modulesPerRow) * kSlotPt }
+
     private var boardContent: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 14) {
+            knockoutStrip(.top)        // ზედა კიდის ცემები
             // ფიქსირებული DIN-რელსები — ცარიელიც drop-სამიზნეა (ქვედა რიგზე გადატანა მუშაობს)
             ForEach(0..<model.railCount, id: \.self) { r in
                 railRow(r)
             }
             // დატვირთვების თარო — კარადის ძირში
             if !model.loadStrip.isEmpty { loadStripRow }
+            knockoutStrip(.bottom)     // ქვედა კიდის ცემები
         }
         .padding(20)
-        .background(cabinetBody)   // კარადის კორპუსი კუთხის ხრახნებით
+        .background(cabinetBody)   // კარადის კორპუსი — ფერი მონტაჟის ტიპით
         .padding(28)
         .coordinateSpace(name: kBoardSpace)
         .overlay { wireOverlay }
@@ -1351,21 +1415,19 @@ struct WorkbenchView: View {
         .onPreferenceChange(PortFrameKey.self) { portPoints = $0 }
         .onPreferenceChange(CardFrameKey.self) { componentFrames = $0 }
         .onPreferenceChange(RailFrameKey.self) { railFrames = $0 }
-        .onPreferenceChange(RailWidthKey.self) { cabinetInnerWidth = max(cabinetInnerWidth, $0) }
     }
 
-    /// ერთი ფიქსირებული DIN-რელსი: წევრები მარცხნიდან, ცარიელიც ხილული და მიზანშეწონილი.
+    /// ერთი ფიქსირებული DIN-რელსი: მოდულები მარცხნიდან სლოტებში ჩაწყობილი,
+    /// ფიქსირებული ტევადობით (კარადის ზომა); ცარიელ ნაწილზე სლოტ-ბადე ჩანს.
     private func railRow(_ r: Int) -> some View {
-        HStack(alignment: .top, spacing: 24) {
+        HStack(alignment: .top, spacing: 0) {
             ForEach(model.railMembers(r)) { comp in card(for: comp) }
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 16).padding(.vertical, 12)
-        .frame(minHeight: 136, alignment: .leading)
-        .background(GeometryReader { g in
-            Color.clear.preference(key: RailWidthKey.self, value: g.size.width)
-        })
-        .frame(minWidth: max(560, cabinetInnerWidth), alignment: .leading)
-        .background(dinRailBackground)
+        .padding(.vertical, 12)
+        .frame(width: railContentWidth, alignment: .leading)
+        .frame(minHeight: 132, alignment: .topLeading)
+        .background(slotGrid)
         .background(GeometryReader { g in
             Color.clear.preference(key: RailFrameKey.self,
                                    value: [r: g.frame(in: .named(kBoardSpace))])
@@ -1374,13 +1436,79 @@ struct WorkbenchView: View {
         .accessibilityIdentifier("rail-\(r)")
     }
 
+    /// მონტაჟის ფირფიტა (back box) + DIN რელსი + 18მმ სლოტ-ბადე.
+    /// ფირფიტა ღია ფერისაა, რომ მუქ flush-კარადაშიც სლოტები ნათლად ჩანდეს.
+    private var slotGrid: some View {
+        RoundedRectangle(cornerRadius: 8)
+            .fill(Color(white: 0.82))
+            .overlay { dinRailBackground }
+            .overlay {
+                HStack(spacing: 0) {
+                    ForEach(0..<model.modulesPerRow, id: \.self) { i in
+                        Rectangle().fill(Color.clear).frame(width: kSlotPt)
+                            .overlay(alignment: .leading) {
+                                if i > 0 { Rectangle().fill(Color.black.opacity(0.10)).frame(width: 0.5) }
+                            }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .allowsHitTesting(false)
+            }
+    }
+
+    /// კარადის კიდის ცემები (knockouts) — დახურული დისკი / გახსნილი ხვრელი; tap → გახსნა.
+    private func knockoutStrip(_ edge: Knockout.Edge) -> some View {
+        let ks = model.enclosure.availableKnockouts.filter { $0.edge == edge }
+        return ZStack(alignment: .leading) {
+            Color.clear.frame(height: 16)
+            ForEach(ks, id: \.self) { k in
+                knockoutDisc(k)
+                    .position(x: CGFloat(k.index) * kSlotPt + kSlotPt / 2, y: 8)
+            }
+        }
+        .frame(width: railContentWidth, height: 16, alignment: .leading)
+        .accessibilityIdentifier("knockouts-\(edge.rawValue)")
+    }
+
+    private func knockoutDisc(_ k: Knockout) -> some View {
+        let open = model.enclosure.isOpen(k)
+        return Button {
+            model.toggleKnockout(k)
+            knockoutPulseID = k
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+                if knockoutPulseID == k { knockoutPulseID = nil }
+            }
+        } label: {
+            ZStack {
+                if open {
+                    // გახსნილი ხვრელი — მუქი, კაბელის შესაყვანი რგოლით
+                    Circle().fill(Color.black.opacity(0.55))
+                        .overlay(Circle().stroke(Color.black.opacity(0.5), lineWidth: 1.5))
+                        .frame(width: 13, height: 13)
+                } else {
+                    // დახურული ცემა — ბლანკირებული დისკი
+                    Circle().fill(Color(white: 0.80))
+                        .overlay(Circle().stroke(Color.black.opacity(0.30), lineWidth: 1))
+                        .overlay(Circle().fill(Color(white: 0.68)).frame(width: 7, height: 7))
+                        .frame(width: 13, height: 13)
+                }
+            }
+            .scaleEffect(knockoutPulseID == k ? 1.35 : 1)
+            .animation(.spring(response: 0.25, dampingFraction: 0.5), value: knockoutPulseID == k)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("knockout-\(k.edge.rawValue)-\(k.index)")
+        .accessibilityLabel(open ? "გახსნილი ცემა" : "დახურული ცემა")
+    }
+
     /// დატვირთვების ზოლი კარადის ქვედა ნაწილში (რელსები DIN-მოწყობილობებისთვისაა).
     private var loadStripRow: some View {
-        HStack(alignment: .top, spacing: 24) {
+        HStack(alignment: .top, spacing: 16) {
             ForEach(model.loadStrip) { comp in card(for: comp) }
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 16).padding(.vertical, 10)
-        .frame(minWidth: max(560, cabinetInnerWidth), alignment: .leading)
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .frame(width: railContentWidth, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 10)
                 .fill(Color.gray.opacity(0.06))
@@ -1391,12 +1519,17 @@ struct WorkbenchView: View {
         .accessibilityIdentifier("load-strip")
     }
 
-    /// კარადის კორპუსი: ღია ლითონის კედელი, ჩარჩო და კუთხის ხრახნების მინიშნება.
+    /// კარადის კორპუსი — ფერი მონტაჟის ტიპით: surface = ღია პლასტიკი,
+    /// flush = მუქი ლითონის კარადა. ჩარჩო + კუთხის ხრახნები.
     private var cabinetBody: some View {
-        RoundedRectangle(cornerRadius: 16)
-            .fill(LinearGradient(colors: [Color(white: 0.97), Color(white: 0.90)],
-                                 startPoint: .top, endPoint: .bottom))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(white: 0.60), lineWidth: 1.6))
+        let flush = model.enclosure.mount == .flush
+        let colors = flush
+            ? [Color(white: 0.30), Color(white: 0.20)]   // მუქი ლითონი
+            : [Color(white: 0.97), Color(white: 0.89)]   // ღია პლასტიკი
+        return RoundedRectangle(cornerRadius: 16)
+            .fill(LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom))
+            .overlay(RoundedRectangle(cornerRadius: 16)
+                .stroke(flush ? Color(white: 0.10) : Color(white: 0.60), lineWidth: 1.6))
             .overlay(alignment: .topLeading) { cabinetScrew }
             .overlay(alignment: .topTrailing) { cabinetScrew }
             .overlay(alignment: .bottomLeading) { cabinetScrew }
@@ -1459,6 +1592,10 @@ struct WorkbenchView: View {
                                         stranded: w.conductorType == .stranded)
             }
         )
+        // რელს-მოწყობილობა იკავებს ზუსტად მის სლოტ(ებ)ს და ებჯინება მეზობელს;
+        // დატვირთვები ბუნებრივად იზომებიან (ზოლი).
+        .frame(width: WorkbenchModel.isRailMounted(comp)
+               ? CGFloat(comp.kind.moduleWidthUnits) * kSlotPt : nil)
     }
 
     /// DIN 35მმ რელსის ვიზუალი: ლითონის გრადიენტი, ზედა/ქვედა ბაგეები (lips) და
@@ -1771,35 +1908,44 @@ struct ComponentCardView: View {
     private var isConnector: Bool { component.kind.isConnector }
 
     var body: some View {
-        VStack(spacing: 5) {
-            // ზედა კიდე — შემავალი ხრახნიანი კლემები (კვების მხარე)
-            if !inputs.isEmpty { terminalRow(inputs, edge: .top) }
-            // მოდულის სახე (კონექტორებს ცალკე სახე არ აქვთ — სალტეა)
-            if !isConnector { moduleFace }
-            // ქვედა კიდე — გამავალი/დატვირთვის კლემები
-            let bottom = outputs + singles
-            if !bottom.isEmpty { terminalRow(bottom, edge: .bottom) }
-            // ქართული სახელი — მოდულის ქვეშ
+        let photo = photoAssetName
+        return VStack(spacing: 5) {
+            if let photo {
+                // ფოტო-რეალისტური მოდული (ხატული ბერკეტი/კორპუსი იხშობა)
+                photoBody(photo)
+            } else {
+                // ზედა კიდე — შემავალი ხრახნიანი კლემები (კვების მხარე)
+                if !inputs.isEmpty { terminalRow(inputs, edge: .top) }
+                // მოდულის სახე (კონექტორებს ცალკე სახე არ აქვთ — სალტეა)
+                if !isConnector { moduleFace }
+                // ქვედა კიდე — გამავალი/დატვირთვის კლემები
+                let bottom = outputs + singles
+                if !bottom.isEmpty { terminalRow(bottom, edge: .bottom) }
+            }
+            // ქართული სახელი — მოდულის ქვეშ (სლოტის სიგანეში, რომ ბარათი არ გაგანიერდეს)
             Text(component.name)
                 .font(.system(size: 8)).foregroundStyle(Color.black.opacity(0.55))
                 .lineLimit(2).multilineTextAlignment(.center)
-                .frame(maxWidth: max(faceWidth + 36, 88))
+                .frame(maxWidth: CGFloat(moduleUnits) * kSlotPt - 4)
         }
-        .padding(7)
-        // DIN-მოდულის კორპუსი: სპილოსძვლისფერი გრადიენტი + მსუბუქი ჩრდილი რელსზე;
-        // ცენტრში — რელსის ჩამჭიდის ღარი (კონტენტის ქვეშ, სახეს არ კვეთს).
-        .background(
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isConnector ? AnyShapeStyle(Color(white: 0.88)) : AnyShapeStyle(ModuleStyle.casing))
-                    .shadow(color: .black.opacity(0.20), radius: 2.5, x: 0, y: 1.5)
-                if !isConnector {
-                    Rectangle().fill(Color.black.opacity(0.10))
-                        .frame(height: 1.6)
-                        .padding(.horizontal, 2)
+        .padding(.vertical, 7)
+        .padding(.horizontal, photo == nil ? 7 : 1)
+        // DIN-მოდულის კორპუსი: სპილოსძვლისფერი გრადიენტი + რელსის ჩამჭიდის ღარი.
+        // ფოტო-მოდულს კორპუსი არ სჭირდება — სურათი თავად აჩვენებს კორპუსს.
+        .background {
+            if photo == nil {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isConnector ? AnyShapeStyle(Color(white: 0.88)) : AnyShapeStyle(ModuleStyle.casing))
+                        .shadow(color: .black.opacity(0.20), radius: 2.5, x: 0, y: 1.5)
+                    if !isConnector {
+                        Rectangle().fill(Color.black.opacity(0.10))
+                            .frame(height: 1.6)
+                            .padding(.horizontal, 2)
+                    }
                 }
             }
-        )
+        }
         .overlay(RoundedRectangle(cornerRadius: 8)
             .stroke(isSelected ? Color.brand : Color.gray.opacity(0.35), lineWidth: isSelected ? 2 : 1))
         .overlay(alignment: .topTrailing) {
@@ -1837,15 +1983,57 @@ struct ComponentCardView: View {
 
     // MARK: მოდულის სახე — თეთრი კორპუსი, ბერკეტი/ხატულა, ტექ-იარლიყი
 
-    /// DIN-მოდულის სიგანე მოდულებში (1 მოდული ≈ 18მმ რეალურში).
-    private var moduleUnits: Int {
+    /// DIN-მოდულის სიგანე სლოტებში — ერთიანი წყარო Core-ში (v1.1 Pro Panel).
+    private var moduleUnits: Int { component.kind.moduleWidthUnits }
+    /// მოდულის სახის სიგანე — სლოტ(ებ)ს ავსებს მცირე ბეჟელით.
+    private var faceWidth: CGFloat { CGFloat(moduleUnits) * kSlotPt - 16 }
+
+    /// ფოტო-რეალისტური მოდულის asset (პილოტი: ერთპოლუსიანი MCB + RCD).
+    /// nil → ხელით ხატული სახე (დანარჩენი kind-ები ჯერ უცვლელია).
+    private var photoAssetName: String? {
         switch component.kind {
-        case .mcb, .fuse, .lightSwitch, .relay, .selectorSwitch, .indicatorLight: return 1
-        case .rcd, .rcbo, .mainSwitch, .contactor, .smartSwitch, .smartRelay, .smartDimmer: return 2
-        default: return 3   // mpcb/vfd/წყაროები/დატვირთვები — განიერი სახე
+        case .mcb where component.poles == 1: return "MCB1P"
+        case .rcd: return "RCD2P"
+        default: return nil
         }
     }
-    private var faceWidth: CGFloat { CGFloat(moduleUnits) * 26 + 6 }
+    /// ფოტოს ბუნებრივი თანაფარდობა (სიგანე/სიმაღლე) — სიმაღლის ფიქსაციისთვის.
+    private var photoAspect: CGFloat {
+        switch component.kind {
+        case .mcb: return 35.0 / 120.0   // 0.292
+        case .rcd: return 81.0 / 120.0   // 0.675
+        default:   return 1
+        }
+    }
+
+    /// ფოტო-მოდულის სხეული: სურათი სლოტ-სიგანის ჩარჩოში (scaledToFit, top-aligned),
+    /// ფეხების ანკრები/ხრახნი/მოჭერა გადადებული ფოტოს ზედა და ქვედა კლემებზე.
+    /// ხატული ბერკეტი იხშობა — ფოტო თავად აჩვენებს ბერკეტს.
+    private func photoBody(_ name: String) -> some View {
+        let w = CGFloat(moduleUnits) * kSlotPt
+        let h = w / photoAspect            // სრული სიმაღლე — თორემ მშობელი ჭყლეტს
+        let bottom = outputs + singles
+        return ZStack {
+            // სურათი = მოდულის სახე (ერთი accessibility ელემენტი — face-<id>)
+            Image(name).resizable().scaledToFit().frame(width: w, height: h)
+                // გაგდება/კვება — მსუბუქი შეფერილობა ფოტოზე (ბერკეტი სტატიკურია)
+                .overlay(RoundedRectangle(cornerRadius: 4).fill(faceTint))
+                .accessibilityElement(children: .ignore)
+                .accessibilityIdentifier("face-\(component.id)")
+            // ფეხების ინტერაქცია (ანკრი/მოჭერა/სადენი) ფოტოს კლემებზე გასწორებული —
+            // ცალკე accessibility ელემენტებად (term-<portid>), რომ მოჭერა/სადენი მუშაობდეს.
+            VStack(spacing: 0) {
+                if !inputs.isEmpty {
+                    HStack(spacing: 7) { ForEach(inputs) { terminal($0, edge: .top) } }
+                }
+                Spacer(minLength: 0)
+                if !bottom.isEmpty {
+                    HStack(spacing: 7) { ForEach(bottom) { terminal($0, edge: .bottom) } }
+                }
+            }
+            .padding(.vertical, 9)   // ფოტოს კლემების ჩაზნექაზე გასწორება
+        }
+    }
 
     private var moduleFace: some View {
         ZStack {

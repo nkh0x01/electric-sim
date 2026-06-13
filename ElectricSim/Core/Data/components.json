@@ -136,6 +136,14 @@
     "category": "auxiliary"
   },
   {
+    "id": "blank_1",
+    "kind": "blank",
+    "name": "ცარიელი მოდული",
+    "poles": 1,
+    "priceGEL": 3,
+    "category": "auxiliary"
+  },
+  {
     "id": "busbar_n",
     "kind": "busbar",
     "name": "ნულის სალტე (N-bus)",

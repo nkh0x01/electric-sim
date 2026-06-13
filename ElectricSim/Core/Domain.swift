@@ -166,6 +166,8 @@ public enum ComponentKind: String, Codable, CaseIterable, Sendable {
     case ups              // უწყვეტი კვება (UPS)
     case inverter         // ინვერტორი
     case battery          // აკუმულატორი
+    // ფიზიკური შემავსებელი (v1.1 Pro Panel)
+    case blank            // ცარიელი მოდული (filler) — ფეხების გარეშე, ელექტრულად ინერტული
 
     /// კონექტორია? (ყველა ფეხი ერთ კვანძში ერთიანდება)
     public var isConnector: Bool {
@@ -210,6 +212,19 @@ public enum ComponentKind: String, Codable, CaseIterable, Sendable {
 
     /// დამცავი ავტომატია (ampacity/ნომინალის შემოწმებისთვის)?
     public var isBreaker: Bool { self == .mcb || self == .mpcb || self == .rcbo || self == .fuse }
+
+    /// DIN-მოდულის სიგანე 18მმ სლოტებში (რელსზე ადგილის გათვლა — v1.1 Pro Panel).
+    /// 1 მოდული = 18მმ. ერთპოლუსიანი ავტომატი = 1; RCD/RCBO/მთავარი = 2; MPCB/VFD = 3.
+    public var moduleWidthUnits: Int {
+        switch self {
+        case .mcb, .fuse, .lightSwitch, .relay, .selectorSwitch, .indicatorLight, .blank:
+            return 1
+        case .rcd, .rcbo, .mainSwitch, .contactor, .smartSwitch, .smartRelay, .smartDimmer:
+            return 2
+        default:
+            return 3
+        }
+    }
 
     /// ხრახნიანი კლემაა (screw terminal) — მრავალწვერა კაბელს ბუნიკი სჭირდება (IEC).
     public var hasScrewTerminal: Bool {
@@ -419,6 +434,12 @@ public enum ComponentFactory {
         }
         let title = phase == .three ? "3-ფაზიანი სავარცხელი (comb)" : "სავარცხელი სალტე (comb)"
         return Component(id: id, kind: .comb, name: title, poles: teeth, ports: ports)
+    }
+
+    /// ცარიელი მოდული (blank/filler): ფეხების გარეშე — solver-ი მას უგულებელყოფს.
+    /// რეალურ ფარში ცარიელ სლოტებს ფარავს; აქ მხოლოდ 1 სლოტს იკავებს ვიზუალურად.
+    public static func blank(id: String) -> Component {
+        Component(id: id, kind: .blank, name: "ცარიელი მოდული", poles: 1, ports: [])
     }
 
     public static func lamp(id: String, powerW: Double = 60, requiresPE: Bool = true, leakageMa: Double? = nil) -> Component {

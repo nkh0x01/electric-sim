@@ -20,6 +20,24 @@ final class ElectricSimUITests: XCTestCase {
         return app
     }
 
+    /// ფოტო-რეალისტური მოდულების პილოტი: კარადის რელსზე ხელით ხატული მოდულები
+    /// (კვება + მთავარი) გვერდით ფოტო-MCB×2 + ფოტო-RCD — მასშტაბის/რეალიზმის შესაფასებლად.
+    func testPhotoModulePilotScreenshot() {
+        let app = launchApp()
+        app.buttons["menu-panels"].tap()
+        let row = app.buttons["panel-lvl_panel_basic"]
+        XCTAssertTrue(row.waitForExistence(timeout: 15)); row.tap()
+        XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 15))
+        // ხელით ხატული მთავარი (შესადარებლად), მერე ფოტო RCD + ორი ფოტო MCB
+        openPaletteCard(app, header: "palette-cat-supply", card: "palette-card-main_2p").tap()
+        openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-rcd_30").tap()
+        let mcb = openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-mcb_b10")
+        mcb.tap(); mcb.tap()
+        XCTAssertTrue(app.otherElements["face-mcb_b10_2"].waitForExistence(timeout: 5))
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "PhotoModulePilot"; shot.lifetime = .keepAlways; add(shot)
+    }
+
     /// მთავარ მენიუში „სწავლება“-ს გახსნა.
     private func openLearn(_ app: XCUIApplication) {
         let learn = app.buttons["menu-learn"]

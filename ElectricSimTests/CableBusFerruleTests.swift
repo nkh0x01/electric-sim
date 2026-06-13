@@ -258,6 +258,105 @@ final class CableBusFerruleTests: XCTestCase {
             .resolvedRailCount, 2, "მარტივი სამუშაო → 2 რელსი")
     }
 
+    // MARK: კარადა (Enclosure) — ფიზიკური მოდელი (v1.1 Pro Panel)
+
+    /// სტანდარტული ზომები სწორ რიგებსა და per-row მოდულებს იძლევა.
+    func testEnclosureSizesProduceCorrectRowsAndCapacity() {
+        XCTAssertEqual(EnclosureSize.m12.rows, 1); XCTAssertEqual(EnclosureSize.m12.modulesPerRow, 12)
+        XCTAssertEqual(EnclosureSize.m18.rows, 1); XCTAssertEqual(EnclosureSize.m18.modulesPerRow, 18)
+        XCTAssertEqual(EnclosureSize.m24.rows, 2); XCTAssertEqual(EnclosureSize.m24.modulesPerRow, 12)
+        XCTAssertEqual(EnclosureSize.m36.rows, 3); XCTAssertEqual(EnclosureSize.m36.modulesPerRow, 12)
+        XCTAssertEqual(EnclosureSize.m48.rows, 4); XCTAssertEqual(EnclosureSize.m48.modulesPerRow, 12)
+        // ჯამური ტევადობა = ზომა
+        for s in EnclosureSize.allCases { XCTAssertEqual(s.rows * s.modulesPerRow, s.rawValue) }
+    }
+
+    func testSmallestFittingEnclosure() {
+        XCTAssertEqual(EnclosureSize.smallestFitting(modules: 5), .m12)
+        XCTAssertEqual(EnclosureSize.smallestFitting(modules: 12), .m12)
+        XCTAssertEqual(EnclosureSize.smallestFitting(modules: 13), .m18)
+        XCTAssertEqual(EnclosureSize.smallestFitting(modules: 20, minRows: 2), .m24)
+        XCTAssertEqual(EnclosureSize.smallestFitting(modules: 1, minRows: 4), .m48)
+    }
+
+    /// ცემების (knockout) გახსნა/დახურვა მდგომარეობა.
+    func testKnockoutOpenCloseState() {
+        var enc = Enclosure(size: .m24, mount: .flush)
+        let k = enc.availableKnockouts.first { $0.edge == .top }!
+        XCTAssertFalse(enc.isOpen(k))
+        enc.toggle(k); XCTAssertTrue(enc.isOpen(k))
+        enc.toggle(k); XCTAssertFalse(enc.isOpen(k))
+        // ზედა + ქვედა კიდე ცემებს შეიცავს (მინიმუმ)
+        XCTAssertTrue(enc.availableKnockouts.contains { $0.edge == .top })
+        XCTAssertTrue(enc.availableKnockouts.contains { $0.edge == .bottom })
+    }
+
+    /// Level → კარადა: explicit ზომა; არსებული დონეები railCount-იდან (რეგრესია).
+    func testLevelResolvedEnclosure() throws {
+        let levels = try GameData.loadLevels()
+        // არსებული პანელ-დონეები — რიგები ემთხვევა ძველ railCount-ს (უცვლელი)
+        XCTAssertEqual(levels.first { $0.id == "lvl_panel_basic" }?.resolvedRailCount, 2)
+        XCTAssertEqual(levels.first { $0.id == "lvl_panel_basic" }?.resolvedEnclosure.rows, 2)
+        XCTAssertEqual(levels.first { $0.id == "lvl_sandbox_1ph" }?.resolvedEnclosure.size, .m48)
+        XCTAssertEqual(levels.first { $0.id == "lvl_tutorial" }?.resolvedEnclosure.rows, 1)
+        // tutorial (არა-panelAssembly) → surface; panelAssembly default → flush
+        XCTAssertEqual(levels.first { $0.id == "lvl_tutorial" }?.resolvedEnclosure.mount, .surface)
+        XCTAssertEqual(levels.first { $0.id == "lvl_panel_basic" }?.resolvedEnclosure.mount, .flush)
+    }
+
+    /// ცარიელი მოდული: ფეხების გარეშე, ელექტრულად ინერტული, solver-ი უგულებელყოფს.
+    func testBlankModuleIsElectricallyInert() throws {
+        XCTAssertEqual(ComponentKind.blank.moduleWidthUnits, 1)
+        XCTAssertFalse(ComponentKind.blank.isLoad)
+        XCTAssertFalse(ComponentKind.blank.isSource)
+        XCTAssertFalse(ComponentKind.blank.isConnector)
+        XCTAssertFalse(ComponentKind.blank.isSeriesDevice)
+        let blank = ComponentFactory.blank(id: "blank1")
+        XCTAssertTrue(blank.ports.isEmpty)
+
+        // ნათურის წრე + ცარიელი მოდული გვერდით → წრე უცვლელად მუშაობს
+        var b = Board(phase: .single)
+        b.add(ComponentFactory.supply(id: "supply"))
+        b.add(ComponentFactory.mcb(id: "mcb1", ratingA: 10))
+        b.add(ComponentFactory.lamp(id: "lamp1"))
+        b.add(ComponentFactory.blank(id: "blank1"))   // ინერტული შემავსებელი
+        b.connect("supply.L", "mcb1.in", csaMm2: 1.5, color: .brown)
+        b.connect("mcb1.out", "lamp1.L", csaMm2: 1.5, color: .brown)
+        b.connect("supply.N", "lamp1.N", csaMm2: 1.5, color: .blue)
+        b.connect("supply.PE", "lamp1.PE", csaMm2: 1.5, color: .yellowGreen)
+        let r = CircuitSolver().solve(b, energize: true)
+        XCTAssertEqual(r.loadStates.filter(\.isPowered).count, 1, "ცარიელი მოდული წრეს არ ცვლის")
+
+        // შაბლონი იტვირთება და auxiliary-შია
+        let templates = try GameData.loadTemplates()
+        let t = try XCTUnwrap(templates["blank_1"])
+        XCTAssertEqual(t.kind, .blank)
+        XCTAssertEqual(ComponentCategory.forKind(.blank), .auxiliary)
+    }
+
+    /// რიგის ტევადობა: მოდულების ჯამური სიგანე ვერ აღემატება modulesPerRow-ს.
+    func testRowCapacityRule() {
+        let enc = Enclosure(size: .m12)   // 1 რიგი × 12 სლოტი
+        XCTAssertTrue(enc.rowHasRoom(usedSlots: 10, adding: 2))   // 12 ≤ 12 ✓
+        XCTAssertFalse(enc.rowHasRoom(usedSlots: 11, adding: 2))  // 13 > 12 ✗
+        XCTAssertTrue(enc.rowHasRoom(usedSlots: 0, adding: 12))
+        XCTAssertFalse(enc.rowHasRoom(usedSlots: 0, adding: 13))
+        // 2 ერთეულიანი მთავარი + 10 × 1 ერთეულიანი ავტომატი = 12 → სავსე
+        let m = ComponentKind.mainSwitch.moduleWidthUnits   // 2
+        let mcb = ComponentKind.mcb.moduleWidthUnits        // 1
+        XCTAssertEqual(m + 10 * mcb, 12)
+        XCTAssertFalse(enc.rowHasRoom(usedSlots: 12, adding: mcb))  // მე-11 ავტომატი აღარ ეტევა
+    }
+
+    /// მოდულის სიგანე სლოტებში (კარადის ტევადობის გათვლისთვის).
+    func testModuleWidthUnits() {
+        XCTAssertEqual(ComponentKind.mcb.moduleWidthUnits, 1)
+        XCTAssertEqual(ComponentKind.rcd.moduleWidthUnits, 2)
+        XCTAssertEqual(ComponentKind.rcbo.moduleWidthUnits, 2)
+        XCTAssertEqual(ComponentKind.mainSwitch.moduleWidthUnits, 2)
+        XCTAssertEqual(ComponentKind.mpcb.moduleWidthUnits, 3)
+    }
+
     // MARK: instance-id გენერაცია (კოლიზიის რეგრესია)
 
     /// წაშლა-დამატების შემდეგ id აღარ მეორდება: nextInstanceID = max სუფიქსი + 1

@@ -60,7 +60,7 @@ public enum ComponentCategory: String, Codable, Sendable, CaseIterable {
         case .contactor, .relay, .lightSwitch, .selectorSwitch,
              .smartSwitch, .smartRelay, .smartDimmer, .smartMeter, .vfd:
             return .control
-        case .busbar, .comb, .wago, .terminalBlock, .emergencyStop, .indicatorLight:
+        case .busbar, .comb, .wago, .terminalBlock, .emergencyStop, .indicatorLight, .blank:
             return .auxiliary
         }
     }
@@ -144,7 +144,92 @@ public struct ComponentTemplate: Codable, Identifiable, Sendable {
             return ComponentFactory.source(id: instanceID, kind: .generator, name: name, phase: .three)
         case .solarPanel, .ups, .inverter, .battery:
             return ComponentFactory.source(id: instanceID, kind: kind, name: name, phase: .single)
+        case .blank:
+            return ComponentFactory.blank(id: instanceID)
         }
+    }
+}
+
+// MARK: - კარადა (Enclosure) — ფიზიკური მოდელი (v1.1 Pro Panel)
+
+/// კარადის სტანდარტული ზომა სრული მოდულების რაოდენობით (1 მოდული = 18მმ).
+/// რიგების რაოდენობა ზომიდან გამოითვლება (რეალისტური per-row მოდულებით).
+public enum EnclosureSize: Int, Codable, CaseIterable, Sendable {
+    case m12 = 12, m18 = 18, m24 = 24, m36 = 36, m48 = 48
+
+    /// DIN-რელსების (რიგების) რაოდენობა.
+    public var rows: Int {
+        switch self {
+        case .m12, .m18: return 1
+        case .m24:       return 2
+        case .m36:       return 3
+        case .m48:       return 4
+        }
+    }
+    /// მოდულების რაოდენობა თითო რიგზე (12, 18, 12, 12, 12).
+    public var modulesPerRow: Int { rawValue / rows }
+
+    /// უმცირესი სტანდარტული ზომა, რომელიც იტევს `modules`-ს და აქვს ≥`minRows` რიგი.
+    public static func smallestFitting(modules: Int, minRows: Int = 1) -> EnclosureSize {
+        let need = max(1, modules), rows = max(1, minRows)
+        return allCases.sorted { $0.rawValue < $1.rawValue }
+            .first { $0.rawValue >= need && $0.rows >= rows } ?? .m48
+    }
+}
+
+/// კარადის მონტაჟის ტიპი — ვიზუალს მართავს (surface = ღია პლასტიკი, flush = მუქი ლითონი).
+public enum MountType: String, Codable, Sendable, CaseIterable { case surface, flush }
+
+/// კაბელის შესაყვანი „ცემა" (knockout) კარადის კიდეზე — გახსნისას კაბელი შემოდის.
+public struct Knockout: Codable, Hashable, Sendable {
+    public enum Edge: String, Codable, Sendable, CaseIterable { case top, bottom, left, right }
+    public let edge: Edge
+    public let index: Int   // პოზიცია კიდეზე (0-დან)
+    public init(edge: Edge, index: Int) { self.edge = edge; self.index = index }
+}
+
+/// კარადის ფიზიკური მოდელი: ზომა, მონტაჟის ტიპი, გახსნილი ცემები.
+/// ⚠️ solver-ი ამ მოდელს არ კითხულობს — წმინდა განლაგების/ფიზიკის ფენაა.
+public struct Enclosure: Codable, Sendable, Equatable {
+    public let size: EnclosureSize
+    public let mount: MountType
+    public var openKnockouts: Set<Knockout>
+
+    public init(size: EnclosureSize, mount: MountType = .flush,
+                openKnockouts: Set<Knockout> = []) {
+        self.size = size
+        self.mount = mount
+        self.openKnockouts = openKnockouts
+    }
+
+    public var rows: Int { size.rows }
+    public var modulesPerRow: Int { size.modulesPerRow }
+    public var totalModules: Int { size.rawValue }
+
+    /// ხელმისაწვდომი ცემები: ზედა/ქვედა კიდე — თითო 2 სლოტზე ერთი (გლანდ-ფირფიტა);
+    /// გვერდები — თითო რიგზე ერთი (გვერდითი შესაყვანი).
+    public var availableKnockouts: [Knockout] {
+        var ks: [Knockout] = []
+        for i in stride(from: 0, to: modulesPerRow, by: 2) {
+            ks.append(Knockout(edge: .top, index: i))
+            ks.append(Knockout(edge: .bottom, index: i))
+        }
+        for r in 0..<rows {
+            ks.append(Knockout(edge: .left, index: r))
+            ks.append(Knockout(edge: .right, index: r))
+        }
+        return ks
+    }
+
+    public func isOpen(_ k: Knockout) -> Bool { openKnockouts.contains(k) }
+    public mutating func toggle(_ k: Knockout) {
+        if openKnockouts.contains(k) { openKnockouts.remove(k) }
+        else { openKnockouts.insert(k) }
+    }
+
+    /// რიგზე `width` სლოტი ეტევა, თუ უკვე `usedSlots`-ია დაკავებული? (ტევადობის წესი)
+    public func rowHasRoom(usedSlots: Int, adding width: Int) -> Bool {
+        usedSlots + width <= modulesPerRow
     }
 }
 
@@ -278,12 +363,15 @@ public struct Level: Codable, Identifiable, Sendable {
     public let difficulty: Int?           // 1...5 (nil → 1)
     public let tier: LevelTier?           // nil → გამოითვლება (heuristic)
     public let railCount: Int?            // კარადის DIN-რელსების რაოდენობა (nil → heuristic)
+    public let enclosureModules: Int?     // კარადის ზომა (12/18/24/36/48; nil → railCount-იდან)
+    public let enclosureMount: String?    // "surface"/"flush" (nil → flush)
 
     public init(id: String, index: Int, title: String, brief: String, hint: String,
                 phase: Phase, palette: [PaletteEntry], goal: LevelGoal,
                 mode: LevelMode? = nil, prebuilt: PrebuiltBoard? = nil,
                 category: LevelCategory? = nil, difficulty: Int? = nil, tier: LevelTier? = nil,
-                railCount: Int? = nil) {
+                railCount: Int? = nil, enclosureModules: Int? = nil,
+                enclosureMount: String? = nil) {
         self.id = id
         self.index = index
         self.title = title
@@ -298,6 +386,8 @@ public struct Level: Codable, Identifiable, Sendable {
         self.difficulty = difficulty
         self.tier = tier
         self.railCount = railCount
+        self.enclosureModules = enclosureModules
+        self.enclosureMount = enclosureMount
     }
 
     public var resolvedMode: LevelMode { mode ?? .build }
@@ -323,13 +413,33 @@ public struct Level: Codable, Identifiable, Sendable {
     /// სირთულე 1...5.
     public var resolvedDifficulty: Int { min(5, max(1, difficulty ?? 1)) }
 
-    /// კარადის DIN-რელსების რაოდენობა: explicit (2...4) ან heuristic — დიდი
-    /// პალიტრა მეტ რელსს იღებს; პატარა Learn-ფარები ერთ კომპაქტურ რელსს.
-    public var resolvedRailCount: Int {
+    /// რელს-რაოდენობის heuristic (კარადის გარეშე) — explicit (2...4) ან პალიტრის ზომიდან.
+    private var heuristicRailCount: Int {
         if let railCount { return min(4, max(2, railCount)) }
         if palette.count >= 10 { return 3 }
         return palette.count >= 6 ? 2 : 1
     }
+
+    /// დონის კარადა: explicit ზომა, ან railCount-heuristic-იდან გამოთვლილი უმცირესი,
+    /// რომელსაც საკმარისი რიგი აქვს. არსებული დონეები (enclosureModules == nil) უცვლელად
+    /// რჩება — რიგების რაოდენობა ემთხვევა ძველ resolvedRailCount-ს.
+    public var resolvedEnclosure: Enclosure {
+        let size: EnclosureSize
+        if let m = enclosureModules, let s = EnclosureSize(rawValue: m) {
+            size = s
+        } else {
+            size = EnclosureSize.allCases.sorted { $0.rawValue < $1.rawValue }
+                .first { $0.rows >= heuristicRailCount } ?? .m48
+        }
+        // default მონტაჟი: ფარის-აწყობა → flush (მუქი ლითონის pro-კარადა);
+        // Learn/Career/sandbox → surface (ღია პლასტიკი).
+        let mount = enclosureMount.flatMap(MountType.init(rawValue:))
+            ?? (resolvedCategory == .panelAssembly ? .flush : .surface)
+        return Enclosure(size: size, mount: mount)
+    }
+
+    /// კარადის DIN-რელსების რაოდენობა = კარადის რიგები (ერთიანი წყარო).
+    public var resolvedRailCount: Int { resolvedEnclosure.rows }
 
     /// ფარის-აწყობის დონეა? (ააწყობ სრულ consumer unit-ს სწორი თანმიმდევრობით)
     public var isPanelAssembly: Bool { resolvedCategory == .panelAssembly }
