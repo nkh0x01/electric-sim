@@ -2003,22 +2003,43 @@ struct ComponentCardView: View {
     /// მოდულის სახის სიგანე — სლოტ(ებ)ს ავსებს მცირე ბეჟელით.
     private var faceWidth: CGFloat { CGFloat(moduleUnits) * kSlotPt - 16 }
 
-    /// ფოტო-რეალისტური მოდულის asset (პილოტი: ერთპოლუსიანი MCB + RCD).
-    /// nil → ხელით ხატული სახე (დანარჩენი kind-ები ჯერ უცვლელია).
-    private var photoAssetName: String? {
+    /// ფოტო-asset-ის მოსალოდნელი სახელი KIND + POLES-ით (template-id-ის გარეშე):
+    /// `<KIND><poles>P`. ნებისმიერი ერთპოლუსიანი ავტომატი → MCB1P, RCD → RCD2P და ა.შ.
+    /// asset-ის არსებობა card-ში მოწმდება (`photoAssetName`).
+    private var photoAssetBaseName: String? {
         switch component.kind {
-        case .mcb where component.poles == 1: return "MCB1P"
-        case .rcd: return "RCD2P"
-        default: return nil
+        case .mcb:        return "MCB\(component.poles)P"
+        case .rcd:        return "RCD\(component.poles)P"
+        case .rcbo:       return "RCBO\(component.poles)P"
+        case .mpcb:       return "MPCB\(component.poles)P"
+        case .mainSwitch: return "MAIN\(component.poles)P"
+        case .spd:        return "SPD\(component.poles)P"
+        case .contactor:  return "CONTACTOR\(component.poles)P"
+        case .relay:      return "RELAY\(component.poles)P"
+        default:          return nil
         }
     }
+
+    /// რეალური ფოტო-asset (თუ imageset არსებობს). არ არსებობს → nil → ხელით ხატული
+    /// სახე (placeholder-fallback: ცარიელი/ავარია არ ხდება; asset-ის ჩასმისთანავე ჩნდება).
+    private var photoAssetName: String? {
+        guard let base = photoAssetBaseName else { return nil }
+        #if canImport(UIKit)
+        return UIImage(named: base) != nil ? base : nil
+        #else
+        return base
+        #endif
+    }
+
     /// ფოტოს ბუნებრივი თანაფარდობა (სიგანე/სიმაღლე) — სიმაღლის ფიქსაციისთვის.
+    /// წაკითხულია თავად asset-ის ზომიდან → ნებისმიერი ახალი asset ავტომატურად ჯდება.
     private var photoAspect: CGFloat {
-        switch component.kind {
-        case .mcb: return 35.0 / 120.0   // 0.292
-        case .rcd: return 81.0 / 120.0   // 0.675
-        default:   return 1
+        #if canImport(UIKit)
+        if let base = photoAssetBaseName, let img = UIImage(named: base), img.size.height > 0 {
+            return img.size.width / img.size.height
         }
+        #endif
+        return max(0.2, CGFloat(moduleUnits) * 0.29)   // სარეზერვო შეფასება
     }
 
     /// ფოტო-მოდულის სხეული: სურათი სლოტ-სიგანის ჩარჩოში (scaledToFit, top-aligned),
@@ -2070,9 +2091,12 @@ struct ComponentCardView: View {
     /// შეხების ზონისთვის. (პილოტში მცირე per-asset მორგება შესაძლოა დასჭირდეს.)
     private var photoLeverAnchor: CGPoint {
         switch component.kind {
-        case .mcb: return CGPoint(x: 0.50, y: 0.56)
-        case .rcd: return CGPoint(x: 0.33, y: 0.60)
-        default:   return CGPoint(x: 0.50, y: 0.55)
+        case .mcb:        return CGPoint(x: 0.50, y: 0.56)
+        case .rcd:        return CGPoint(x: 0.33, y: 0.60)
+        case .rcbo:       return CGPoint(x: 0.50, y: 0.58)
+        case .mainSwitch: return CGPoint(x: 0.50, y: 0.55)
+        case .mpcb:       return CGPoint(x: 0.50, y: 0.55)
+        default:          return CGPoint(x: 0.50, y: 0.56)
         }
     }
 
