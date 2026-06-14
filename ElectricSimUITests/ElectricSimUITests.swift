@@ -38,6 +38,26 @@ final class ElectricSimUITests: XCTestCase {
         shot.name = "PhotoModulePilot"; shot.lifetime = .keepAlways; add(shot)
     }
 
+    /// სრული ფოტო-rollout: ერთ რელსზე სხვადასხვა ფოტო-მოდული — main + MCB1P + MCB2P +
+    /// RCD + SPD, top-aligned, ნომინალები გადადებული. Screenshot შესაფასებლად.
+    func testFullPhotoRolloutScreenshot() {
+        let app = launchApp()
+        app.buttons["menu-panels"].tap()
+        let row = app.buttons["panel-lvl_panel_basic"]
+        XCTAssertTrue(row.waitForExistence(timeout: 15)); row.tap()
+        XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 15))
+        // მთავარი (MainSwitch2P) + RCD (RCD2P) + MCB1P + MCB2P + SPD — კვება უკვე რელსზეა
+        openPaletteCard(app, header: "palette-cat-supply", card: "palette-card-main_2p").tap()
+        openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-rcd_30").tap()
+        openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-mcb_b10").tap()
+        openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-mcb_2p_c32").tap()
+        openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-spd").tap()
+        XCTAssertTrue(app.otherElements["face-spd_1"].waitForExistence(timeout: 6),
+                      "SPD ფოტო რელსზე უნდა იყოს")
+        XCTAssertTrue(app.otherElements["face-mcb_2p_c32_1"].exists, "2-პოლუსიანი MCB ფოტო")
+        shot(app, "FullPhotoRollout")
+    }
+
     private func shot(_ app: XCUIApplication, _ name: String) {
         let a = XCTAttachment(screenshot: app.screenshot())
         a.name = name; a.lifetime = .keepAlways; add(a)

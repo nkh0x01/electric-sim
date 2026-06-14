@@ -1766,6 +1766,14 @@
         "max": 2
       },
       {
+        "templateId": "mcb_2p_c32",
+        "max": 1
+      },
+      {
+        "templateId": "spd",
+        "max": 1
+      },
+      {
         "templateId": "busbar_l",
         "max": 1
       },

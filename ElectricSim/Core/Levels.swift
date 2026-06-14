@@ -99,7 +99,8 @@ public struct ComponentTemplate: Codable, Identifiable, Sendable {
         case .mainSwitch:
             return ComponentFactory.mainSwitch(id: instanceID, phase: phase)
         case .mcb:
-            return ComponentFactory.mcb(id: instanceID, ratingA: ratingA ?? 16, curve: curve ?? .B)
+            return ComponentFactory.mcb(id: instanceID, ratingA: ratingA ?? 16,
+                                        curve: curve ?? .B, poles: poles ?? 1)
         case .rcbo:
             return ComponentFactory.rcbo(id: instanceID, ratingA: ratingA ?? 16, curve: curve ?? .B,
                                          mAtrip: mAtrip ?? Electrical.standardRCDmA)

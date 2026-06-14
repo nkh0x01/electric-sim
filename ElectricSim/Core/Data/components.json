@@ -136,6 +136,26 @@
     "category": "auxiliary"
   },
   {
+    "id": "mcb_2p_c32",
+    "kind": "mcb",
+    "name": "ავტომატი 2P (MCB) C32",
+    "poles": 2,
+    "ratingA": 32,
+    "curve": "C",
+    "priceGEL": 22,
+    "category": "protection"
+  },
+  {
+    "id": "mcb_3p_c25",
+    "kind": "mcb",
+    "name": "ავტომატი 3P (MCB) C25",
+    "poles": 3,
+    "ratingA": 25,
+    "curve": "C",
+    "priceGEL": 32,
+    "category": "protection"
+  },
+  {
     "id": "blank_1",
     "kind": "blank",
     "name": "ცარიელი მოდული",

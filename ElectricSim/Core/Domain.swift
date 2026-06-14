@@ -224,13 +224,14 @@ public enum ComponentKind: String, Codable, CaseIterable, Sendable {
         }
     }
 
-    /// DIN-მოდულის სიგანე 18მმ სლოტებში (რელსზე ადგილის გათვლა — v1.1 Pro Panel).
-    /// 1 მოდული = 18მმ. ერთპოლუსიანი ავტომატი = 1; RCD/RCBO/მთავარი = 2; MPCB/VFD = 3.
+    /// DIN-მოდულის ბაზისური სიგანე 18მმ სლოტებში (1-პოლუსიანი დაშვებით).
+    /// poles-დამოკიდებული სიგანისთვის იხ. `Component.moduleWidthUnits`.
     public var moduleWidthUnits: Int {
         switch self {
-        case .mcb, .fuse, .lightSwitch, .relay, .selectorSwitch, .indicatorLight, .blank:
+        case .mcb, .fuse, .lightSwitch, .selectorSwitch, .indicatorLight, .blank:
             return 1
-        case .rcd, .rcbo, .mainSwitch, .contactor, .smartSwitch, .smartRelay, .smartDimmer:
+        case .rcd, .rcbo, .mainSwitch, .contactor, .relay, .spd,
+             .smartSwitch, .smartRelay, .smartDimmer:
             return 2
         default:
             return 3
@@ -343,6 +344,16 @@ public struct Component: Identifiable, Hashable, Codable, Sendable {
     public func port(conductor: Conductor) -> Port? {
         ports.first { $0.conductor == conductor }
     }
+
+    /// DIN-სიგანე სლოტებში, poles-ის გათვალისწინებით: ავტომატი/MPCB = პოლუსების
+    /// რაოდენობა (1P/2P/3P); მთავარი = პოლუსები (≥2); დანარჩენი — kind-ის ბაზისი.
+    public var moduleWidthUnits: Int {
+        switch kind {
+        case .mcb, .mpcb: return max(1, poles)
+        case .mainSwitch: return max(2, poles)
+        default:          return kind.moduleWidthUnits
+        }
+    }
 }
 
 // MARK: - Component factory (სტანდარტული კომპონენტები)
@@ -380,14 +391,28 @@ public enum ComponentFactory {
                          name: "მთავარი ამომრთველი \(poles)P", poles: poles, ports: ports)
     }
 
-    public static func mcb(id: String, ratingA: Double, curve: BreakerCurve = .B, conductor: Conductor = .L) -> Component {
-        let ports = [
-            Port(id: pid(id, "in"), conductor: conductor, side: .input, name: "IN"),
-            Port(id: pid(id, "out"), conductor: conductor, side: .output, name: "OUT")
-        ]
-        return Component(id: id, kind: .mcb,
-                         name: "ავტომატი (MCB) \(curve.rawValue)\(Int(ratingA))",
-                         poles: 1, ratingA: ratingA, curve: curve, ports: ports)
+    public static func mcb(id: String, ratingA: Double, curve: BreakerCurve = .B,
+                           conductor: Conductor = .L, poles: Int = 1) -> Component {
+        let name = "ავტომატი (MCB) \(curve.rawValue)\(Int(ratingA))"
+        // ერთპოლუსიანი — ძველი ფეხ-id-ები ("in"/"out") უცვლელად (comb/ტესტები ეყრდნობა).
+        if poles <= 1 {
+            let ports = [
+                Port(id: pid(id, "in"), conductor: conductor, side: .input, name: "IN"),
+                Port(id: pid(id, "out"), conductor: conductor, side: .output, name: "OUT")
+            ]
+            return Component(id: id, kind: .mcb, name: name,
+                             poles: 1, ratingA: ratingA, curve: curve, ports: ports)
+        }
+        // მრავალპოლუსიანი — თითო გამტარზე in/out; ერთი ბერკეტი ყველა პოლუსს ერთად რთავს.
+        // 2P = ხაზი+ნული (ერთფაზიანი ორმაგი); 3P = სამი ფაზა.
+        let conductors: [Conductor] = poles >= 3 ? [.L1, .L2, .L3] : [.L, .N]
+        var ports: [Port] = []
+        for c in conductors {
+            ports.append(Port(id: pid(id, "\(c.rawValue)in"), conductor: c, side: .input, name: "\(c.rawValue) IN"))
+            ports.append(Port(id: pid(id, "\(c.rawValue)out"), conductor: c, side: .output, name: "\(c.rawValue) OUT"))
+        }
+        return Component(id: id, kind: .mcb, name: name,
+                         poles: poles, ratingA: ratingA, curve: curve, ports: ports)
     }
 
     public static func rcbo(id: String, ratingA: Double, curve: BreakerCurve = .B, mAtrip: Double = Electrical.standardRCDmA) -> Component {

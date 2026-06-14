@@ -445,7 +445,7 @@ final class WorkbenchModel: ObservableObject {
     var modulesPerRow: Int { enclosure.modulesPerRow }
 
     /// მოდულის სიგანე სლოტებში (18მმ ერთეული).
-    func widthUnits(of comp: Component) -> Int { comp.kind.moduleWidthUnits }
+    func widthUnits(of comp: Component) -> Int { comp.moduleWidthUnits }
 
     /// მოდულის მარცხენა სლოტი — მარცხნივ ჩაწყობით (preceding წევრების ჯამური სიგანე).
     /// რეალური ფარივით ღრეჩოები არ რჩება; ღრეჩო = ცარიელი მოდული.
@@ -1608,7 +1608,7 @@ struct WorkbenchView: View {
         // რელს-მოწყობილობა იკავებს ზუსტად მის სლოტ(ებ)ს და ებჯინება მეზობელს;
         // დატვირთვები ბუნებრივად იზომებიან (ზოლი).
         .frame(width: WorkbenchModel.isRailMounted(comp)
-               ? CGFloat(comp.kind.moduleWidthUnits) * kSlotPt : nil)
+               ? CGFloat(comp.moduleWidthUnits) * kSlotPt : nil)
     }
 
     /// DIN 35მმ რელსის ვიზუალი: ლითონის გრადიენტი, ზედა/ქვედა ბაგეები (lips) და
@@ -1999,7 +1999,7 @@ struct ComponentCardView: View {
     // MARK: მოდულის სახე — თეთრი კორპუსი, ბერკეტი/ხატულა, ტექ-იარლიყი
 
     /// DIN-მოდულის სიგანე სლოტებში — ერთიანი წყარო Core-ში (v1.1 Pro Panel).
-    private var moduleUnits: Int { component.kind.moduleWidthUnits }
+    private var moduleUnits: Int { component.moduleWidthUnits }
     /// მოდულის სახის სიგანე — სლოტ(ებ)ს ავსებს მცირე ბეჟელით.
     private var faceWidth: CGFloat { CGFloat(moduleUnits) * kSlotPt - 16 }
 
@@ -2008,14 +2008,13 @@ struct ComponentCardView: View {
     /// asset-ის არსებობა card-ში მოწმდება (`photoAssetName`).
     private var photoAssetBaseName: String? {
         switch component.kind {
-        case .mcb:        return "MCB\(component.poles)P"
-        case .rcd:        return "RCD\(component.poles)P"
-        case .rcbo:       return "RCBO\(component.poles)P"
-        case .mpcb:       return "MPCB\(component.poles)P"
-        case .mainSwitch: return "MAIN\(component.poles)P"
-        case .spd:        return "SPD\(component.poles)P"
-        case .contactor:  return "CONTACTOR\(component.poles)P"
-        case .relay:      return "RELAY\(component.poles)P"
+        case .mcb:        return "MCB\(component.poles)P"          // MCB1P/MCB2P/MCB3P
+        case .rcd:        return "RCD\(component.poles)P"          // RCD2P
+        case .rcbo:       return "RCBO"
+        case .mainSwitch: return "MainSwitch\(component.poles)P"   // MainSwitch2P (4P → fallback)
+        case .spd:        return "SPD"
+        case .contactor:  return "Contactor"
+        case .relay:      return "VoltageRelay"
         default:          return nil
         }
     }
@@ -2057,6 +2056,16 @@ struct ComponentCardView: View {
                 .accessibilityIdentifier("face-\(component.id)")
             // გაგდება/კვება — მსუბუქი შეფერილობა (clear → უჩინარი)
             RoundedRectangle(cornerRadius: 4).fill(faceTint).frame(width: w, height: h)
+            // ნომინალი — ფოტოზე დაბეჭდილ ნომინალს ფარავს და რეალურს აჩვენებს (C16/B10…)
+            if let rAnchor = ratingLabelAnchor, !ratingText.isEmpty {
+                Text(ratingText)
+                    .font(.system(size: max(7, h * 0.052), weight: .heavy))
+                    .foregroundStyle(Color.black.opacity(0.82))
+                    .lineLimit(1).minimumScaleFactor(0.6)
+                    .padding(.horizontal, 2).padding(.vertical, 0.5)
+                    .background(RoundedRectangle(cornerRadius: 1.5).fill(Color(white: 0.94)))
+                    .position(x: rAnchor.x * w, y: rAnchor.y * h)
+            }
             // გამორთული — ბნელდება + შავი ბერკეტი ქვევით ფოტოს „ON"-ს ფარავს
             if component.isOpen {
                 RoundedRectangle(cornerRadius: 4).fill(Color.black.opacity(0.40))
@@ -2091,13 +2100,40 @@ struct ComponentCardView: View {
     /// შეხების ზონისთვის. (პილოტში მცირე per-asset მორგება შესაძლოა დასჭირდეს.)
     private var photoLeverAnchor: CGPoint {
         switch component.kind {
-        case .mcb:        return CGPoint(x: 0.50, y: 0.56)
-        case .rcd:        return CGPoint(x: 0.33, y: 0.60)
-        case .rcbo:       return CGPoint(x: 0.50, y: 0.58)
-        case .mainSwitch: return CGPoint(x: 0.50, y: 0.55)
+        case .mcb:
+            switch component.poles {
+            case 1:  return CGPoint(x: 0.50, y: 0.48)
+            case 2:  return CGPoint(x: 0.50, y: 0.42)
+            default: return CGPoint(x: 0.50, y: 0.58)   // 3P — სამი ბერკეტი
+            }
+        case .rcd:        return CGPoint(x: 0.33, y: 0.55)
+        case .rcbo:       return CGPoint(x: 0.45, y: 0.52)
+        case .mainSwitch: return CGPoint(x: 0.50, y: 0.58)   // წითელი ბერკეტი
         case .mpcb:       return CGPoint(x: 0.50, y: 0.55)
-        default:          return CGPoint(x: 0.50, y: 0.56)
+        default:          return CGPoint(x: 0.50, y: 0.55)
         }
+    }
+
+    /// ნომინალის (C16/B10…) overlay-ის ნორმალიზებული პოზიცია ფოტოს ბრენდ-ფირფიტაზე —
+    /// მხოლოდ ავტომატებზე (MCB/RCBO), რომლებსაც ფოტოზე ნომინალი აქვთ დაბეჭდილი.
+    /// nil → ნომინალი არ ეხატება.
+    private var ratingLabelAnchor: CGPoint? {
+        switch component.kind {
+        case .mcb:
+            switch component.poles {
+            case 1:  return CGPoint(x: 0.29, y: 0.73)   // MCB1P "C16" — ქვედა სპეც-ბლოკი
+            case 2:  return CGPoint(x: 0.83, y: 0.80)   // MCB2P "C32" — ქვედა-მარჯვნივ
+            default: return CGPoint(x: 0.30, y: 0.40)   // MCB3P "C25" — ზედა-მარცხნივ (iC60-სთან)
+            }
+        case .rcbo: return CGPoint(x: 0.42, y: 0.33)    // RCBO "C16" — ზედა-ცენტრში
+        default:    return nil
+        }
+    }
+
+    /// ნომინალის ტექსტი ფოტოზე გადასაფარებლად: მრუდი + ამპერაჟი (მაგ. „C16", „B10").
+    private var ratingText: String {
+        guard let r = component.ratingA else { return "" }
+        return "\(component.curve?.rawValue ?? "")\(Int(r))"
     }
 
     /// გამორთული ფოტო-მოდულის ბერკეტი ქვედა (OFF) მდგომარეობაში.

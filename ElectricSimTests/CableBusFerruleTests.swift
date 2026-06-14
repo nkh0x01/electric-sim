@@ -390,6 +390,32 @@ final class CableBusFerruleTests: XCTestCase {
         XCTAssertFalse(enc.rowHasRoom(usedSlots: 12, adding: mcb))  // მე-11 ავტომატი აღარ ეტევა
     }
 
+    /// მრავალპოლუსიანი ავტომატი: სიგანე = პოლუსები, ფეხები პოლუსებზე, 1P უცვლელი.
+    func testMultiPoleMCB() {
+        let m1 = ComponentFactory.mcb(id: "m1", ratingA: 16, curve: .C, poles: 1)
+        XCTAssertEqual(m1.moduleWidthUnits, 1)
+        XCTAssertNotNil(m1.port(side: .input, conductor: .L), "1P — ძველი in/out ფეხები (.L)")
+        XCTAssertNotNil(m1.port(side: .output, conductor: .L))
+
+        let m2 = ComponentFactory.mcb(id: "m2", ratingA: 32, curve: .C, poles: 2)
+        XCTAssertEqual(m2.poles, 2)
+        XCTAssertEqual(m2.moduleWidthUnits, 2, "2P → 2 სლოტი")
+        XCTAssertEqual(m2.ports.count, 4, "L in/out + N in/out")
+
+        let m3 = ComponentFactory.mcb(id: "m3", ratingA: 25, curve: .C, poles: 3)
+        XCTAssertEqual(m3.moduleWidthUnits, 3, "3P → 3 სლოტი")
+        XCTAssertEqual(m3.ports.count, 6, "L1/L2/L3 in/out")
+
+        // asset-სიგანეები: SPD/relay = 2 სლოტი
+        XCTAssertEqual(ComponentKind.spd.moduleWidthUnits, 2)
+        XCTAssertEqual(ComponentKind.relay.moduleWidthUnits, 2)
+
+        // 2P/3P შაბლონები იტვირთება
+        let templates = try! GameData.loadTemplates()
+        XCTAssertEqual(templates["mcb_2p_c32"]?.poles, 2)
+        XCTAssertEqual(templates["mcb_3p_c25"]?.poles, 3)
+    }
+
     /// მოდულის სიგანე სლოტებში (კარადის ტევადობის გათვლისთვის).
     func testModuleWidthUnits() {
         XCTAssertEqual(ComponentKind.mcb.moduleWidthUnits, 1)
