@@ -448,8 +448,9 @@ public enum ComponentFactory {
     /// ზოლი (busbar / ნულის ან მიწის სალტე). `slots` ფეხი, ყველა ერთ კვანძში.
     /// `name` — სურვილისამებრ ცხადი სახელი (template-იდან); არადა გამტარს მიხედვით.
     public static func busbar(id: String, conductor: Conductor, slots: Int, name: String? = nil) -> Component {
+        // კლემის id უნიკალურია (busbar.0..N); იარლიყი მხოლოდ გამტარი (ყველა „N"/„PE"/„L").
         let ports = (0..<slots).map {
-            Port(id: pid(id, "\($0)"), conductor: conductor, side: .single, name: "\(conductor.rawValue)\($0)")
+            Port(id: pid(id, "\($0)"), conductor: conductor, side: .single, name: conductor.rawValue)
         }
         let title: String
         if let name { title = name }

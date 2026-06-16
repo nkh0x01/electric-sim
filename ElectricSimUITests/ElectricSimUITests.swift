@@ -58,6 +58,29 @@ final class ElectricSimUITests: XCTestCase {
         shot(app, "FullPhotoRollout")
     }
 
+    /// რეგრესია: (BUG1) განთავსებული MCB ფოტოს ხატავს; (BUG2) სალტეები სრულ-სიგანის
+    /// ცალკეულ ზოლებად — რელსზე არ ედებიან მოდულებს და ერთმანეთს არ ფარავენ.
+    func testBusbarLayoutAndMCBPhoto() {
+        let app = launchApp()
+        app.buttons["menu-panels"].tap()
+        let row = app.buttons["panel-lvl_panel_basic"]
+        XCTAssertTrue(row.waitForExistence(timeout: 15)); row.tap()
+        XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 15))
+        // BUG1: MCB განთავსებისას ფოტო ჩანს
+        openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-mcb_b10").tap()
+        XCTAssertTrue(app.otherElements["face-mcb_b10_1"].waitForExistence(timeout: 6),
+                      "BUG1: MCB → ფოტო face")
+        // BUG2: სალტეები — სრულ-სიგანის ზონაში, არა რელსზე ედებიან
+        openPaletteCard(app, header: "palette-cat-auxiliary", card: "palette-card-busbar_n").tap()
+        openPaletteCard(app, header: "palette-cat-auxiliary", card: "palette-card-busbar_pe").tap()
+        openPaletteCard(app, header: "palette-cat-auxiliary", card: "palette-card-busbar_l").tap()
+        XCTAssertTrue(app.otherElements["busbar-zone"].waitForExistence(timeout: 6),
+                      "BUG2: სალტეების სრულ-სიგანის ზონა")
+        // MCB ფოტო კვლავ ჩანს (სალტეებმა არ დაფარა)
+        XCTAssertTrue(app.otherElements["face-mcb_b10_1"].exists, "MCB ფოტო სალტეების შემდეგაც ჩანს")
+        shot(app, "BusbarsAndMCB")
+    }
+
     private func shot(_ app: XCUIApplication, _ name: String) {
         let a = XCTAttachment(screenshot: app.screenshot())
         a.name = name; a.lifetime = .keepAlways; add(a)

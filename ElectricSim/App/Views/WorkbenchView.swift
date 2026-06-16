@@ -473,8 +473,11 @@ final class WorkbenchModel: ObservableObject {
         GameFeedback.tick()
     }
 
-    /// DIN-რელსზე მჯდომი მოწყობილობაა? (დატვირთვები ქვედა ზოლში იხატება)
-    static func isRailMounted(_ c: Component) -> Bool { !c.kind.isLoad }
+    /// DIN-რელსზე მჯდომი მოწყობილობაა? (დატვირთვები ქვედა ზოლში, სალტეები სრულ-სიგანის
+    /// ზოლებად, სავარცხელი overlay-ად — რელსზე არ ჯდებიან).
+    static func isRailMounted(_ c: Component) -> Bool {
+        !c.kind.isLoad && c.kind != .busbar && c.kind != .comb
+    }
 
     func rail(of comp: Component) -> Int {
         min(max(railOf[comp.id] ?? 0, 0), railCount - 1)
@@ -486,6 +489,8 @@ final class WorkbenchModel: ObservableObject {
     }
     var loadStrip: [Component] { board.components.filter { $0.kind.isLoad } }
     var combs: [Component] { board.components.filter { $0.kind == .comb } }
+    /// სალტეები (N/PE/L-bus) — სრულ-სიგანის ჰორიზონტალურ ზოლებად იხატება (რელსზე არა).
+    var busbars: [Component] { board.components.filter { $0.kind == .busbar } }
 
     /// საწყისი განაწილება: რელს-მოწყობილობები მარცხნიდან ივსება, რიგ-რიგობით
     /// (კვება ზედა-მარცხნივ); რელსის ტევადობის ამოწურვისას — შემდეგ რელსზე.
@@ -507,6 +512,8 @@ final class WorkbenchModel: ObservableObject {
     /// ცარიელ რელსზეც მუშაობს — ეს ასწორებს „ქვედა რიგზე ვერ გადამაქვს" შეცდომას.
     func moveToRail(_ id: String, rail r: Int, afterID: String?) {
         guard let comp = board.components.first(where: { $0.id == id }) else { return }
+        // სალტეები სრულ-სიგანის ზოლებია — რელსზე არ გადააქვთ.
+        if comp.kind == .busbar { return }
         if blockedByLiveEdit(comp.ports.map { $0.id }) { return }
         let target = min(max(r, 0), railCount - 1)
         if comp.kind == .comb {
@@ -1408,6 +1415,8 @@ struct WorkbenchView: View {
             ForEach(0..<model.railCount, id: \.self) { r in
                 railRow(r)
             }
+            // სალტეები — სრულ-სიგანის ჰორიზონტალური ზოლები (N/PE/L-bus), რელსების ქვემოთ
+            if !model.busbars.isEmpty { busbarZone }
             // დატვირთვების თარო — კარადის ძირში
             if !model.loadStrip.isEmpty { loadStripRow }
             knockoutStrip(.bottom)     // ქვედა კიდის ცემები
@@ -1530,6 +1539,17 @@ struct WorkbenchView: View {
         .accessibilityIdentifier("load-strip")
     }
 
+    /// სალტეების ზონა — თითო სალტე (N/PE/L-bus) ცალკე სრულ-სიგანის ჰორიზონტალურ
+    /// ზოლად (კლემები განივ გაშლილი), რეალური ფარის ნულის/მიწის სალტეების მსგავსად.
+    private var busbarZone: some View {
+        VStack(spacing: 6) {
+            ForEach(model.busbars) { comp in card(for: comp) }
+        }
+        .frame(width: railContentWidth, alignment: .leading)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("busbar-zone")
+    }
+
     /// კარადის კორპუსი — ფერი მონტაჟის ტიპით: surface = ღია პლასტიკი,
     /// flush = მუქი ლითონის კარადა. ჩარჩო + კუთხის ხრახნები.
     private var cabinetBody: some View {
@@ -1603,12 +1623,15 @@ struct WorkbenchView: View {
                 return TerminalWireInfo(color: w.color.swiftUIColor,
                                         ferruled: w.ferruled,
                                         stranded: w.conductorType == .stranded)
-            }
+            },
+            // სალტე → კლემები სრულ სიგანეზე გაიშლება (padding-ის გამოკლებით).
+            connectorFullWidth: comp.kind == .busbar ? railContentWidth - 30 : nil
         )
-        // რელს-მოწყობილობა იკავებს ზუსტად მის სლოტ(ებ)ს და ებჯინება მეზობელს;
+        // რელს-მოწყობილობა იკავებს ზუსტად მის სლოტ(ებ)ს; სალტე — სრული სიგანე;
         // დატვირთვები ბუნებრივად იზომებიან (ზოლი).
         .frame(width: WorkbenchModel.isRailMounted(comp)
-               ? CGFloat(comp.moduleWidthUnits) * kSlotPt : nil)
+               ? CGFloat(comp.moduleWidthUnits) * kSlotPt
+               : (comp.kind == .busbar ? railContentWidth : nil))
     }
 
     /// DIN 35მმ რელსის ვიზუალი: ლითონის გრადიენტი, ზედა/ქვედა ბაგეები (lips) და
@@ -1913,6 +1936,8 @@ struct ComponentCardView: View {
     var onTightenPort: (String) -> Void = { _ in }
     /// კლემაში შესული სადენის ფერი/ბუნიკი — ვიზუალური ჭდისთვის (nil → სადენი არ არის).
     var wireInfo: (String) -> TerminalWireInfo? = { _ in nil }
+    /// სალტისთვის: სრული სიგანე — კლემები ამ სიგანეზე თანაბრად განაწილდება (nil → ბუნებრივი).
+    var connectorFullWidth: CGFloat? = nil
 
     /// რომელი კლემაა ამჟამად დაჭერილი (პროგრესული მოჭერის ანიმაცია).
     @State private var pressingPort: String?
@@ -1941,7 +1966,7 @@ struct ComponentCardView: View {
             Text(component.name)
                 .font(.system(size: 8)).foregroundStyle(Color.black.opacity(0.55))
                 .lineLimit(2).multilineTextAlignment(.center)
-                .frame(maxWidth: CGFloat(moduleUnits) * kSlotPt - 4)
+                .frame(maxWidth: connectorFullWidth ?? (CGFloat(moduleUnits) * kSlotPt - 4))
         }
         .padding(.vertical, 7)
         .padding(.horizontal, photo == nil ? 7 : 1)
@@ -2346,9 +2371,14 @@ struct ComponentCardView: View {
 
     @ViewBuilder
     private func terminalRow(_ ports: [Port], edge: TerminalEdge = .bottom) -> some View {
-        let row = HStack(alignment: .top, spacing: 7) {
-            ForEach(ports) { terminal($0, edge: edge) }
+        let full = connectorFullWidth
+        // სალტეზე — კლემები სრულ სიგანეზე თანაბრად; სხვაგან — ბუნებრივი დაშორება.
+        let row = HStack(alignment: .top, spacing: full != nil ? 0 : 7) {
+            ForEach(ports) { p in
+                terminal(p, edge: edge).frame(maxWidth: full != nil ? .infinity : nil)
+            }
         }
+        .frame(width: full)
         if isConnector {
             // სალტე (busbar): ლითონის ზოლი ხრახნებით + გამტარის ფერის მინიშნება
             row
