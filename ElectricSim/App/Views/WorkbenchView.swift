@@ -740,6 +740,15 @@ func photoNaturalWidth(for comp: Component) -> CGFloat? {
 func photoSlots(for comp: Component) -> Int? {
     photoNaturalWidth(for: comp).map { max(1, Int(($0 / kSlotPt).rounded())) }
 }
+/// MCB/RCBO ნომინალის ტექსტი (B10, C16, ...) — სხვა კომპონენტებისთვის ცარიელი.
+func ratingText(for comp: Component) -> String {
+    switch comp.kind {
+    case .mcb, .rcbo:
+        guard let r = comp.ratingA else { return "" }
+        return "\(comp.curve?.rawValue ?? "")\(Int(r))"
+    default: return ""
+    }
+}
 
 /// ფარზე ერთიანი drag-ის რეჟიმი.
 enum BoardDragMode { case none, wire, move, pan }
@@ -1464,6 +1473,7 @@ struct WorkbenchView: View {
         .coordinateSpace(name: kBoardSpace)
         .overlay { wireOverlay }
         .overlay { combOverlay }   // სავარცხელები მოდულების ზემოდან
+        .overlay { ratingLabelsOverlay }
         .background(GeometryReader { g in
             Color.clear
                 .onAppear { fitCabinetIfNeeded(content: g.size) }
@@ -1624,6 +1634,9 @@ struct WorkbenchView: View {
               railAreaSize.width > 50, railAreaSize.height > 50,
               lastCabinetContent.width > 50, lastCabinetContent.height > 50 else { return }
         didFitCamera = true
+        if ProcessInfo.processInfo.arguments.contains("-UITestZoom1") {
+            zoom = 1.0; pan = .zero; return
+        }
         let fit = min(railAreaSize.width / lastCabinetContent.width,
                       railAreaSize.height / lastCabinetContent.height, 1.0)
         zoom = max(0.3, fit * 0.98)
@@ -1795,6 +1808,30 @@ struct WorkbenchView: View {
         }
     }
 
+    /// MCB/RCBO ნომინალის ლეიბლები — board-დონის overlay (componentFrames კოორდინატებში).
+    /// კარადის zoom/pan-ს მიჰყვება, რადგან boardContent-ის overlay-შია.
+    private var ratingLabelsOverlay: some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(model.board.components) { comp in
+                let rt = ratingText(for: comp)
+                if !rt.isEmpty, let frame = componentFrames[comp.id] {
+                    Text(rt)
+                        .font(.system(size: 9, weight: .heavy, design: .monospaced))
+                        .foregroundStyle(Color(white: 0.08))
+                        .padding(.horizontal, 4).padding(.vertical, 2)
+                        .background(
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(Color.white.opacity(0.90))
+                                .shadow(color: .black.opacity(0.30), radius: 1.5, x: 0, y: 0.5)
+                        )
+                        .position(x: frame.midX, y: frame.maxY - 10)
+                        .accessibilityIdentifier("rating-\(comp.id)")
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
     /// ხისტი = მუდმივი ხაზი; მრავალწვერა = ოდნავ სქელი + ზოლიანი (striped).
     private func wireStroke(_ c: ConductorType) -> StrokeStyle {
         c == .stranded
@@ -1813,6 +1850,7 @@ struct WorkbenchView: View {
             Button { zoom = min(zoom + 0.2, 3.0) } label: { zoomIcon("plus.magnifyingglass") }
             Button { zoom = max(zoom - 0.2, 0.3) } label: { zoomIcon("minus.magnifyingglass") }
             Button { zoom = 1.0; pan = .zero } label: { zoomIcon("scope") }
+                .accessibilityIdentifier("zoom-reset")
         }
         .padding(8)
     }
@@ -1986,9 +2024,8 @@ struct ComponentCardView: View {
 
     var body: some View {
         let photo = photoAssetName
-        return VStack(spacing: 5) {
+        return VStack(spacing: photo != nil ? 2 : 5) {
             if let photo {
-                // ფოტო-რეალისტური მოდული (ხატული ბერკეტი/კორპუსი იხშობა)
                 photoBody(photo)
             } else {
                 // ზედა კიდე — შემავალი ხრახნიანი კლემები (კვების მხარე)
@@ -2085,16 +2122,6 @@ struct ComponentCardView: View {
                 .accessibilityIdentifier("face-\(component.id)")
             // გაგდება/კვება — მსუბუქი შეფერილობა (clear → უჩინარი)
             RoundedRectangle(cornerRadius: 4).fill(faceTint).frame(width: w, height: h)
-            // ნომინალი — ფოტოზე დაბეჭდილ ნომინალს ფარავს და რეალურს აჩვენებს (C16/B10…)
-            if let rAnchor = ratingLabelAnchor, !ratingText.isEmpty {
-                Text(ratingText)
-                    .font(.system(size: max(7, h * 0.052), weight: .heavy))
-                    .foregroundStyle(Color.black.opacity(0.82))
-                    .lineLimit(1).minimumScaleFactor(0.6)
-                    .padding(.horizontal, 2).padding(.vertical, 0.5)
-                    .background(RoundedRectangle(cornerRadius: 1.5).fill(Color(white: 0.94)))
-                    .position(x: rAnchor.x * w, y: rAnchor.y * h)
-            }
             // გამორთული — ბნელდება + შავი ბერკეტი ქვევით ფოტოს „ON"-ს ფარავს
             if component.isOpen {
                 RoundedRectangle(cornerRadius: 4).fill(Color.black.opacity(0.40))
@@ -2144,27 +2171,15 @@ struct ComponentCardView: View {
         }
     }
 
-    /// ნომინალის (C16/B10…) overlay-ის ნორმალიზებული პოზიცია ფოტოს ბრენდ-ფირფიტაზე —
-    /// მხოლოდ ავტომატებზე (MCB/RCBO), რომლებსაც ფოტოზე ნომინალი აქვთ დაბეჭდილი.
-    /// nil → ნომინალი არ ეხატება.
-    private var ratingLabelAnchor: CGPoint? {
-        switch component.kind {
-        case .mcb:
-            switch component.poles {
-            case 1:  return CGPoint(x: 0.50, y: 0.80)   // MCB1P (blank) — ქვედა-ცენტრი
-            case 2:  return CGPoint(x: 0.50, y: 0.80)   // MCB2P (blank) — ქვედა-ცენტრი
-            case 3:  return CGPoint(x: 0.30, y: 0.40)   // MCB3P — დაბეჭდილი C25, ზედა-მარცხნივ
-            default: return CGPoint(x: 0.30, y: 0.42)   // MCB4P — ზედა-მარცხნივ
-            }
-        case .rcbo: return CGPoint(x: 0.22, y: 0.42)    // RCBO (blank) — ზედა-მარცხნივ
-        default:    return nil
-        }
-    }
-
-    /// ნომინალის ტექსტი ფოტოზე გადასაფარებლად: მრუდი + ამპერაჟი (მაგ. „C16", „B10").
+    /// ნომინალის ტექსტი ფოტოს ქვეშ (MCB/RCBO): მრუდი + ამპერაჟი (მაგ. „C16", „B10").
+    /// სხვა მოწყობილობებისთვის ცარიელია — ლეიბლი არ ჩანს.
     private var ratingText: String {
-        guard let r = component.ratingA else { return "" }
-        return "\(component.curve?.rawValue ?? "")\(Int(r))"
+        switch component.kind {
+        case .mcb, .rcbo:
+            guard let r = component.ratingA else { return "" }
+            return "\(component.curve?.rawValue ?? "")\(Int(r))"
+        default: return ""
+        }
     }
 
     /// გამორთული ფოტო-მოდულის ბერკეტი ქვედა (OFF) მდგომარეობაში.

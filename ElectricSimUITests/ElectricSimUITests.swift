@@ -807,4 +807,28 @@ final class ElectricSimUITests: XCTestCase {
         attachment.lifetime = .keepAlways
         add(attachment)
     }
+
+    /// MCB-ების ქვეშ ნომინალის ლეიბლი (B10/B16/B20) — სუფთა, ფოტოს ქვეშ.
+    /// Focus mode + zoom reset (1×) → MCB ბარათები ბუნებრივ ზომაში, badge ხილული.
+    func testRatingLabelsBelowPhoto() {
+        let app = XCUIApplication()
+        // -UITestZoom1: fitCabinetIfNeeded-ი 1.0-ზე ჩერდება (fit-ის ნაცვლად) → badge კარგად ჩანს
+        app.launchArguments = ["-UITestPro", "-UITestUnlockAll", "-UITestZoom1"]
+        app.launch()
+        app.buttons["menu-panels"].tap()
+        let row = app.buttons["panel-lvl_panel_full"]
+        var tries = 0
+        while !row.exists && tries < 6 { app.swipeUp(); tries += 1 }
+        XCTAssertTrue(row.waitForExistence(timeout: 8))
+        row.tap()
+        XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 15))
+        openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-mcb_b10").tap()
+        openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-mcb_b16").tap()
+        openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-mcb_b20").tap()
+        XCTAssertTrue(app.otherElements["face-mcb_b20_1"].waitForExistence(timeout: 8),
+                      "სამი MCB ფოტო-ბარათი რელსზე")
+        let badge = app.staticTexts["rating-mcb_b10_1"]
+        XCTAssertTrue(badge.waitForExistence(timeout: 5), "B10 badge უნდა ეხატებოდეს MCB-ის ქვეშ")
+        shot(app, "RatingLabels-BelowPhoto")
+    }
 }
