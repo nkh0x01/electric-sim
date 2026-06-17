@@ -1491,6 +1491,9 @@ struct WorkbenchView: View {
             ForEach(model.railMembers(r)) { comp in card(for: comp) }
             Spacer(minLength: 0)
         }
+        // frame(minHeight:) ბავშვს აჯდომებს 132pt-ზე — ფოტო-ბარათების (150pt) ქვედა
+        // კლემები და ფონი ამოვარდება. fixedSize(vertical:) ბუნებრივ სიმაღლეს ინარჩუნებს.
+        .fixedSize(horizontal: false, vertical: true)
         .padding(.vertical, 12)
         .frame(width: railContentWidth, alignment: .leading)
         .frame(minHeight: 132, alignment: .topLeading)
