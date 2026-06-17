@@ -31,6 +31,9 @@ final class GameState: ObservableObject {
     private let achKey = "achievements.v1"
     private let sldKey = "sldExportCount.v1"
 
+    /// UITest bypass: `-UITestUnlockAll` → isUnlocked always true (no prerequisite check).
+    private let uiTestUnlockAll = ProcessInfo.processInfo.arguments.contains("-UITestUnlockAll")
+
     /// უფასო ვერსიაში — 1 ცალხაზოვანი ნახაზის ექსპორტი; Pro-ში ულიმიტო.
     static let freeSLDExports = 1
     func canExportSLD(isPro: Bool) -> Bool { isPro || sldExportCount < Self.freeSLDExports }
@@ -148,6 +151,7 @@ final class GameState: ObservableObject {
     func isCompleted(_ level: Level) -> Bool { completedLevelIDs.contains(level.id) }
 
     func isUnlocked(_ level: Level) -> Bool {
+        if uiTestUnlockAll { return true }
         // sandbox და custom დონეები ყოველთვის ღიაა.
         if level.resolvedMode == .sandbox { return true }
         // პროგრესია თითო ტრეკში ცალკე — Learn და ფარის აწყობა დამოუკიდებლად იხსნება.

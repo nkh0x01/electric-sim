@@ -416,6 +416,46 @@ final class CableBusFerruleTests: XCTestCase {
         XCTAssertEqual(templates["mcb_3p_c25"]?.poles, 3)
     }
 
+    /// ჭკვიანი რელე: 2-პოლუსიანი (L+N), toggleable; გამორთვისას დატვირთვა ქრება.
+    func testSmartRelayTwoPoleToggle() {
+        XCTAssertTrue(ComponentKind.smartRelay.isToggleable)
+        let templates = try! GameData.loadTemplates()
+        let t = try! XCTUnwrap(templates["smart_relay"])
+        let sr = t.makeComponent(instanceID: "sr1", phase: .single)
+        XCTAssertEqual(sr.poles, 2, "2-პოლუსიანი (L+N)")
+        XCTAssertNotNil(sr.port(side: .input, conductor: .L))
+        XCTAssertNotNil(sr.port(side: .input, conductor: .N))
+        XCTAssertNotNil(sr.port(side: .output, conductor: .L))
+
+        func lamp(srOpen: Bool) -> Int {
+            var b = Board(phase: .single)
+            b.add(ComponentFactory.supply(id: "supply"))
+            var relay = t.makeComponent(instanceID: "sr1", phase: .single)
+            relay.isOpen = srOpen
+            b.add(relay)
+            b.add(ComponentFactory.lamp(id: "lamp1"))
+            b.connect("supply.L", "sr1.Lin", csaMm2: 1.5, color: .brown)
+            b.connect("sr1.Lout", "lamp1.L", csaMm2: 1.5, color: .brown)
+            b.connect("supply.N", "sr1.Nin", csaMm2: 1.5, color: .blue)
+            b.connect("sr1.Nout", "lamp1.N", csaMm2: 1.5, color: .blue)
+            b.connect("supply.PE", "lamp1.PE", csaMm2: 1.5, color: .yellowGreen)
+            return CircuitSolver().solve(b, energize: true).loadStates.filter(\.isPowered).count
+        }
+        XCTAssertEqual(lamp(srOpen: false), 1, "ჩართული რელე — ნათურა ანთია")
+        XCTAssertEqual(lamp(srOpen: true), 0, "გამორთული რელე — ორივე პოლუსი იხსნება, ნათურა ქრება")
+    }
+
+    /// 4-პოლუსიანი ავტომატი: L1/L2/L3+N, სიგანე 4.
+    func testFourPoleMCB() {
+        let m4 = ComponentFactory.mcb(id: "m4", ratingA: 25, curve: .C, poles: 4)
+        XCTAssertEqual(m4.poles, 4)
+        XCTAssertEqual(m4.moduleWidthUnits, 4)
+        XCTAssertEqual(Set(m4.ports.map(\.conductor)), [.L1, .L2, .L3, .N])
+        XCTAssertEqual(m4.ports.count, 8)   // 4 in + 4 out
+        let t = try! GameData.loadTemplates()["mcb_4p_c25"]
+        XCTAssertEqual(t?.poles, 4)
+    }
+
     /// მოდულის სიგანე სლოტებში (კარადის ტევადობის გათვლისთვის).
     func testModuleWidthUnits() {
         XCTAssertEqual(ComponentKind.mcb.moduleWidthUnits, 1)

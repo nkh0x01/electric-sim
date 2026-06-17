@@ -445,7 +445,7 @@ final class WorkbenchModel: ObservableObject {
     var modulesPerRow: Int { enclosure.modulesPerRow }
 
     /// მოდულის სიგანე სლოტებში (18მმ ერთეული).
-    func widthUnits(of comp: Component) -> Int { comp.moduleWidthUnits }
+    func widthUnits(of comp: Component) -> Int { photoSlots(for: comp) ?? comp.moduleWidthUnits }
 
     /// მოდულის მარცხენა სლოტი — მარცხნივ ჩაწყობით (preceding წევრების ჯამური სიგანე).
     /// რეალური ფარივით ღრეჩოები არ რჩება; ღრეჩო = ცარიელი მოდული.
@@ -701,8 +701,45 @@ struct RailFrameKey: PreferenceKey {
 let kBoardSpace = "board"
 
 /// ერთი DIN-სლოტის სიგანე წერტილებში (18მმ-ის ვიზუალური ეკვივალენტი).
-/// მოდულები ზუსტად `moduleWidthUnits * kSlotPt` სიგანისაა და ერთმანეთს ებჯინება.
 let kSlotPt: CGFloat = 44
+/// ფოტო-მოდულის საერთო სიმაღლე — ყველა მოდული ერთ ხაზზე დგას (რეალური DIN-მოდულივით);
+/// სიგანე asset-ის ბუნებრივი თანაფარდობით გამოითვლება, რომ მოდულები არ დაიჭიმოს.
+let kPhotoModuleHeight: CGFloat = 150
+
+/// kind (+poles) → ფოტო-asset-ის მოსალოდნელი სახელი (template-id-ის გარეშე).
+func photoAssetBaseName(for comp: Component) -> String? {
+    switch comp.kind {
+    case .mcb:        return "MCB\(comp.poles)P"          // MCB1P/2P/3P/4P
+    case .rcd:        return "RCD\(comp.poles)P"          // RCD2P
+    case .rcbo:       return "RCBO"
+    case .mainSwitch: return "MainSwitch\(comp.poles)P"   // MainSwitch2P/4P
+    case .spd:        return "SPD"
+    case .contactor:  return "Contactor"
+    case .relay:      return "VoltageRelay"
+    case .smartRelay: return "SmartRelay"
+    default:          return nil
+    }
+}
+
+/// რეალური ფოტო-asset (თუ imageset არსებობს) + მისი ბუნებრივი თანაფარდობა (w/h).
+func photoAsset(for comp: Component) -> (name: String, aspect: CGFloat)? {
+    guard let base = photoAssetBaseName(for: comp) else { return nil }
+    #if canImport(UIKit)
+    guard let img = UIImage(named: base), img.size.height > 0 else { return nil }
+    return (base, img.size.width / img.size.height)
+    #else
+    return (base, 0.3)
+    #endif
+}
+
+/// ფოტო-მოდულის ბუნებრივი სიგანე საერთო სიმაღლეზე (nil → ფოტო არ აქვს).
+func photoNaturalWidth(for comp: Component) -> CGFloat? {
+    photoAsset(for: comp).map { $0.aspect * kPhotoModuleHeight }
+}
+/// ფოტო-მოდულის სლოტ-დაკავება (ტევადობისთვის) — ბუნებრივი სიგანე ÷ სლოტი.
+func photoSlots(for comp: Component) -> Int? {
+    photoNaturalWidth(for: comp).map { max(1, Int(($0 / kSlotPt).rounded())) }
+}
 
 /// ფარზე ერთიანი drag-ის რეჟიმი.
 enum BoardDragMode { case none, wire, move, pan }
@@ -1627,11 +1664,11 @@ struct WorkbenchView: View {
             // სალტე → კლემები სრულ სიგანეზე გაიშლება (padding-ის გამოკლებით).
             connectorFullWidth: comp.kind == .busbar ? railContentWidth - 30 : nil
         )
-        // რელს-მოწყობილობა იკავებს ზუსტად მის სლოტ(ებ)ს; სალტე — სრული სიგანე;
-        // დატვირთვები ბუნებრივად იზომებიან (ზოლი).
-        .frame(width: WorkbenchModel.isRailMounted(comp)
-               ? CGFloat(comp.moduleWidthUnits) * kSlotPt
-               : (comp.kind == .busbar ? railContentWidth : nil))
+        // ფოტო-მოდული → ბუნებრივი სიგანე (საერთო სიმაღლეზე) — ყველა ერთ ხაზზე ებჯინება;
+        // ხელით ხატული რელს-მოდული → სლოტ(ებ)ი; სალტე → სრული სიგანე; დატვირთვა → ბუნებრივი.
+        .frame(width: photoNaturalWidth(for: comp)
+               ?? (WorkbenchModel.isRailMounted(comp) ? CGFloat(comp.moduleWidthUnits) * kSlotPt
+                   : (comp.kind == .busbar ? railContentWidth : nil)))
     }
 
     /// DIN 35მმ რელსის ვიზუალი: ლითონის გრადიენტი, ზედა/ქვედა ბაგეები (lips) და
@@ -2028,50 +2065,17 @@ struct ComponentCardView: View {
     /// მოდულის სახის სიგანე — სლოტ(ებ)ს ავსებს მცირე ბეჟელით.
     private var faceWidth: CGFloat { CGFloat(moduleUnits) * kSlotPt - 16 }
 
-    /// ფოტო-asset-ის მოსალოდნელი სახელი KIND + POLES-ით (template-id-ის გარეშე):
-    /// `<KIND><poles>P`. ნებისმიერი ერთპოლუსიანი ავტომატი → MCB1P, RCD → RCD2P და ა.შ.
-    /// asset-ის არსებობა card-ში მოწმდება (`photoAssetName`).
-    private var photoAssetBaseName: String? {
-        switch component.kind {
-        case .mcb:        return "MCB\(component.poles)P"          // MCB1P/MCB2P/MCB3P
-        case .rcd:        return "RCD\(component.poles)P"          // RCD2P
-        case .rcbo:       return "RCBO"
-        case .mainSwitch: return "MainSwitch\(component.poles)P"   // MainSwitch2P (4P → fallback)
-        case .spd:        return "SPD"
-        case .contactor:  return "Contactor"
-        case .relay:      return "VoltageRelay"
-        default:          return nil
-        }
-    }
+    /// რეალური ფოტო-asset (თუ imageset არსებობს). nil → ხელით ხატული fallback.
+    private var photoAssetName: String? { photoAsset(for: component)?.name }
+    /// ფოტოს ბუნებრივი თანაფარდობა (w/h) — asset-ის ზომიდან.
+    private var photoAspect: CGFloat { photoAsset(for: component)?.aspect ?? max(0.2, CGFloat(moduleUnits) * 0.29) }
 
-    /// რეალური ფოტო-asset (თუ imageset არსებობს). არ არსებობს → nil → ხელით ხატული
-    /// სახე (placeholder-fallback: ცარიელი/ავარია არ ხდება; asset-ის ჩასმისთანავე ჩნდება).
-    private var photoAssetName: String? {
-        guard let base = photoAssetBaseName else { return nil }
-        #if canImport(UIKit)
-        return UIImage(named: base) != nil ? base : nil
-        #else
-        return base
-        #endif
-    }
-
-    /// ფოტოს ბუნებრივი თანაფარდობა (სიგანე/სიმაღლე) — სიმაღლის ფიქსაციისთვის.
-    /// წაკითხულია თავად asset-ის ზომიდან → ნებისმიერი ახალი asset ავტომატურად ჯდება.
-    private var photoAspect: CGFloat {
-        #if canImport(UIKit)
-        if let base = photoAssetBaseName, let img = UIImage(named: base), img.size.height > 0 {
-            return img.size.width / img.size.height
-        }
-        #endif
-        return max(0.2, CGFloat(moduleUnits) * 0.29)   // სარეზერვო შეფასება
-    }
-
-    /// ფოტო-მოდულის სხეული: სურათი სლოტ-სიგანის ჩარჩოში (scaledToFit, top-aligned),
-    /// ფეხების ანკრები/ხრახნი/მოჭერა გადადებული ფოტოს ზედა და ქვედა კლემებზე.
-    /// ხატული ბერკეტი იხშობა — ფოტო თავად აჩვენებს ბერკეტს.
+    /// ფოტო-მოდულის სხეული: სურათი საერთო სიმაღლეზე (ბუნებრივი სიგანე — არ იჭიმება),
+    /// ფეხების ანკრები/ხრახნი/მოჭერა გადადებული ფოტოს ზედა/ქვედა კლემებზე. ხატული
+    /// ბერკეტი იხშობა — ფოტო თავად აჩვენებს ბერკეტს.
     private func photoBody(_ name: String) -> some View {
-        let w = CGFloat(moduleUnits) * kSlotPt
-        let h = w / photoAspect            // სრული სიმაღლე — თორემ მშობელი ჭყლეტს
+        let h = kPhotoModuleHeight          // საერთო სიმაღლე — ყველა მოდული ერთ ხაზზე
+        let w = h * photoAspect             // ბუნებრივი სიგანე (თანაფარდობით)
         let bottom = outputs + singles
         let leverPt = CGPoint(x: photoLeverAnchor.x * w, y: photoLeverAnchor.y * h)
         return ZStack {
@@ -2127,14 +2131,15 @@ struct ComponentCardView: View {
         switch component.kind {
         case .mcb:
             switch component.poles {
-            case 1:  return CGPoint(x: 0.50, y: 0.48)
-            case 2:  return CGPoint(x: 0.50, y: 0.42)
-            default: return CGPoint(x: 0.50, y: 0.58)   // 3P — სამი ბერკეტი
+            case 1:  return CGPoint(x: 0.50, y: 0.62)   // MCB1P "I-ON"
+            case 2:  return CGPoint(x: 0.50, y: 0.58)
+            default: return CGPoint(x: 0.50, y: 0.58)   // 3P/4P — განივი ბერკეტები
             }
         case .rcd:        return CGPoint(x: 0.33, y: 0.55)
-        case .rcbo:       return CGPoint(x: 0.45, y: 0.52)
-        case .mainSwitch: return CGPoint(x: 0.50, y: 0.58)   // წითელი ბერკეტი
+        case .rcbo:       return CGPoint(x: 0.30, y: 0.62)   // ორი ბერკეტი მარცხნივ
+        case .mainSwitch: return CGPoint(x: 0.50, y: 0.62)   // წითელი ბერკეტ(ებ)ი
         case .mpcb:       return CGPoint(x: 0.50, y: 0.55)
+        case .smartRelay: return CGPoint(x: 0.85, y: 0.45)   // წითელი UP ბერკეტი მარჯვნივ
         default:          return CGPoint(x: 0.50, y: 0.55)
         }
     }
@@ -2146,11 +2151,12 @@ struct ComponentCardView: View {
         switch component.kind {
         case .mcb:
             switch component.poles {
-            case 1:  return CGPoint(x: 0.29, y: 0.73)   // MCB1P "C16" — ქვედა სპეც-ბლოკი
-            case 2:  return CGPoint(x: 0.83, y: 0.80)   // MCB2P "C32" — ქვედა-მარჯვნივ
-            default: return CGPoint(x: 0.30, y: 0.40)   // MCB3P "C25" — ზედა-მარცხნივ (iC60-სთან)
+            case 1:  return CGPoint(x: 0.50, y: 0.80)   // MCB1P (blank) — ქვედა-ცენტრი
+            case 2:  return CGPoint(x: 0.50, y: 0.80)   // MCB2P (blank) — ქვედა-ცენტრი
+            case 3:  return CGPoint(x: 0.30, y: 0.40)   // MCB3P — დაბეჭდილი C25, ზედა-მარცხნივ
+            default: return CGPoint(x: 0.30, y: 0.42)   // MCB4P — ზედა-მარცხნივ
             }
-        case .rcbo: return CGPoint(x: 0.42, y: 0.33)    // RCBO "C16" — ზედა-ცენტრში
+        case .rcbo: return CGPoint(x: 0.22, y: 0.42)    // RCBO (blank) — ზედა-მარცხნივ
         default:    return nil
         }
     }

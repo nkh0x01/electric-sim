@@ -2003,6 +2003,18 @@
       {
         "templateId": "blank_1",
         "max": 6
+      },
+      {
+        "templateId": "mcb_3p_c25",
+        "max": 2
+      },
+      {
+        "templateId": "mcb_4p_c25",
+        "max": 2
+      },
+      {
+        "templateId": "smart_relay",
+        "max": 2
       }
     ],
     "goal": {

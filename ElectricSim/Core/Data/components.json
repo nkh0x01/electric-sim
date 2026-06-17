@@ -156,6 +156,16 @@
     "category": "protection"
   },
   {
+    "id": "mcb_4p_c25",
+    "kind": "mcb",
+    "name": "ავტომატი 4P (MCB) C25",
+    "poles": 4,
+    "ratingA": 25,
+    "curve": "C",
+    "priceGEL": 42,
+    "category": "protection"
+  },
+  {
     "id": "blank_1",
     "kind": "blank",
     "name": "ცარიელი მოდული",
@@ -348,10 +358,11 @@
   {
     "id": "smart_relay",
     "kind": "smartRelay",
-    "name": "ჭკვიანი რელე",
-    "poles": 1,
+    "name": "ჭკვიანი WiFi რელე (2P)",
+    "poles": 2,
     "priceGEL": 45,
-    "category": "control"
+    "category": "control",
+    "ratingA": 10
   },
   {
     "id": "smart_dimmer",

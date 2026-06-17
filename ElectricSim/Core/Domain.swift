@@ -217,7 +217,7 @@ public enum ComponentKind: String, Codable, CaseIterable, Sendable {
     /// გამთიშველები). კონტაქტორი/რელე კოჭით იმართება — ხელით არ გადაირთვება.
     public var isToggleable: Bool {
         switch self {
-        case .mcb, .mpcb, .rcbo, .rcd, .mainSwitch, .lightSwitch, .selectorSwitch:
+        case .mcb, .mpcb, .rcbo, .rcd, .mainSwitch, .lightSwitch, .selectorSwitch, .smartRelay:
             return true
         default:
             return false
@@ -404,8 +404,13 @@ public enum ComponentFactory {
                              poles: 1, ratingA: ratingA, curve: curve, ports: ports)
         }
         // მრავალპოლუსიანი — თითო გამტარზე in/out; ერთი ბერკეტი ყველა პოლუსს ერთად რთავს.
-        // 2P = ხაზი+ნული (ერთფაზიანი ორმაგი); 3P = სამი ფაზა.
-        let conductors: [Conductor] = poles >= 3 ? [.L1, .L2, .L3] : [.L, .N]
+        // 2P = ხაზი+ნული; 3P = სამი ფაზა; 4P = სამი ფაზა + ნული.
+        let conductors: [Conductor]
+        switch poles {
+        case 2:  conductors = [.L, .N]
+        case 3:  conductors = [.L1, .L2, .L3]
+        default: conductors = [.L1, .L2, .L3, .N]   // 4P
+        }
         var ports: [Port] = []
         for c in conductors {
             ports.append(Port(id: pid(id, "\(c.rawValue)in"), conductor: c, side: .input, name: "\(c.rawValue) IN"))

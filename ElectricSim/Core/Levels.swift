@@ -124,7 +124,11 @@ public struct ComponentTemplate: Codable, Identifiable, Sendable {
             return ComponentFactory.motor(id: instanceID, powerW: powerW ?? 4000)
         case .mpcb:
             return ComponentFactory.mpcb(id: instanceID, ratingA: ratingA ?? 16, curve: curve ?? .D)
-        case .contactor, .relay, .lightSwitch, .smartSwitch, .smartRelay, .smartDimmer, .smartMeter,
+        case .smartRelay:
+            // ჭკვიანი WiFi რელე — 2-პოლუსიანი (L+N), ხელით ჩართვა/გამორთვა.
+            return ComponentFactory.seriesDevice(id: instanceID, kind: .smartRelay, name: name,
+                                                 conductors: [.L, .N], ratingA: ratingA ?? 10)
+        case .contactor, .relay, .lightSwitch, .smartSwitch, .smartDimmer, .smartMeter,
              .fuse, .emergencyStop, .selectorSwitch, .currentTransformer, .transformer, .vfd:
             let conductors: [Conductor] = (poles ?? 1) >= 3 ? [.L1, .L2, .L3] : [.L]
             return ComponentFactory.seriesDevice(id: instanceID, kind: kind, name: name,

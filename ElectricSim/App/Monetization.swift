@@ -29,13 +29,18 @@ final class EntitlementStore: ObservableObject {
     private let proKey = "entitlement.pro.v1"        // რეალური (StoreKit) entitlement-ის ქეში
     private let demoKey = "entitlement.demoPro.v1"   // QA/დემო override (Release-ზეც)
 
+    /// UITest bypass: `-UITestPro` launch arg → isPro always true (ProcessInfo გარანტირებულია).
+    private let uiTestPro = ProcessInfo.processInfo.arguments.contains("-UITestPro")
+
     /// რეალური StoreKit entitlement (override-ის გარეშე).
     private var realPro = false
 
     init() {
         // ლოკალური ქეში — ოფლაინ გამოცდილებისთვის; დადასტურდება StoreKit-ით.
         realPro = UserDefaults.standard.bool(forKey: proKey)
-        isPro = realPro || UserDefaults.standard.bool(forKey: demoKey)
+        let demoActive = UserDefaults.standard.bool(forKey: demoKey)
+            || ProcessInfo.processInfo.arguments.contains("-UITestPro")
+        isPro = realPro || demoActive
         updatesTask = listenForTransactions()
         Task {
             await loadProducts()
@@ -123,7 +128,7 @@ final class EntitlementStore: ObservableObject {
     }
 
     private func recomputeIsPro() {
-        isPro = realPro || UserDefaults.standard.bool(forKey: demoKey)
+        isPro = realPro || UserDefaults.standard.bool(forKey: demoKey) || uiTestPro
     }
 
     // MARK: - QA / დემო override (მუშაობს Release/TestFlight-ზეც)

@@ -81,6 +81,34 @@ final class ElectricSimUITests: XCTestCase {
         shot(app, "BusbarsAndMCB")
     }
 
+    /// v2 ფოტო-მოდულები: 3-ფაზიანი რელსი — MainSwitch4P + MCB4P + MCB3P + SmartRelay
+    /// (demo-pro-თი pro დონეზე წვდომა); + SmartRelay ბერკეტის გადართვა.
+    func testV2ThreePhaseRailScreenshot() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-UITestPro", "-UITestUnlockAll"]  // pro bypass + skip level prerequisite check
+        app.launch()
+        app.buttons["menu-panels"].tap()
+        let row = app.buttons["panel-lvl_panel_3ph_comb"]
+        // სიის ბოლოშია (index 38) — საჭიროა გადახვევა, სანამ გამოჩნდება.
+        var tries = 0
+        while !row.exists && tries < 8 { app.swipeUp(); tries += 1 }
+        XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
+        XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 15), "pro დონე გაიხსნა (demo-pro)")
+        openPaletteCard(app, header: "palette-cat-supply", card: "palette-card-main_4p").tap()        // MainSwitch4P
+        openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-mcb_4p_c25").tap()  // MCB4P
+        openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-mcb_3p_c25").tap()  // MCB3P
+        openPaletteCard(app, header: "palette-cat-control", card: "palette-card-smart_relay").tap()    // SmartRelay
+        XCTAssertTrue(app.otherElements["face-smart_relay_1"].waitForExistence(timeout: 6),
+                      "SmartRelay ფოტო რელსზე")
+        XCTAssertTrue(app.otherElements["face-mcb_4p_c25_1"].exists, "MCB4P ფოტო")
+        shot(app, "V2-ThreePhaseRail")
+        // SmartRelay ბერკეტი ON→OFF (2 პოლუსს ერთად)
+        let lever = app.otherElements["lever-smart_relay_1"]
+        XCTAssertTrue(lever.waitForExistence(timeout: 5), "SmartRelay ბერკეტი")
+        lever.tap()
+        shot(app, "V2-SmartRelay-Off")
+    }
+
     private func shot(_ app: XCUIApplication, _ name: String) {
         let a = XCTAttachment(screenshot: app.screenshot())
         a.name = name; a.lifetime = .keepAlways; add(a)
