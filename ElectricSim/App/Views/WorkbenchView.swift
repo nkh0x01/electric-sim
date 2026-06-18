@@ -1487,7 +1487,7 @@ struct WorkbenchView: View {
     /// ერთი ფიქსირებული DIN-რელსი: მოდულები მარცხნიდან სლოტებში ჩაწყობილი,
     /// ფიქსირებული ტევადობით (კარადის ზომა); ცარიელ ნაწილზე სლოტ-ბადე ჩანს.
     private func railRow(_ r: Int) -> some View {
-        HStack(alignment: .top, spacing: 0) {
+        HStack(alignment: .center, spacing: 0) {
             ForEach(model.railMembers(r)) { comp in card(for: comp) }
             Spacer(minLength: 0)
         }
@@ -2039,11 +2039,13 @@ struct ComponentCardView: View {
                 let bottom = outputs + singles
                 if !bottom.isEmpty { terminalRow(bottom, edge: .bottom) }
             }
-            // ქართული სახელი — მოდულის ქვეშ (სლოტის სიგანეში, რომ ბარათი არ გაგანიერდეს)
-            Text(component.name)
-                .font(.system(size: 8)).foregroundStyle(Color.black.opacity(0.55))
-                .lineLimit(2).multilineTextAlignment(.center)
-                .frame(maxWidth: connectorFullWidth ?? (CGFloat(moduleUnits) * kSlotPt - 4))
+            // ქართული სახელი — მოდულის ქვეშ (ფოტო-მოდულებს ლეიბლი არ სჭირდება)
+            if photo == nil {
+                Text(component.name)
+                    .font(.system(size: 8)).foregroundStyle(Color.black.opacity(0.55))
+                    .lineLimit(2).multilineTextAlignment(.center)
+                    .frame(maxWidth: connectorFullWidth ?? (CGFloat(moduleUnits) * kSlotPt - 4))
+            }
         }
         .padding(.vertical, 7)
         .padding(.horizontal, photo == nil ? 7 : 1)
@@ -2118,6 +2120,7 @@ struct ComponentCardView: View {
         let w = h * photoAspect             // ბუნებრივი სიგანე (თანაფარდობით)
         let bottom = outputs + singles
         let leverPt = CGPoint(x: photoLeverAnchor.x * w, y: photoLeverAnchor.y * h)
+        let anchors = photoTerminalAnchors  // გაზომილი ბრინჯაო-ხრახნების Y-ანკრები
         return ZStack {
             // სურათი = მოდულის სახე (ერთი accessibility ელემენტი — face-<id>)
             Image(name).resizable().scaledToFit().frame(width: w, height: h)
@@ -2131,17 +2134,27 @@ struct ComponentCardView: View {
                     .frame(width: w, height: h)
                 photoOffLever.position(leverPt)
             }
-            // ფეხების უხილავი hit-zone — ფოტოს ნამდვილ კლემებზე (ცალკე term-<id> ელემენტებად)
-            VStack(spacing: 0) {
-                if !inputs.isEmpty {
-                    HStack(spacing: 7) { ForEach(inputs) { photoTerminal($0, edge: .top) } }
+            // ფეხების უხილავი hit-zone — centered on each pole's brass screw column
+            if !inputs.isEmpty {
+                HStack(spacing: 0) {
+                    ForEach(inputs) { port in
+                        photoTerminal(port, edge: .top)
+                            .frame(width: w / CGFloat(inputs.count), alignment: .center)
+                    }
                 }
-                Spacer(minLength: 0)
-                if !bottom.isEmpty {
-                    HStack(spacing: 7) { ForEach(bottom) { photoTerminal($0, edge: .bottom) } }
-                }
+                .frame(width: w)
+                .position(x: w / 2, y: anchors.topFrac * h)
             }
-            .padding(.vertical, 9)
+            if !bottom.isEmpty {
+                HStack(spacing: 0) {
+                    ForEach(bottom) { port in
+                        photoTerminal(port, edge: .bottom)
+                            .frame(width: w / CGFloat(bottom.count), alignment: .center)
+                    }
+                }
+                .frame(width: w)
+                .position(x: w / 2, y: anchors.botFrac * h)
+            }
             // ბერკეტის შეხების ზონა — ჩართვა/გამორთვა (ფოტოს ბერკეტზე)
             if let onToggleLever {
                 Color.clear.frame(width: max(24, w * 0.55), height: 28)
@@ -2171,6 +2184,18 @@ struct ComponentCardView: View {
         case .mpcb:       return CGPoint(x: 0.50, y: 0.55)
         case .smartRelay: return CGPoint(x: 0.85, y: 0.45)   // წითელი UP ბერკეტი მარჯვნივ
         default:          return CGPoint(x: 0.50, y: 0.55)
+        }
+    }
+
+    /// ფოტოს კლემების ნორმალიზებული Y-პოზიცია — @3x asset-ის ბრინჯაო-ხრახნების ცენტრიდან.
+    /// kPhotoModuleHeight=150pt-ზე: topFrac×150 = კლემის Y-ცენტრი display-კოორდინატებში.
+    private var photoTerminalAnchors: (topFrac: CGFloat, botFrac: CGFloat) {
+        switch component.kind {
+        case .mainSwitch where component.poles == 4: return (0.093, 0.954)
+        case .rcd:        return (0.131, 0.901)
+        case .rcbo:       return (0.097, 0.955)
+        case .smartRelay: return (0.092, 0.952)
+        default:          return (0.103, 0.893)
         }
     }
 
