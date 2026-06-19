@@ -128,6 +128,10 @@ final class WorkbenchModel: ObservableObject {
     @Published var selectedCable: CableType = .copper
     @Published var selectedConductorType: ConductorType = .solid
     @Published var selectedLengthM: Double = 10
+    @Published var defaultRouteStyle: RouteStyle = .rightAngle   // ახალი სადენების გაყვანის სტილი
+    // ფეხების პოზიციები board სივრცეში (View-დან გადმოცემული) — სიგრძის გადათვლისთვის,
+    // როცა მომხმარებელი სადენს ხელით ღუნავს.
+    var portPoints: [String: CGPoint] = [:]
     @Published var selection: Set<String> = []       // მონიშნული კომპონენტები (group move)
     @Published var selectMode = false
     @Published var result: SimulationResult?
@@ -357,7 +361,61 @@ final class WorkbenchModel: ObservableObject {
         // ახალი ინტერაქტიული შეერთება მოუჭერელია — მოთამაშემ უნდა „დაშურუპოს".
         board.connect(from, to, csaMm2: selectedCSA, color: WireColor.standard(for: conductor),
                       cableType: selectedCable, conductorType: selectedConductorType,
-                      lengthM: selectedLengthM, tightened: false)
+                      lengthM: selectedLengthM, tightened: false, routeStyle: defaultRouteStyle)
+        resetResult()
+    }
+
+    // MARK: - ხელით გაყვანა / მოღუნვა (waypoints)
+
+    /// მომხმარებლის ყველა სადენის შუა-წერტილების ჯამი (UITest/აქსესიბილითისთვის).
+    var totalUserWaypoints: Int { userWires.reduce(0) { $0 + $1.waypoints.count } }
+
+    /// ეფექტური სიგრძის გადათვლა გაყვანილი გზიდან (board ფეხების პოზიციებით).
+    private func recomputeLength(_ i: Int) {
+        let w = board.wires[i]
+        guard let a = portPoints[w.fromPortID], let b = portPoints[w.toPortID] else { return }
+        board.wires[i].lengthM = WireRouting.effectiveLength(
+            baseM: w.baseLengthM,
+            from: RoutePoint(x: a.x, y: a.y), w.waypoints,
+            to: RoutePoint(x: b.x, y: b.y), style: w.routeStyle)
+    }
+
+    private func wireIndex(_ id: String) -> Int? { board.wires.firstIndex { $0.id == id } }
+
+    /// ახალი შუა-წერტილის ჩასმა მითითებულ მონაკვეთში; აბრუნებს ახალ ინდექსს.
+    @discardableResult
+    func addWaypoint(wireID: String, at p: CGPoint, segment: Int) -> Int? {
+        guard let i = wireIndex(wireID) else { return nil }
+        if blockedByLiveEdit([board.wires[i].fromPortID, board.wires[i].toPortID]) { return nil }
+        let idx = max(0, min(segment, board.wires[i].waypoints.count))
+        board.wires[i].waypoints.insert(RoutePoint(x: p.x, y: p.y), at: idx)
+        recomputeLength(i)
+        resetResult()
+        return idx
+    }
+
+    /// არსებული შუა-წერტილის გადატანა (live drag).
+    func moveWaypoint(wireID: String, index: Int, to p: CGPoint) {
+        guard let i = wireIndex(wireID), index >= 0, index < board.wires[i].waypoints.count else { return }
+        board.wires[i].waypoints[index] = RoutePoint(x: p.x, y: p.y)
+        recomputeLength(i)
+        resetResult()
+    }
+
+    /// შუა-წერტილის წაშლა — ის მონაკვეთი ისევ სწორდება.
+    func removeWaypoint(wireID: String, index: Int) {
+        guard let i = wireIndex(wireID), index >= 0, index < board.wires[i].waypoints.count else { return }
+        if blockedByLiveEdit([board.wires[i].fromPortID, board.wires[i].toPortID]) { return }
+        board.wires[i].waypoints.remove(at: index)
+        recomputeLength(i)
+        resetResult()
+    }
+
+    /// ერთი სადენის გაყვანის სტილი (90° ↔ მრუდი).
+    func setRouteStyle(_ wireID: String, _ style: RouteStyle) {
+        guard let i = wireIndex(wireID) else { return }
+        board.wires[i].routeStyle = style
+        recomputeLength(i)
         resetResult()
     }
 
@@ -751,7 +809,7 @@ func ratingText(for comp: Component) -> String {
 }
 
 /// ფარზე ერთიანი drag-ის რეჟიმი.
-enum BoardDragMode { case none, wire, move, pan }
+enum BoardDragMode { case none, wire, move, pan, waypoint }
 
 // MARK: - Workbench view
 
@@ -795,6 +853,9 @@ struct WorkbenchView: View {
     @State private var dragFrom: String?
     @State private var moveID: String?
     @State private var dragCurrent: CGPoint = .zero
+    // ხელით გაყვანა: მონიშნული სადენი + მიმდინარე შუა-წერტილის გადათრევა.
+    @State private var selectedWireID: String?
+    @State private var draggingWaypoint: (wireID: String, index: Int)?
     @State private var isZooming = false
     @State private var railWidth: CGFloat = 0   // ფარის ზონის სიგანე
     @State private var railAreaSize: CGSize = .zero   // ფარის ზონის ზომა (კადრირებისთვის)
@@ -992,6 +1053,91 @@ struct WorkbenchView: View {
         }
         return bestD <= 36 ? best : nil   // snap threshold (board units)
     }
+
+    // MARK: - ხელით გაყვანა — გეომეტრია (board სივრცე)
+
+    /// წერტილიდან მონაკვეთამდე უმოკლესი მანძილი.
+    private func distanceToSegment(_ p: CGPoint, _ a: CGPoint, _ b: CGPoint) -> CGFloat {
+        let dx = b.x - a.x, dy = b.y - a.y
+        if dx == 0 && dy == 0 { return hypot(p.x - a.x, p.y - a.y) }
+        let t = max(0, min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy)))
+        return hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy))
+    }
+
+    /// სადენის polyline-წერტილები (ბოლოები + შუა-წერტილები) board სივრცეში.
+    private func wirePolyline(_ wire: Wire) -> [CGPoint]? {
+        guard let a = portPoints[wire.fromPortID], let b = portPoints[wire.toPortID] else { return nil }
+        return [a] + wire.waypoints.map { CGPoint(x: $0.x, y: $0.y) } + [b]
+    }
+
+    /// უახლოესი მომხმარებლის სადენი მითითებულ წერტილთან (comb-ის გარეშე).
+    private func userWireHit(at p: CGPoint) -> String? {
+        var best: String?; var bestD = CGFloat(18)   // კომფორტული touch ზღვარი
+        for wire in model.userWires {
+            guard let pts = wirePolyline(wire) else { continue }
+            for i in 1..<pts.count {
+                let d = distanceToSegment(p, pts[i - 1], pts[i])
+                if d < bestD { bestD = d; best = wire.id }
+            }
+        }
+        return best
+    }
+
+    /// მონიშნულ სადენზე უახლოესი შუა-წერტილის ინდექსი (grab ზონა დიდია).
+    private func waypointHit(_ wireID: String, at p: CGPoint) -> Int? {
+        guard let wire = model.board.wires.first(where: { $0.id == wireID }) else { return nil }
+        var best: Int?; var bestD = CGFloat(26)
+        for (i, wp) in wire.waypoints.enumerated() {
+            let d = hypot(wp.x - p.x, wp.y - p.y)
+            if d < bestD { bestD = d; best = i }
+        }
+        return best
+    }
+
+    /// რომელ მონაკვეთში ჩაჯდეს ახალი შუა-წერტილი (ინდექსი waypoints-ში).
+    private func insertionSegment(_ wireID: String, at p: CGPoint) -> Int {
+        guard let wire = model.board.wires.first(where: { $0.id == wireID }),
+              let pts = wirePolyline(wire) else { return 0 }
+        var best = 0; var bestD = CGFloat.greatestFiniteMagnitude
+        for i in 1..<pts.count {
+            let d = distanceToSegment(p, pts[i - 1], pts[i])
+            if d < bestD { bestD = d; best = i - 1 }   // მონაკვეთი j = i-1
+        }
+        return best
+    }
+
+    /// გაყვანის ბილიკი — სწორი (შუა-წერტილების გარეშე), 90° ან გლუვი მრუდი.
+    private func wirePath(_ wire: Wire, from a: CGPoint, to b: CGPoint) -> Path {
+        let wpts = wire.waypoints.map { CGPoint(x: $0.x, y: $0.y) }
+        var path = Path()
+        guard !wpts.isEmpty else {
+            path.move(to: a); path.addLine(to: b); return path   // სწორი ხაზი
+        }
+        let pts = [a] + wpts + [b]
+        path.move(to: pts[0])
+        switch wire.routeStyle {
+        case .rightAngle:
+            for i in 1..<pts.count {
+                let prev = pts[i - 1], cur = pts[i]
+                // ავტო H-first / V-first — გრძელი გასწვრივი მონაკვეთი duct-ხაზზე.
+                if abs(cur.x - prev.x) >= abs(cur.y - prev.y) {
+                    path.addLine(to: CGPoint(x: cur.x, y: prev.y))   // ჯერ ჰორიზონტალური
+                } else {
+                    path.addLine(to: CGPoint(x: prev.x, y: cur.y))   // ჯერ ვერტიკალური
+                }
+                path.addLine(to: cur)
+            }
+        case .smooth:
+            let n = pts.count
+            for i in 1..<n {
+                let p0 = pts[max(i - 2, 0)], p1 = pts[i - 1], p2 = pts[i], p3 = pts[min(i + 1, n - 1)]
+                let c1 = CGPoint(x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6)
+                let c2 = CGPoint(x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6)
+                path.addCurve(to: p2, control1: c1, control2: c2)
+            }
+        }
+        return path
+    }
     private func componentAt(_ p: CGPoint) -> String? {
         // 1) ზუსტი ბარათის ჩარჩო (CardFrameKey), თუ preference უკვე გავრცელდა.
         if let hit = componentFrames.first(where: { $0.value.contains(p) })?.key {
@@ -1041,12 +1187,27 @@ struct WorkbenchView: View {
                 if dragMode == .none {
                     if isZooming { return }   // pinch-ის დროს pan არ ვიწყოთ
                     let b = toBoard(v.startLocation)
-                    if model.tool == .wire, let p = nearestPort(to: b, excluding: nil) {
-                        dragMode = .wire; dragFrom = p              // ფეხზე → სადენი
-                    } else if let cid = componentAt(b) {
-                        dragMode = .move; moveID = cid              // კომპონენტის სხეულზე → გადატანა
-                    } else {
-                        dragMode = .pan                            // ცარიელზე → პანი
+                    // 1) მონიშნულ სადენზე — შუა-წერტილის გადათრევა/დამატება (პრიორიტეტი).
+                    if let sel = selectedWireID, nearestPort(to: b, excluding: nil) == nil {
+                        if let idx = waypointHit(sel, at: b) {
+                            dragMode = .waypoint; draggingWaypoint = (sel, idx)   // არსებულის გადატანა
+                        } else if userWireHit(at: b) == sel {
+                            // მონიშნული სადენის სხეულზე ჩავლება → ახალი ღუნვა + მისი გადათრევა
+                            let seg = insertionSegment(sel, at: b)
+                            if let newIdx = model.addWaypoint(wireID: sel, at: b, segment: seg) {
+                                dragMode = .waypoint; draggingWaypoint = (sel, newIdx)
+                            }
+                        }
+                    }
+                    // 2) ჩვეულებრივი ლოგიკა — სადენი / გადატანა / პანი.
+                    if dragMode == .none {
+                        if model.tool == .wire, let p = nearestPort(to: b, excluding: nil) {
+                            dragMode = .wire; dragFrom = p              // ფეხზე → სადენი
+                        } else if let cid = componentAt(b) {
+                            dragMode = .move; moveID = cid              // კომპონენტის სხეულზე → გადატანა
+                        } else {
+                            dragMode = .pan                            // ცარიელზე → პანი
+                        }
                     }
                     #if DEBUG
                     print("[boardDrag] mode=\(dragMode) start(board)=\(b) "
@@ -1055,6 +1216,9 @@ struct WorkbenchView: View {
                     #endif
                 }
                 if dragMode == .wire || dragMode == .move { dragCurrent = toBoard(v.location) }
+                if dragMode == .waypoint, let dw = draggingWaypoint {
+                    model.moveWaypoint(wireID: dw.wireID, index: dw.index, to: toBoard(v.location))
+                }
                 // გადატანისას — სამიზნე რელსის სლოტის ჰაილაითი (სად ჩაჯდება).
                 if dragMode == .move, let id = moveID,
                    !(model.selection.contains(id) && model.selection.count > 1) {
@@ -1089,11 +1253,14 @@ struct WorkbenchView: View {
                             snapPulse(id)                          // ჩაჭდობა: პულსი + კლიკი
                         }
                     }
+                case .waypoint:
+                    GameFeedback.tick()                            // ღუნვა დაჯდა
                 case .pan:
                     pan.width += v.translation.width; pan.height += v.translation.height
                 case .none: break
                 }
                 dragMode = .none; dragFrom = nil; moveID = nil; dropSlot = nil
+                draggingWaypoint = nil
             }
     }
 
@@ -1367,9 +1534,30 @@ struct WorkbenchView: View {
         })
         .contentShape(Rectangle())
         .clipped()
-        // ერთიანი drag (wire/move/pan) + pinch zoom — ორივე simultaneous, არ ეჯახება.
+        // ერთიანი drag (wire/move/pan/waypoint) + pinch zoom — ორივე simultaneous, არ ეჯახება.
         .simultaneousGesture(boardDrag)
         .simultaneousGesture(boardZoom)
+        // ორმაგი შეხება მონიშნული სადენის handle-ზე → შუა-წერტილის წაშლა (მონაკვეთი სწორდება).
+        .simultaneousGesture(SpatialTapGesture(count: 2).onEnded { v in
+            let b = toBoard(v.location)
+            if let sel = selectedWireID, let idx = waypointHit(sel, at: b) {
+                model.removeWaypoint(wireID: sel, index: idx)
+                GameFeedback.tick()
+            }
+        })
+        // ერთმაგი შეხება — სადენის მონიშვნა / ცარიელზე გაუქმება.
+        .simultaneousGesture(SpatialTapGesture().onEnded { v in
+            let b = toBoard(v.location)
+            if nearestPort(to: b, excluding: nil) != nil { return }     // ფეხს თავისი tap აქვს
+            // მონიშნული სადენის handle-ზე — მონიშვნას არ ვცვლით (ორმაგი შეხება შლის).
+            if let sel = selectedWireID, waypointHit(sel, at: b) != nil { return }
+            if let wid = userWireHit(at: b) {
+                selectedWireID = wid
+                GameFeedback.tick()
+            } else if componentAt(b) == nil {
+                selectedWireID = nil                                    // ცარიელზე → გაუქმება
+            }
+        })
         .overlay(alignment: .bottomTrailing) { zoomControls }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("board-rail")
@@ -1479,7 +1667,7 @@ struct WorkbenchView: View {
                 .onAppear { fitCabinetIfNeeded(content: g.size) }
                 .onChange(of: g.size) { fitCabinetIfNeeded(content: $0) }
         })
-        .onPreferenceChange(PortFrameKey.self) { portPoints = $0 }
+        .onPreferenceChange(PortFrameKey.self) { portPoints = $0; model.portPoints = $0 }
         .onPreferenceChange(CardFrameKey.self) { componentFrames = $0 }
         .onPreferenceChange(RailFrameKey.self) { railFrames = $0 }
     }
@@ -1715,15 +1903,31 @@ struct WorkbenchView: View {
         ZStack {
             ForEach(model.board.wires) { wire in
                 if let a = portPoints[wire.fromPortID], let b = portPoints[wire.toPortID] {
+                    let routed = wirePath(wire, from: a, to: b)
                     // ცოცხალი (ფაზიანი) სადენი ჩართულ ფარზე — მსუბუქი ყვითელი ნათება
                     if model.energized,
                        model.isLive(wire.fromPortID) || model.isLive(wire.toPortID) {
-                        Path { p in p.move(to: a); p.addLine(to: b) }
-                            .stroke(Color.yellow.opacity(0.32),
-                                    style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                        routed.stroke(Color.yellow.opacity(0.32),
+                                      style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round))
                     }
-                    Path { p in p.move(to: a); p.addLine(to: b) }
-                        .stroke(wire.color.swiftUIColor, style: wireStroke(wire.conductorType))
+                    // მონიშნული სადენი — მსუბუქი ფართო ჰაილაითი ქვემოდან
+                    if wire.id == selectedWireID {
+                        routed.stroke(Color.accentColor.opacity(0.35),
+                                      style: StrokeStyle(lineWidth: 9, lineCap: .round, lineJoin: .round))
+                    }
+                    routed.stroke(wire.color.swiftUIColor, style: wireStroke(wire.conductorType))
+                }
+            }
+            // მონიშნული სადენის გადასათრევი შუა-წერტილები (handles)
+            if let sel = selectedWireID,
+               let wire = model.board.wires.first(where: { $0.id == sel }) {
+                ForEach(Array(wire.waypoints.enumerated()), id: \.offset) { _, wp in
+                    Circle()
+                        .fill(Color.white)
+                        .overlay(Circle().stroke(Color.accentColor, lineWidth: 2.5))
+                        .frame(width: 16, height: 16)
+                        .shadow(color: .black.opacity(0.25), radius: 1.5, y: 1)
+                        .position(x: wp.x, y: wp.y)
                 }
             }
             if let from = dragFrom, let a = portPoints[from] {
@@ -1940,6 +2144,7 @@ struct WorkbenchView: View {
                             Label("\(model.userWires.count)", systemImage: "list.bullet")
                         }
                         .accessibilityIdentifier("wires-list")
+                        .accessibilityValue("bends:\(model.totalUserWaypoints)")
                         Button { model.removeLastWire() } label: { Image(systemName: "arrow.uturn.backward") }
                         Button(role: .destructive) { model.clearWires() } label: { Image(systemName: "trash") }
                     }.padding(.horizontal)
@@ -1970,6 +2175,18 @@ struct WorkbenchView: View {
                                 value: $model.selectedLengthM, in: 0...100, step: 5)
                             .font(.caption)
                             .padding(.horizontal)
+
+                        // ახალი სადენების გაყვანის სტილი (ხელით ღუნვისას)
+                        HStack(spacing: 8) {
+                            Text("ღუნვა").font(.caption)
+                            Picker("ღუნვა", selection: $model.defaultRouteStyle) {
+                                Text("90°").tag(RouteStyle.rightAngle)
+                                Text("მრუდი").tag(RouteStyle.smooth)
+                            }
+                            .pickerStyle(.segmented)
+                            .accessibilityIdentifier("route-style-default")
+                        }
+                        .padding(.horizontal)
                     }
                 }
                 .padding(.bottom, 4)
@@ -2616,6 +2833,18 @@ struct WiresListView: View {
                                         .foregroundStyle(wire.ferruled ? .green : .orange)
                                 }
                                 .accessibilityIdentifier("ferrule-toggle")
+                            }
+                            // გაყვანის სტილი — მხოლოდ ხელით მოღუნულ სადენზე აქტუალურია.
+                            if !wire.waypoints.isEmpty {
+                                Picker("ღუნვა", selection: Binding(
+                                    get: { wire.routeStyle },
+                                    set: { model.setRouteStyle(wire.id, $0) }
+                                )) {
+                                    Text("90°").tag(RouteStyle.rightAngle)
+                                    Text("მრუდი").tag(RouteStyle.smooth)
+                                }
+                                .pickerStyle(.segmented)
+                                .accessibilityIdentifier("wire-route-style")
                             }
                         }
                     }

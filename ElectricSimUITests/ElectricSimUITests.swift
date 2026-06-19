@@ -114,6 +114,68 @@ final class ElectricSimUITests: XCTestCase {
         a.name = name; a.lifetime = .keepAlways; add(a)
     }
 
+    /// ხელით გაყვანა: ორი მოდული რელსზე → სადენი → მონიშვნა → შუა-წერტილის
+    /// დამატება/გადათრევა (სადენი იღუნება). Screenshot-ები — 90° და გლუვი გაყვანით.
+    func testManualWireRoutingBend() {
+        let app = launchApp()
+        app.buttons["menu-panels"].tap()
+        let row = app.buttons["panel-lvl_panel_basic"]
+        XCTAssertTrue(row.waitForExistence(timeout: 15)); row.tap()
+        XCTAssertTrue(app.buttons["inspect"].waitForExistence(timeout: 15))
+        // მთავარი ამომრთველი + MCB
+        openPaletteCard(app, header: "palette-cat-supply", card: "palette-card-main_2p").tap()
+        openPaletteCard(app, header: "palette-cat-protection", card: "palette-card-mcb_b10").tap()
+        // აკორდეონის დაკეტვა — ქვედა wire-ხელსაწყოები (wires-list) ჩარჩოში მოექცეს
+        app.buttons["palette-cat-protection"].tap()
+
+        // სადენი — მთავარის ზედა L-შესასვლელი → MCB-ის ქვედა გამოსასვლელი.
+        // დიაგონალური (ზედა↔ქვედა რიგი) — შუა-წერტილი ღია სივრცეშია, ფეხებს მოშორებით,
+        // რომ მონიშვნა/ღუნვა nearestPort-ის ზღვარში არ მოყვეს.
+        dragWire(app, "term-main_2p_1.Lin", "term-mcb_b10_1.out")
+        let wiresBtn = app.buttons["wires-list"]
+        XCTAssertTrue(wiresBtn.waitForExistence(timeout: 8))
+        XCTAssertTrue(wiresBtn.label.contains("1"), "ერთი სადენი უნდა შეიქმნას")
+        XCTAssertEqual(wiresBtn.value as? String, "bends:0", "ახალ სადენს ღუნვა არ აქვს")
+
+        // ორი კლემის ეკრანული შუა-წერტილი — სადენი იქ გადის
+        let from = app.otherElements["term-main_2p_1.Lin"]
+        let to = app.otherElements["term-mcb_b10_1.out"]
+        XCTAssertTrue(from.waitForExistence(timeout: 8) && to.waitForExistence(timeout: 8))
+        let fa = from.frame, fb = to.frame
+        let mid = CGPoint(x: (fa.midX + fb.midX) / 2, y: (fa.midY + fb.midY) / 2)
+        func coord(_ x: CGFloat, _ y: CGFloat) -> XCUICoordinate {
+            app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: x, dy: y))
+        }
+
+        // 1) მონიშვნა — შუა-წერტილზე შეხება. 2) გადათრევა ქვემოთ → ღუნვა ჩნდება.
+        // ნელ რანერზე პირველმა შეხებამ შეიძლება ააცდინოს — ვცდით ორჯერ.
+        var bent = false
+        for _ in 0..<2 {
+            coord(mid.x, mid.y).tap()
+            coord(mid.x, mid.y).press(forDuration: 0.12,
+                                      thenDragTo: coord(mid.x - 70, mid.y + 70),
+                                      withVelocity: .slow, thenHoldForDuration: 0.2)
+            let exp = XCTNSPredicateExpectation(
+                predicate: NSPredicate(format: "value == 'bends:1'"), object: wiresBtn)
+            if XCTWaiter().wait(for: [exp], timeout: 5) == .completed { bent = true; break }
+        }
+        XCTAssertTrue(bent, "შუა-წერტილის დამატება/გადათრევამ სადენი უნდა მოღუნოს (bends:1)")
+        shot(app, "RoutedWire-RightAngle")
+
+        // გაყვანის სტილის შეცვლა → გლუვი მრუდი (per-wire, სადენების სიიდან)
+        wiresBtn.tap()
+        if !app.navigationBars["სადენები"].waitForExistence(timeout: 5) { wiresBtn.tap() }
+        XCTAssertTrue(app.navigationBars["სადენები"].waitForExistence(timeout: 6))
+        // per-wire სეგმენტი (იდენტიფიკატორით — გლობალური ნაგულისხმევთან ორაზროვნება რომ არ მოხდეს)
+        let seg = app.segmentedControls["wire-route-style"]
+        XCTAssertTrue(seg.waitForExistence(timeout: 6), "ხელით მოღუნულ სადენს უნდა ჰქონდეს სტილის გადამრთველი")
+        seg.buttons["მრუდი"].tap()
+        app.buttons["დახურვა"].tap()
+        // ღუნვა შენარჩუნებულია, სტილი — გლუვი
+        XCTAssertEqual(wiresBtn.value as? String, "bends:1", "სტილის შეცვლა ღუნვას არ შლის")
+        shot(app, "RoutedWire-Smooth")
+    }
+
     /// ფოტო-კლემის ინტერაქცია: სადენი ფოტოს კლემაში „შედის" (ორმაგი ხრახნის გარეშე),
     /// მოუჭერელი → მოჭერილი, და ბერკეტი ON→OFF. + screenshot-ები შესაფასებლად.
     func testPhotoTerminalInteractionScreenshots() {

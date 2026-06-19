@@ -592,13 +592,21 @@ public struct Wire: Identifiable, Hashable, Codable, Sendable {
     public var ferruled: Bool          // მრავალწვერა კაბელზე ბუნიკი (ferrule) დადებულია?
     public var tightened: Bool         // კლემები მოჭერილია? default true — მხოლოდ ახალი
                                        // ინტერაქტიული შეერთება იწყება მოუჭერელი.
+    // ხელით გაყვანის შუა-წერტილები (board სივრცეში). ცარიელი → სწორი ხაზი.
+    public var waypoints: [RoutePoint]
+    public var routeStyle: RouteStyle  // 90° ან მრუდი — როგორ იღუნება წერტილებზე.
+    // მომხმარებლის არჩეული „სწორი მონაკვეთის" სიგრძე (მ). ეფექტური lengthM =
+    // baseLengthM * (გაყვანილი/სწორი). მოღუნვა მხოლოდ ახანგრძლივებს კაბელს.
+    public var baseLengthM: Double
 
     public init(id: String = UUID().uuidString,
                 from: String, to: String,
                 csaMm2: Double, color: WireColor,
                 cableType: CableType = .copper,
                 conductorType: ConductorType = .solid, lengthM: Double = 0,
-                ferruled: Bool = false, tightened: Bool = true) {
+                ferruled: Bool = false, tightened: Bool = true,
+                waypoints: [RoutePoint] = [], routeStyle: RouteStyle = .rightAngle,
+                baseLengthM: Double? = nil) {
         self.id = id
         self.fromPortID = from
         self.toPortID = to
@@ -609,6 +617,9 @@ public struct Wire: Identifiable, Hashable, Codable, Sendable {
         self.lengthM = lengthM
         self.ferruled = ferruled
         self.tightened = tightened
+        self.waypoints = waypoints
+        self.routeStyle = routeStyle
+        self.baseLengthM = baseLengthM ?? lengthM
     }
 
     // backward-compatible decode (cableType/conductorType/lengthM default-ებით თუ აკლია)
@@ -625,6 +636,67 @@ public struct Wire: Identifiable, Hashable, Codable, Sendable {
         ferruled = try c.decodeIfPresent(Bool.self, forKey: .ferruled) ?? false
         // ძველი/წინასწარ აწყობილი ფარები მოჭერილად იტვირთება.
         tightened = try c.decodeIfPresent(Bool.self, forKey: .tightened) ?? true
+        // routing — ძველ ფარებზე აკლია → სწორი ხაზი, 90° default.
+        waypoints = try c.decodeIfPresent([RoutePoint].self, forKey: .waypoints) ?? []
+        routeStyle = try c.decodeIfPresent(RouteStyle.self, forKey: .routeStyle) ?? .rightAngle
+        baseLengthM = try c.decodeIfPresent(Double.self, forKey: .baseLengthM) ?? lengthM
+    }
+}
+
+// MARK: - Wire routing (ხელით გაყვანა / მოღუნვა)
+
+/// სადენის შუა-წერტილი board სივრცეში. CGPoint არ არის Codable, ამიტომ თხელი wrapper.
+public struct RoutePoint: Codable, Hashable, Sendable {
+    public var x: Double
+    public var y: Double
+    public init(x: Double, y: Double) { self.x = x; self.y = y }
+}
+
+/// გაყვანის სტილი: 90° (პროფესიული ფარის dressing) ან გლუვი მრუდი.
+public enum RouteStyle: String, Codable, Sendable {
+    case rightAngle    // 90° კუთხეები — default (ნამდვილი ფარის გაყვანა)
+    case smooth        // გლუვი (Catmull-Rom) მრუდი
+}
+
+/// სადენის გაყვანის გეომეტრია — წმინდა ფუნქციები (board ერთეულებში, ტესტირებადი).
+public enum WireRouting {
+    /// წერტილების სრული რიგი — ბოლოები + შუა-წერტილები.
+    public static func points(from a: RoutePoint, _ waypoints: [RoutePoint], to b: RoutePoint) -> [RoutePoint] {
+        [a] + waypoints + [b]
+    }
+
+    /// სწორი მანძილი ბოლოებს შორის.
+    public static func straightLength(from a: RoutePoint, to b: RoutePoint) -> Double {
+        let dx = b.x - a.x, dy = b.y - a.y
+        return (dx * dx + dy * dy).squareRoot()
+    }
+
+    /// რეალურად გაყვანილი გზის სიგრძე (იმავე ერთეულებში). 90°-ზე — Manhattan
+    /// (|dx|+|dy|) თითო მონაკვეთზე; გლუვზე — polyline (სწორი) მანძილი.
+    public static func routedLength(from a: RoutePoint, _ waypoints: [RoutePoint], to b: RoutePoint,
+                                    style: RouteStyle) -> Double {
+        let pts = points(from: a, waypoints, to: b)
+        var total = 0.0
+        for i in 1..<pts.count {
+            let dx = abs(pts[i].x - pts[i - 1].x)
+            let dy = abs(pts[i].y - pts[i - 1].y)
+            switch style {
+            case .rightAngle: total += dx + dy
+            case .smooth:     total += (dx * dx + dy * dy).squareRoot()
+            }
+        }
+        return total
+    }
+
+    /// ეფექტური მეტრული სიგრძე: base × (გაყვანილი / სწორი). შუა-წერტილების გარეშე
+    /// = base (სწორი ხაზი — ქცევა არ იცვლება). მოღუნვა მხოლოდ ახანგრძლივებს.
+    public static func effectiveLength(baseM: Double, from a: RoutePoint, _ waypoints: [RoutePoint],
+                                       to b: RoutePoint, style: RouteStyle) -> Double {
+        guard !waypoints.isEmpty else { return baseM }
+        let straight = straightLength(from: a, to: b)
+        guard straight > 0.0001 else { return baseM }
+        let routed = routedLength(from: a, waypoints, to: b, style: style)
+        return baseM * (routed / straight)
     }
 }
 
@@ -667,10 +739,12 @@ public struct Board: Codable, Sendable {
     public mutating func connect(_ a: String, _ b: String, csaMm2: Double,
                                  color: WireColor, cableType: CableType = .copper,
                                  conductorType: ConductorType = .solid, lengthM: Double = 0,
-                                 ferruled: Bool = false, tightened: Bool = true) {
+                                 ferruled: Bool = false, tightened: Bool = true,
+                                 routeStyle: RouteStyle = .rightAngle) {
         wires.append(Wire(from: a, to: b, csaMm2: csaMm2, color: color,
                           cableType: cableType, conductorType: conductorType,
-                          lengthM: lengthM, ferruled: ferruled, tightened: tightened))
+                          lengthM: lengthM, ferruled: ferruled, tightened: tightened,
+                          routeStyle: routeStyle))
     }
 
     public func component(withPort portID: String) -> Component? {
