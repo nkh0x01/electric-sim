@@ -33,6 +33,10 @@ struct MainMenuView: View {
                         subtitle: "იპოვე და გაასწორე დეფექტი აწყობილ ფარში",
                         systemImage: "stethoscope", color: .red,
                         id: "menu-faults") { path.append("faults") }
+                modeRow(title: "მონტაჟის დიზაინერი",
+                        subtitle: "დახაზე ბინის გეგმა, განათავსე დატვირთვები, გაიყვანე წრედი",
+                        systemImage: "house.fill", color: .green,
+                        id: "menu-plan") { path.append("plan") }
                 modeRow(title: "Sandbox",
                         subtitle: "თავისუფალი აწყობა შეზღუდვის გარეშე",
                         systemImage: "hammer.fill", color: .blue,

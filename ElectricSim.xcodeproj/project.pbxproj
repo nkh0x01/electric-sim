@@ -47,10 +47,18 @@
 		E1EC000000000000000002AA /* faults.json in Resources */ = {isa = PBXBuildFile; fileRef = E1EC000000000000000001AA /* faults.json */; };
 		E1EC00000000000000000219 /* GameCenterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC00000000000000000119 /* GameCenterManager.swift */; };
 		E1EC0000000000000000021B /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = E1EC0000000000000000031A /* Localizable.strings */; };
+		E1EC00000000000000000509 /* Installation.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC00000000000000000508 /* Installation.swift */; };
+		E1EC0000000000000000050B /* PlanSizing.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC0000000000000000050A /* PlanSizing.swift */; };
+		E1EC0000000000000000050D /* ProjectCompiler.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC0000000000000000050C /* ProjectCompiler.swift */; };
+		E1EC0000000000000000050F /* PlanEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EC0000000000000000050E /* PlanEditorView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		E1EC000000000000000000F1 /* Domain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Domain.swift; sourceTree = "<group>"; };
+		E1EC00000000000000000508 /* Installation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Installation.swift; sourceTree = "<group>"; };
+		E1EC0000000000000000050A /* PlanSizing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanSizing.swift; sourceTree = "<group>"; };
+		E1EC0000000000000000050C /* ProjectCompiler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectCompiler.swift; sourceTree = "<group>"; };
+		E1EC0000000000000000050E /* PlanEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanEditorView.swift; sourceTree = "<group>"; };
 		E1EC000000000000000000F2 /* UnionFind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnionFind.swift; sourceTree = "<group>"; };
 		E1EC000000000000000000F3 /* SimulationResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulationResult.swift; sourceTree = "<group>"; };
 		E1EC000000000000000000F4 /* CircuitSolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircuitSolver.swift; sourceTree = "<group>"; };
@@ -158,6 +166,9 @@
 				E1EC000000000000000001A2 /* PanelAssembly.swift */,
 				E1EC000000000000000001A3 /* Career.swift */,
 				E1EC000000000000000001A9 /* FaultMission.swift */,
+				E1EC00000000000000000508 /* Installation.swift */,
+				E1EC0000000000000000050A /* PlanSizing.swift */,
+				E1EC0000000000000000050C /* ProjectCompiler.swift */,
 				E1EC00000000000000000303 /* Data */,
 			);
 			path = Core;
@@ -206,6 +217,7 @@
 				E1EC00000000000000000111 /* StoreViews.swift */,
 				E1EC00000000000000000114 /* LevelEditorView.swift */,
 				E1EC00000000000000000116 /* ReportsView.swift */,
+				E1EC0000000000000000050E /* PlanEditorView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -374,6 +386,10 @@
 				E1EC000000000000000002A3 /* Career.swift in Sources */,
 				E1EC000000000000000002A9 /* FaultMission.swift in Sources */,
 				E1EC00000000000000000219 /* GameCenterManager.swift in Sources */,
+				E1EC00000000000000000509 /* Installation.swift in Sources */,
+				E1EC0000000000000000050B /* PlanSizing.swift in Sources */,
+				E1EC0000000000000000050D /* ProjectCompiler.swift in Sources */,
+				E1EC0000000000000000050F /* PlanEditorView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

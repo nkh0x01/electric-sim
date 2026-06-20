@@ -54,8 +54,13 @@ struct RootView: View {
             case "panels":  PanelListView(path: $path)
             case "sandbox": SandboxListView(path: $path)
             case "faults":  FaultListView(path: $path)
+            case "plan":    PlanListView(path: $path)
             default:
-                if route.hasPrefix("job:") {
+                if route.hasPrefix("plan:") {
+                    if let lvl = PlanCatalog.level(byID: String(route.dropFirst("plan:".count))) {
+                        PlanEditorView(level: lvl, path: $path)
+                    }
+                } else if route.hasPrefix("job:") {
                     JobBriefingView(jobID: String(route.dropFirst("job:".count)), path: $path)
                 } else if route.hasPrefix("jobwork:") {
                     if let job = game.job(byID: String(route.dropFirst("jobwork:".count))) {

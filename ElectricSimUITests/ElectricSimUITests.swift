@@ -63,6 +63,40 @@ final class ElectricSimUITests: XCTestCase {
         a.name = name; a.lifetime = .keepAlways; add(a)
     }
 
+    /// მონტაჟის დიზაინერი (Phase 1): გეგმა იხსნება ოთახით/დატვირთვებით/ტრასით,
+    /// დატვირთვის განთავსება მუშაობს, შემოწმება აბრუნებს ვალიდურ ვერდიქტს.
+    func testPlanDesignerPhase1() {
+        let app = launchApp()
+        // ახალი რეჟიმი მენიუში
+        let menu = app.buttons["menu-plan"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 20), "მენიუში უნდა იყოს „მონტაჟის დიზაინერი“")
+        menu.tap()
+        // დემო პროექტი
+        let demo = app.buttons["plan-lvl_plan_demo_living"]
+        XCTAssertTrue(demo.waitForExistence(timeout: 10)); demo.tap()
+        // რედაქტორი — ოთახი + წინასწარ განთავსებული ნათურები + ტრასა
+        XCTAssertTrue(app.otherElements["plan-room"].waitForExistence(timeout: 10), "ოთახი უნდა დაიხატოს")
+        XCTAssertTrue(app.otherElements["plan-load-lamp_a"].exists, "წინასწარი ნათურა")
+        XCTAssertTrue(app.otherElements["plan-run"].exists, "კაბელის ტრასა")
+        shot(app, "PlanEditor-RoomLoadsRun")
+
+        // შემოწმება სუფთა განათების წრედზე — ProjectCompiler → არსებული solver → ვალიდური
+        app.buttons["plan-validate"].tap()
+        XCTAssertTrue(app.navigationBars["შემოწმება"].waitForExistence(timeout: 8),
+                      "შემოწმების ფურცელი უნდა გაიხსნას")
+        let verdict = app.staticTexts["plan-verdict"]
+        XCTAssertTrue(verdict.waitForExistence(timeout: 4), "ვერდიქტი უნდა ჩანდეს")
+        shot(app, "PlanEditor-ValidationSheet")
+        XCTAssertEqual(verdict.value as? String, "pass", "სუფთა განათების წრედი ვალიდურია")
+        app.buttons["დახურვა"].tap()
+
+        // დატვირთვის განთავსების ხელსაწყო — ავირჩიოთ როზეტი და შევეხოთ ტილოს
+        app.buttons["plan-loadtype-socket_16"].tap()
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.45, dy: 0.35)).tap()
+        XCTAssertTrue(app.otherElements["plan-load-u1"].waitForExistence(timeout: 5),
+                      "ტილოზე შეხებამ ახალი დატვირთვა უნდა განათავსოს")
+    }
+
     /// ფოტო-კლემის ინტერაქცია: სადენი ფოტოს კლემაში „შედის" (ორმაგი ხრახნის გარეშე),
     /// მოუჭერელი → მოჭერილი, და ბერკეტი ON→OFF. + screenshot-ები შესაფასებლად.
     func testPhotoTerminalInteractionScreenshots() {
