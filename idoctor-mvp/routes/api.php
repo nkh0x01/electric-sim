@@ -2,10 +2,14 @@
 
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\LabController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\VisitCardController;
 use Illuminate\Support\Facades\Route;
+
+// Readiness probe (deploy / load balancer)
+Route::get('/health', [HealthController::class, 'show']);
 
 // Anonymous sessions + consent + GDPR erasure
 Route::post('/session', [SessionController::class, 'store']);
