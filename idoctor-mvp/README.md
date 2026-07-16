@@ -54,9 +54,11 @@ php artisan serve   # http://localhost:8000
 ## ტესტები
 
 ```bash
-php artisan test                          # ყველა
+php artisan test                          # ყველა (27 passed, 1 skipped)
 php artisan test --group=lab              # Rule #1: ნორმის მიბმა
 php artisan test --group=triage           # Layer A recall baseline
+php artisan test --group=pipeline         # Rule #2: emergency→112 (Claude არ იძახება), consent, rate-limit
+php artisan test --group=session          # session/consent/GDPR წაშლა/at-rest encryption/feedback
 php artisan test --group=triage-integration   # 100% recall gate (საჭიროებს API key)
 ```
 
