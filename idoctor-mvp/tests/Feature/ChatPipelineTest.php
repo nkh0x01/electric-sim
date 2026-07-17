@@ -25,12 +25,12 @@ class ChatPipelineTest extends TestCase
         $id = (string) Str::uuid();
 
         return ChatSession::create([
-            'id'            => $id,
-            'session_hash'  => AuditLogger::hash($id),
+            'id' => $id,
+            'session_hash' => AuditLogger::hash($id),
             'consent_given' => true,
-            'consent_at'    => now(),
+            'consent_at' => now(),
             'anamnesis_stage' => 'intake',
-            'last_seen_at'  => now(),
+            'last_seen_at' => now(),
         ]);
     }
 
@@ -43,7 +43,7 @@ class ChatPipelineTest extends TestCase
 
         $response = $this->postJson('/api/chat', [
             'session_id' => $session->id,
-            'message'    => 'ძლიერი გულმკერდის ტკივილი მაქვს რა ვქნა?',
+            'message' => 'ძლიერი გულმკერდის ტკივილი მაქვს რა ვქნა?',
         ]);
 
         $response->assertOk();
@@ -56,8 +56,8 @@ class ChatPipelineTest extends TestCase
         // An emergency assistant message is persisted and flagged.
         $this->assertDatabaseHas('messages', [
             'chat_session_id' => $session->id,
-            'role'            => 'assistant',
-            'is_emergency'    => true,
+            'role' => 'assistant',
+            'is_emergency' => true,
         ]);
     }
 
@@ -68,7 +68,7 @@ class ChatPipelineTest extends TestCase
 
         $body = $this->postJson('/api/chat', [
             'session_id' => $session->id,
-            'message'    => 'აღარ მინდა ცხოვრება',
+            'message' => 'აღარ მინდა ცხოვრება',
         ])->streamedContent();
 
         $this->assertStringContainsString('event: emergency', $body);
@@ -80,15 +80,15 @@ class ChatPipelineTest extends TestCase
     {
         $id = (string) Str::uuid();
         $session = ChatSession::create([
-            'id'            => $id,
-            'session_hash'  => AuditLogger::hash($id),
+            'id' => $id,
+            'session_hash' => AuditLogger::hash($id),
             'consent_given' => false,
             'anamnesis_stage' => 'intake',
         ]);
 
         $body = $this->postJson('/api/chat', [
             'session_id' => $session->id,
-            'message'    => 'გამარჯობა',
+            'message' => 'გამარჯობა',
         ])->streamedContent();
 
         $this->assertStringContainsString('consent_required', $body);
@@ -104,13 +104,13 @@ class ChatPipelineTest extends TestCase
         for ($i = 0; $i < 2; $i++) {
             $this->postJson('/api/chat', [
                 'session_id' => $session->id,
-                'message'    => 'ძლიერი გულმკერდის ტკივილი მაქვს',
+                'message' => 'ძლიერი გულმკერდის ტკივილი მაქვს',
             ])->streamedContent();
         }
         // ...the third is rate-limited.
         $body = $this->postJson('/api/chat', [
             'session_id' => $session->id,
-            'message'    => 'ძლიერი გულმკერდის ტკივილი მაქვს',
+            'message' => 'ძლიერი გულმკერდის ტკივილი მაქვს',
         ])->streamedContent();
 
         $this->assertStringContainsString('rate_limited', $body);

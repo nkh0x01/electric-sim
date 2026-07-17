@@ -96,8 +96,8 @@ class SessionFeedbackTest extends TestCase
             $this->postJson('/api/feedback', [
                 'session_id' => $session->id,
                 'message_id' => $msg->id,
-                'kind'       => $kind,
-                'note'       => $kind === 'report' ? 'არასწორია' : null,
+                'kind' => $kind,
+                'note' => $kind === 'report' ? 'არასწორია' : null,
             ])->assertOk()->assertJsonPath('ok', true);
         }
 
@@ -112,7 +112,7 @@ class SessionFeedbackTest extends TestCase
 
         $this->postJson('/api/feedback', [
             'session_id' => $id,
-            'kind'       => 'sideways',
+            'kind' => 'sideways',
         ])->assertStatus(422);
     }
 }

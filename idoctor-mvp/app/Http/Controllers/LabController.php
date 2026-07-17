@@ -18,8 +18,7 @@ class LabController extends Controller
         private readonly LabParser $parser,
         private readonly LabInterpreter $interpreter,
         private readonly AuditLogger $audit,
-    ) {
-    }
+    ) {}
 
     /**
      * Upload → OCR extract → deterministic classify (Rule #1) → interpret.
@@ -28,10 +27,10 @@ class LabController extends Controller
     {
         $data = $request->validate([
             'session_id' => ['required', 'uuid'],
-            'file'       => ['required', 'file', 'max:10240', 'mimes:jpg,jpeg,png,pdf'],
-            'sex'        => ['nullable', 'in:any,m,f'],
-            'age'        => ['nullable', 'integer', 'min:0', 'max:120'],
-            'condition'  => ['nullable', 'string', 'max:64'],
+            'file' => ['required', 'file', 'max:10240', 'mimes:jpg,jpeg,png,pdf'],
+            'sex' => ['nullable', 'in:any,m,f'],
+            'age' => ['nullable', 'integer', 'min:0', 'max:120'],
+            'condition' => ['nullable', 'string', 'max:64'],
         ]);
 
         $session = ChatSession::findOrFail($data['session_id']);
@@ -42,9 +41,9 @@ class LabController extends Controller
 
         $upload = $session->labUploads()->create([
             'original_name' => $file->getClientOriginalName(),
-            'mime'          => $file->getMimeType(),
-            'storage_path'  => $path,
-            'status'        => 'pending',
+            'mime' => $file->getMimeType(),
+            'storage_path' => $path,
+            'status' => 'pending',
         ]);
 
         $this->audit->event($session->id, 'lab.uploaded', ['mime' => $file->getMimeType()]);
@@ -66,9 +65,9 @@ class LabController extends Controller
                 : 'ვერ ამოვიკითხე მაჩვენებლები. სცადეთ უფრო მკაფიო ფოტო.';
 
             $upload->update([
-                'status'         => 'parsed',
-                'extracted'      => $extracted,
-                'classified'     => $classified,
+                'status' => 'parsed',
+                'extracted' => $extracted,
+                'classified' => $classified,
                 'interpretation' => $interpretation."\n\n".config('idoctor.disclaimer'),
             ]);
 
@@ -78,16 +77,16 @@ class LabController extends Controller
             $this->audit->event($session->id, 'lab.failed', ['error' => substr($e->getMessage(), 0, 120)]);
 
             return response()->json([
-                'id'     => $upload->id,
+                'id' => $upload->id,
                 'status' => 'failed',
-                'error'  => 'ანალიზის დამუშავება ვერ მოხერხდა.',
+                'error' => 'ანალიზის დამუშავება ვერ მოხერხდა.',
             ], 422);
         }
 
         return response()->json([
-            'id'             => $upload->id,
-            'status'         => $upload->status,
-            'classified'     => $upload->classified,
+            'id' => $upload->id,
+            'status' => $upload->status,
+            'classified' => $upload->classified,
             'interpretation' => $upload->interpretation,
         ]);
     }
@@ -95,9 +94,9 @@ class LabController extends Controller
     public function show(LabUpload $upload): JsonResponse
     {
         return response()->json([
-            'id'             => $upload->id,
-            'status'         => $upload->status,
-            'classified'     => $upload->classified,
+            'id' => $upload->id,
+            'status' => $upload->status,
+            'classified' => $upload->classified,
             'interpretation' => $upload->interpretation,
         ]);
     }

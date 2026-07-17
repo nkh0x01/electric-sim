@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\KbChunk;
 use App\Models\KbDocument;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 /**
  * Loads the KB starter pack from database/data/kb_starter_pack.md and splits
@@ -46,20 +45,20 @@ class KbSeeder extends Seeder
             }
 
             $doc = KbDocument::create([
-                'slug'      => $meta['slug'],
-                'title'     => $meta['title'] ?? $meta['slug'],
+                'slug' => $meta['slug'],
+                'title' => $meta['title'] ?? $meta['slug'],
                 'specialty' => $meta['specialty'] ?? 'general_labs',
-                'source'    => $meta['source'] ?? null,
-                'body'      => $body,
+                'source' => $meta['source'] ?? null,
+                'body' => $body,
             ]);
             $docs++;
 
             foreach ($this->chunk($body) as $i => $piece) {
                 KbChunk::create([
                     'kb_document_id' => $doc->id,
-                    'specialty'      => $doc->specialty,
-                    'ordinal'        => $i,
-                    'content'        => $piece,
+                    'specialty' => $doc->specialty,
+                    'ordinal' => $i,
+                    'content' => $piece,
                 ]);
                 $chunks++;
             }

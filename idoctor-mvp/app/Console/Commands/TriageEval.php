@@ -46,7 +46,10 @@ class TriageEval extends Command
             $rows = array_slice($rows, 0, $limit);
         }
 
-        $emerg = 0; $caught = 0; $neg = 0; $tn = 0;
+        $emerg = 0;
+        $caught = 0;
+        $neg = 0;
+        $tn = 0;
         $missed = [];
         foreach ($rows as $r) {
             $isEmerg = $r['expected_emergency'] === '1';

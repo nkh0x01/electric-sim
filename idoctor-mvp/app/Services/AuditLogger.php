@@ -33,7 +33,7 @@ class AuditLogger
 
         Log::channel('audit')->info($event, array_merge([
             'session_hash' => self::hash($sessionId),
-            'event'        => $event,
+            'event' => $event,
         ], $meta));
     }
 }

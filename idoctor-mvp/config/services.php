@@ -36,16 +36,16 @@ return [
     ],
 
     'anthropic' => [
-        'key'          => env('ANTHROPIC_API_KEY'),
-        'base_url'     => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com'),
-        'version'      => env('ANTHROPIC_VERSION', '2023-06-01'),
-        'timeout'      => (int) env('ANTHROPIC_TIMEOUT', 60),
+        'key' => env('ANTHROPIC_API_KEY'),
+        'base_url' => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com'),
+        'version' => env('ANTHROPIC_VERSION', '2023-06-01'),
+        'timeout' => (int) env('ANTHROPIC_TIMEOUT', 60),
     ],
 
     'voyage' => [
-        'key'      => env('VOYAGE_API_KEY'),
+        'key' => env('VOYAGE_API_KEY'),
         'base_url' => env('VOYAGE_BASE_URL', 'https://api.voyageai.com/v1'),
-        'timeout'  => (int) env('VOYAGE_TIMEOUT', 30),
+        'timeout' => (int) env('VOYAGE_TIMEOUT', 30),
     ],
 
 ];

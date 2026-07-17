@@ -16,7 +16,7 @@ class LabUpload extends Model
     ];
 
     protected $casts = [
-        'extracted'  => 'array',
+        'extracted' => 'array',
         'classified' => 'array',
     ];
 

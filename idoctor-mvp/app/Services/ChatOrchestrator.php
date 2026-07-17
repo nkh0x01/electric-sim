@@ -22,8 +22,7 @@ class ChatOrchestrator
         private readonly ClaudeClient $claude,
         private readonly RouterService $router,
         private readonly RagService $rag,
-    ) {
-    }
+    ) {}
 
     /**
      * Build the system prompt. RAG snippets and lab ranges are injected as

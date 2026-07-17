@@ -17,8 +17,8 @@ class ChatSession extends Model
 
     protected $casts = [
         'consent_given' => 'boolean',
-        'consent_at'    => 'datetime',
-        'last_seen_at'  => 'datetime',
+        'consent_at' => 'datetime',
+        'last_seen_at' => 'datetime',
         'message_count' => 'integer',
     ];
 

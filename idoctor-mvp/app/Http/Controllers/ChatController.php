@@ -19,8 +19,7 @@ class ChatController extends Controller
         private readonly TriageService $triage,
         private readonly ChatOrchestrator $orchestrator,
         private readonly AuditLogger $audit,
-    ) {
-    }
+    ) {}
 
     /**
      * The full chat pipeline (Rule #2 ordering):
@@ -30,7 +29,7 @@ class ChatController extends Controller
     {
         $data = $request->validate([
             'session_id' => ['required', 'uuid'],
-            'message'    => ['required', 'string', 'max:4000'],
+            'message' => ['required', 'string', 'max:4000'],
         ]);
 
         $session = ChatSession::findOrFail($data['session_id']);
@@ -57,7 +56,7 @@ class ChatController extends Controller
 
             // --- persist user message (encrypted at rest) -------------------
             $userMsg = $session->messages()->create([
-                'role'    => 'user',
+                'role' => 'user',
                 'content' => $text,
             ]);
 
@@ -67,14 +66,14 @@ class ChatController extends Controller
                 $template = $this->emergencyTemplate($verdict['matched']);
 
                 $session->messages()->create([
-                    'role'          => 'assistant',
-                    'content'       => $template,
-                    'is_emergency'  => true,
+                    'role' => 'assistant',
+                    'content' => $template,
+                    'is_emergency' => true,
                     'triage_reason' => $verdict['reason'],
                 ]);
 
                 $this->audit->event($session->id, 'chat.emergency', [
-                    'layer'  => $verdict['layer'],
+                    'layer' => $verdict['layer'],
                     'reason' => $verdict['reason'],
                 ]);
 
@@ -112,8 +111,8 @@ class ChatController extends Controller
             $this->sse('disclaimer', ['text' => $disclaimer]);
 
             $assistantMsg = $session->messages()->create([
-                'role'       => 'assistant',
-                'content'    => $full."\n\n".$disclaimer,
+                'role' => 'assistant',
+                'content' => $full."\n\n".$disclaimer,
                 'model_used' => $this->orchestrator->lastModel,
             ]);
 
@@ -123,15 +122,15 @@ class ChatController extends Controller
 
             $this->touchSession($session);
             $this->sse('done', [
-                'emergency'    => false,
-                'message_id'   => $assistantMsg->id,
+                'emergency' => false,
+                'message_id' => $assistantMsg->id,
                 'show_visit_card' => $session->anamnesis_stage === 'ready',
             ]);
         }, 200, [
-            'Content-Type'      => 'text/event-stream',
-            'Cache-Control'     => 'no-cache, no-transform',
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache, no-transform',
             'X-Accel-Buffering' => 'no',
-            'Connection'        => 'keep-alive',
+            'Connection' => 'keep-alive',
         ]);
     }
 

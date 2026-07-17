@@ -12,7 +12,7 @@ class EmbeddingClient
 {
     /**
      * @param  array<int,string>  $inputs
-     * @return array<int,array<int,float>>  one vector per input
+     * @return array<int,array<int,float>> one vector per input
      */
     public function embed(array $inputs, string $inputType = 'document'): array
     {
@@ -24,8 +24,8 @@ class EmbeddingClient
         $response = Http::withToken($key)
             ->timeout((int) config('services.voyage.timeout', 30))
             ->post(rtrim((string) config('services.voyage.base_url'), '/').'/embeddings', [
-                'model'      => config('idoctor.embeddings.model'),
-                'input'      => $inputs,
+                'model' => config('idoctor.embeddings.model'),
+                'input' => $inputs,
                 'input_type' => $inputType, // 'document' | 'query'
             ]);
 

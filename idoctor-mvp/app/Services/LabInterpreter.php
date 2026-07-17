@@ -11,9 +11,7 @@ namespace App\Services;
  */
 class LabInterpreter
 {
-    public function __construct(private readonly ClaudeClient $claude)
-    {
-    }
+    public function __construct(private readonly ClaudeClient $claude) {}
 
     /**
      * @param  array<int,array<string,mixed>>  $classified

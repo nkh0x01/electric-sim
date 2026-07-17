@@ -14,9 +14,7 @@ use Throwable;
  */
 class RagService
 {
-    public function __construct(private readonly EmbeddingClient $embeddings)
-    {
-    }
+    public function __construct(private readonly EmbeddingClient $embeddings) {}
 
     /**
      * @return array<int,array{content:string,title:string,specialty:string,score:float}>
@@ -65,10 +63,10 @@ class RagService
 
         return collect($rows)
             ->map(fn ($r) => [
-                'content'   => $r->content,
-                'title'     => $r->title,
+                'content' => $r->content,
+                'title' => $r->title,
                 'specialty' => $r->specialty,
-                'score'     => (float) $r->score,
+                'score' => (float) $r->score,
             ])
             ->filter(fn ($r) => $r['score'] >= $minScore)
             ->values()

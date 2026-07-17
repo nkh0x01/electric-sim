@@ -17,7 +17,7 @@ class Message extends Model
 
     protected $casts = [
         // At-rest encryption of message bodies (GDPR).
-        'content'      => 'encrypted',
+        'content' => 'encrypted',
         'is_emergency' => 'boolean',
     ];
 

@@ -13,9 +13,7 @@ use Illuminate\Support\Str;
  */
 class LabParser
 {
-    public function __construct(private readonly ClaudeClient $claude)
-    {
-    }
+    public function __construct(private readonly ClaudeClient $claude) {}
 
     /**
      * OCR raw analyte values from an image/PDF page using vision. Returns
@@ -37,7 +35,7 @@ class LabParser
             .'Map each analyte to one of the known codes when possible.';
 
         $prompt = "Known analyte codes:\n$knownCodes\n\n"
-            ."Return ONLY a JSON array of objects: "
+            .'Return ONLY a JSON array of objects: '
             .'[{"code": "<known code or null>", "name": "<as printed>", '
             .'"value": <number>, "unit": "<as printed or null>"}]. No prose.';
 
@@ -65,10 +63,10 @@ class LabParser
                 continue;
             }
             $out[] = [
-                'code'  => isset($row['code']) && $row['code'] !== '' ? (string) $row['code'] : null,
-                'name'  => (string) ($row['name'] ?? $row['code'] ?? ''),
+                'code' => isset($row['code']) && $row['code'] !== '' ? (string) $row['code'] : null,
+                'name' => (string) ($row['name'] ?? $row['code'] ?? ''),
                 'value' => (float) $row['value'],
-                'unit'  => isset($row['unit']) && $row['unit'] !== '' ? (string) $row['unit'] : null,
+                'unit' => isset($row['unit']) && $row['unit'] !== '' ? (string) $row['unit'] : null,
             ];
         }
 
@@ -98,14 +96,14 @@ class LabParser
             }
 
             $results[] = [
-                'code'      => $range->analyte_code ?? $item['code'],
-                'name'      => $range->analyte_name_ka ?? $item['name'],
-                'value'     => $item['value'],
-                'unit'      => $item['unit'] ?? ($range->unit ?? null),
-                'ref_low'   => $refLow,
-                'ref_high'  => $refHigh,
-                'flag'      => $flag, // low | normal | high | unknown
-                'note_ka'   => $range->note_ka ?? null,
+                'code' => $range->analyte_code ?? $item['code'],
+                'name' => $range->analyte_name_ka ?? $item['name'],
+                'value' => $item['value'],
+                'unit' => $item['unit'] ?? ($range->unit ?? null),
+                'ref_low' => $refLow,
+                'ref_high' => $refHigh,
+                'flag' => $flag, // low | normal | high | unknown
+                'note_ka' => $range->note_ka ?? null,
             ];
         }
 

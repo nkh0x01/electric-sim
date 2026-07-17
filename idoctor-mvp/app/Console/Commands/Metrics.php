@@ -27,25 +27,25 @@ class Metrics extends Command
         $days = max(1, (int) $this->option('days'));
         $since = now()->subDays($days);
 
-        $sessions   = ChatSession::where('created_at', '>=', $since)->count();
-        $active     = ChatSession::where('last_seen_at', '>=', $since)->count();
-        $consented  = ChatSession::where('consent_given', true)
+        $sessions = ChatSession::where('created_at', '>=', $since)->count();
+        $active = ChatSession::where('last_seen_at', '>=', $since)->count();
+        $consented = ChatSession::where('consent_given', true)
             ->where('created_at', '>=', $since)->count();
 
-        $userMsgs   = Message::where('role', 'user')->where('created_at', '>=', $since)->count();
+        $userMsgs = Message::where('role', 'user')->where('created_at', '>=', $since)->count();
         $emergencies = Message::where('is_emergency', true)->where('created_at', '>=', $since)->count();
 
-        $labs       = LabUpload::where('created_at', '>=', $since)->count();
+        $labs = LabUpload::where('created_at', '>=', $since)->count();
         $labsParsed = LabUpload::where('status', 'parsed')->where('created_at', '>=', $since)->count();
-        $cards      = VisitCard::where('created_at', '>=', $since)->count();
+        $cards = VisitCard::where('created_at', '>=', $since)->count();
 
-        $fbUp   = Feedback::where('kind', 'up')->where('created_at', '>=', $since)->count();
+        $fbUp = Feedback::where('kind', 'up')->where('created_at', '>=', $since)->count();
         $fbDown = Feedback::where('kind', 'down')->where('created_at', '>=', $since)->count();
-        $fbRep  = Feedback::where('kind', 'report')->where('created_at', '>=', $since)->count();
+        $fbRep = Feedback::where('kind', 'report')->where('created_at', '>=', $since)->count();
 
         $emergencyRate = $userMsgs > 0 ? $emergencies / $userMsgs : 0.0;
-        $consentRate   = $sessions > 0 ? $consented / $sessions : 0.0;
-        $satisfaction  = ($fbUp + $fbDown) > 0 ? $fbUp / ($fbUp + $fbDown) : 0.0;
+        $consentRate = $sessions > 0 ? $consented / $sessions : 0.0;
+        $satisfaction = ($fbUp + $fbDown) > 0 ? $fbUp / ($fbUp + $fbDown) : 0.0;
 
         $this->info("iDoctor metrics — last {$days} day(s)");
         $this->table(['metric', 'value'], [
