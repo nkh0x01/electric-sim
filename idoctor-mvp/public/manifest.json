@@ -1,0 +1,14 @@
+{
+    "name": "iDoctor.ge — ჯანმრთელობის ნავიგატორი",
+    "short_name": "iDoctor",
+    "description": "ქართული AI ჯანმრთელობის ნავიგატორი — არ არის ექიმი.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#f8fafc",
+    "theme_color": "#0f766e",
+    "lang": "ka",
+    "icons": [
+        { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+        { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    ]
+}
