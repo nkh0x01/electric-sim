@@ -38,7 +38,7 @@ return [
         // Escalate to the premium model when the prompt is long or a lab
         // interpretation / structured reasoning is involved.
         'escalate_char_threshold' => (int) env('IDOCTOR_ROUTER_CHARS', 900),
-        'max_output_tokens' => (int) env('IDOCTOR_MAX_OUTPUT_TOKENS', 1024),
+        'max_output_tokens' => (int) env('IDOCTOR_MAX_OUTPUT_TOKENS', 1536),
     ],
 
     // ---------------------------------------------------------------------

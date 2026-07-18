@@ -10,13 +10,17 @@ namespace App\Services;
 class RouterService
 {
     /**
-     * @param  array{has_lab?:bool,has_rag?:bool}  $signals
+     * @param  array{has_lab?:bool,has_rag?:bool,medical?:bool}  $signals
      */
     public function pick(string $prompt, array $signals = []): string
     {
         $threshold = (int) config('idoctor.router.escalate_char_threshold', 900);
 
+        // Medical content and lab interpretation always get the premium model:
+        // the cheap model hallucinates Georgian medical terminology and invents
+        // reference ranges. Cost is secondary to clinical wording quality here.
         $escalate = ($signals['has_lab'] ?? false)
+            || ($signals['medical'] ?? false)
             || mb_strlen($prompt) > $threshold;
 
         return $escalate
