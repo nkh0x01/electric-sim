@@ -206,7 +206,10 @@ return [
 
     'embeddings' => [
         'model' => env('VOYAGE_MODEL', 'voyage-3'),
-        'dimensions' => (int) env('VOYAGE_DIMENSIONS', 1536),
+        // voyage-3 emits 1024-dim vectors. The kb_chunks vector() column and
+        // ivfflat index are sized from this value, so it MUST match the model's
+        // real output dimension or inserts fail with "expected N dimensions".
+        'dimensions' => (int) env('VOYAGE_DIMENSIONS', 1024),
     ],
 
     // ---------------------------------------------------------------------

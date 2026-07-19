@@ -6,7 +6,9 @@ use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 /**
- * Voyage AI embeddings client (voyage-3, 1536-dim by default).
+ * Voyage AI embeddings client (voyage-3, 1024-dim). The kb_chunks vector
+ * column is sized from config('idoctor.embeddings.dimensions'), which must
+ * match this model's native output dimension.
  */
 class EmbeddingClient
 {

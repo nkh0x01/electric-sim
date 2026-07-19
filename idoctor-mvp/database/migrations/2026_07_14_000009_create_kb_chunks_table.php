@@ -21,7 +21,7 @@ return new class extends Migration
         });
 
         $driver = DB::connection()->getDriverName();
-        $dim = (int) config('idoctor.embeddings.dimensions', 1536);
+        $dim = (int) config('idoctor.embeddings.dimensions', 1024);
 
         if ($driver === 'pgsql') {
             // Real vector column + IVFFlat index for cosine similarity.
