@@ -19,9 +19,7 @@ use Throwable;
  */
 class TriageService
 {
-    public function __construct(private readonly ClaudeClient $claude)
-    {
-    }
+    public function __construct(private readonly ClaudeClient $claude) {}
 
     /**
      * @return array{emergency:bool, layer:?string, reason:?string, matched:?string}
@@ -47,7 +45,7 @@ class TriageService
                 // loudly so a missed emergency is auditable.
                 Log::channel('audit')->warning('triage.layerB.error', [
                     'session_hash' => null,
-                    'error'        => substr($e->getMessage(), 0, 200),
+                    'error' => substr($e->getMessage(), 0, 200),
                 ]);
             }
         }
@@ -70,9 +68,9 @@ class TriageService
             if ($needle !== '' && mb_strpos($norm, $needle) !== false) {
                 return [
                     'emergency' => true,
-                    'layer'     => 'A',
-                    'reason'    => 'redflag_keyword',
-                    'matched'   => $phrase,
+                    'layer' => 'A',
+                    'reason' => 'redflag_keyword',
+                    'matched' => $phrase,
                 ];
             }
         }
@@ -124,9 +122,9 @@ class TriageService
 
         return [
             'emergency' => $p >= $threshold,
-            'layer'     => 'B',
-            'reason'    => 'llm_prob_'.number_format($p, 2),
-            'matched'   => $category,
+            'layer' => 'B',
+            'reason' => 'llm_prob_'.number_format($p, 2),
+            'matched' => $category,
         ];
     }
 

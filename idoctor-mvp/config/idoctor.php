@@ -28,17 +28,27 @@ return [
     // Claude / routing (unit economics — Haiku by default, Sonnet on demand)
     // ---------------------------------------------------------------------
     'models' => [
-        'cheap'   => env('IDOCTOR_MODEL_CHEAP', 'claude-haiku-4-5'),
+        'cheap' => env('IDOCTOR_MODEL_CHEAP', 'claude-haiku-4-5'),
         'premium' => env('IDOCTOR_MODEL_PREMIUM', 'claude-sonnet-5'),
-        'vision'  => env('IDOCTOR_MODEL_VISION', 'claude-sonnet-5'),
-        'triage'  => env('IDOCTOR_MODEL_TRIAGE', 'claude-haiku-4-5'),
+        'vision' => env('IDOCTOR_MODEL_VISION', 'claude-sonnet-5'),
+        'triage' => env('IDOCTOR_MODEL_TRIAGE', 'claude-haiku-4-5'),
     ],
 
     'router' => [
         // Escalate to the premium model when the prompt is long or a lab
         // interpretation / structured reasoning is involved.
         'escalate_char_threshold' => (int) env('IDOCTOR_ROUTER_CHARS', 900),
-        'max_output_tokens'       => (int) env('IDOCTOR_MAX_OUTPUT_TOKENS', 1024),
+        'max_output_tokens' => (int) env('IDOCTOR_MAX_OUTPUT_TOKENS', 1536),
+    ],
+
+    // Rough USD cost per assistant reply, by model tier. A planning estimate
+    // for the value loop (idoctor:metrics) — NOT a billing figure. Token
+    // counts are deliberately not stored, so cost is approximated per reply.
+    'costs' => [
+        'per_reply_usd' => [
+            'cheap' => (float) env('IDOCTOR_COST_CHEAP_USD', 0.002),
+            'premium' => (float) env('IDOCTOR_COST_PREMIUM_USD', 0.02),
+        ],
     ],
 
     // ---------------------------------------------------------------------
@@ -176,40 +186,40 @@ return [
 
         // 112 emergency template shown INSTEAD of any Claude output.
         // Rule #2: the pipeline stops here; Claude is never called.
-        'emergency_template' =>
-            "🚨 ეს შეიძლება იყოს გადაუდებელი მდგომარეობა.\n\n".
+        'emergency_template' => "🚨 ეს შეიძლება იყოს გადაუდებელი მდგომარეობა.\n\n".
             "დაუყოვნებლივ დარეკეთ **112**-ზე ან მიმართეთ უახლოეს გადაუდებელი დახმარების განყოფილებას.\n\n".
-            "iDoctor არ არის ექიმი და ვერ უზრუნველყოფს გადაუდებელ დახმარებას. ".
-            "თუ სიცოცხლისთვის საშიშ სიმპტომებს განიცდით — არ დაელოდოთ.",
+            'iDoctor არ არის ექიმი და ვერ უზრუნველყოფს გადაუდებელ დახმარებას. '.
+            'თუ სიცოცხლისთვის საშიშ სიმპტომებს განიცდით — არ დაელოდოთ.',
 
         // Suicide/self-harm gets an additional hotline line.
-        'crisis_hotline_template' =>
-            "თუ საკუთარი თავის დაზიანებაზე ფიქრობთ, თქვენ მარტო არ ხართ.\n\n".
-            "დარეკეთ **112**-ზე ან ფსიქიკური ჯანმრთელობის კრიზისულ ხაზზე. ".
-            "გთხოვთ, ახლავე მიმართოთ ადამიანს, ვისაც ენდობით.",
+        'crisis_hotline_template' => "თუ საკუთარი თავის დაზიანებაზე ფიქრობთ, თქვენ მარტო არ ხართ.\n\n".
+            'დარეკეთ **112**-ზე ან ფსიქიკური ჯანმრთელობის კრიზისულ ხაზზე. '.
+            'გთხოვთ, ახლავე მიმართოთ ადამიანს, ვისაც ენდობით.',
     ],
 
     // ---------------------------------------------------------------------
     // Medical disclaimer — appended to EVERY medical answer.
     // ---------------------------------------------------------------------
-    'disclaimer' =>
-        "⚕️ iDoctor არ არის ექიმი და არ სვამს დიაგნოზს. ეს ინფორმაცია ".
-        "საგანმანათლებლო ხასიათისაა და არ ცვლის ექიმის კონსულტაციას. ".
-        "სიმპტომების გაუარესებისას მიმართეთ სპეციალისტს.",
+    'disclaimer' => '⚕️ iDoctor არ არის ექიმი და არ სვამს დიაგნოზს. ეს ინფორმაცია '.
+        'საგანმანათლებლო ხასიათისაა და არ ცვლის ექიმის კონსულტაციას. '.
+        'სიმპტომების გაუარესებისას მიმართეთ სპეციალისტს.',
 
     // ---------------------------------------------------------------------
     // RAG (pgvector + Voyage)
     // ---------------------------------------------------------------------
     'rag' => [
-        'enabled'      => env('IDOCTOR_EMBEDDINGS_ENABLED', false),
-        'top_k'        => (int) env('IDOCTOR_RAG_TOP_K', 5),
-        'min_score'    => (float) env('IDOCTOR_RAG_MIN_SCORE', 0.25),
+        'enabled' => env('IDOCTOR_EMBEDDINGS_ENABLED', false),
+        'top_k' => (int) env('IDOCTOR_RAG_TOP_K', 5),
+        'min_score' => (float) env('IDOCTOR_RAG_MIN_SCORE', 0.25),
         'chunk_tokens' => (int) env('IDOCTOR_RAG_CHUNK_TOKENS', 400),
     ],
 
     'embeddings' => [
-        'model'      => env('VOYAGE_MODEL', 'voyage-3'),
-        'dimensions' => (int) env('VOYAGE_DIMENSIONS', 1536),
+        'model' => env('VOYAGE_MODEL', 'voyage-3'),
+        // voyage-3 emits 1024-dim vectors. The kb_chunks vector() column and
+        // ivfflat index are sized from this value, so it MUST match the model's
+        // real output dimension or inserts fail with "expected N dimensions".
+        'dimensions' => (int) env('VOYAGE_DIMENSIONS', 1024),
     ],
 
     // ---------------------------------------------------------------------
@@ -217,7 +227,7 @@ return [
     // ---------------------------------------------------------------------
     'rate_limit' => [
         'messages_per_minute' => (int) env('IDOCTOR_RL_PER_MIN', 12),
-        'messages_per_day'    => (int) env('IDOCTOR_RL_PER_DAY', 200),
+        'messages_per_day' => (int) env('IDOCTOR_RL_PER_DAY', 200),
     ],
 
     // ---------------------------------------------------------------------

@@ -18,12 +18,20 @@ class ChatOrchestrator
     /** Model chosen for the most recent streamReply() call. */
     public ?string $lastModel = null;
 
+    /**
+     * KB chunks that grounded the most recent streamReply() call. Content-free
+     * references (ids + specialty + score) the controller persists so the
+     * quality loop can trace a 👎 back to the docs it leaned on.
+     *
+     * @var array<int,array<string,mixed>>
+     */
+    public array $lastRagRefs = [];
+
     public function __construct(
         private readonly ClaudeClient $claude,
         private readonly RouterService $router,
         private readonly RagService $rag,
-    ) {
-    }
+    ) {}
 
     /**
      * Build the system prompt. RAG snippets and lab ranges are injected as
@@ -50,6 +58,18 @@ class ChatOrchestrator
         - თუ მოცემულია ლაბ. ნორმები ან ცოდნის ბაზის ამონარიდი — დაეყრდენი მხოლოდ მათ.
         - ანამნეზის შეგროვებისას დაუსვი 1–2 დამაზუსტებელი კითხვა ერთ პასუხში, არა მეტი.
         - ისაუბრე თბილად, გასაგებად, ქართულად.
+        - სამედიცინო ტერმინი ქართულად ზუსტად დაწერე. თუ ზუსტ ქართულ ტერმინში დარწმუნებული არ ხარ,
+          გამოიყენე დამკვიდრებული ტერმინი და ფრჩხილებში ლათინური/ინგლისური სახელი. ტერმინი
+          **არასოდეს გამოიგონო** (მაგ. არასწორია "ხორბალი-ტკივილი", "ხორბლი ჰიპოფიზი").
+        - ლაბორატორიული ნორმის კონკრეტული რიცხვი (მაგ. "0.4–4.0") დაწერე **მხოლოდ** ქვემოთ
+          მოცემული კონტექსტიდან, **არასოდეს მეხსიერებიდან**. თუ ნორმა კონტექსტში არ არის —
+          თქვი, რომ ზუსტი ნორმა ლაბორატორიის მიხედვით განსხვავდება და ნაცვლად რიცხვისა ახსენი მნიშვნელობა.
+        - მარცხენა/მარჯვენა არ აურიო (გულის შეტევისას ტკივილი ხშირად მარცხენა მკლავში ვრცელდება).
+
+        ტერმინოლოგია (გამოიყენე ზუსტად ეს ფორმები):
+        ფარისებრი ჯირკვალი (thyroid), ჰიპოთირეოზი (hypothyroidism), ჰიპერთირეოზი (hyperthyroidism),
+        ჰიპოფიზი (pituitary), ყელის/ხახის ტკივილი (sore throat), ანემია/სისხლნაკლებობა (anemia),
+        ჰემოგლობინი (hemoglobin), შემცივნება/ჟრჟოლა (chills).
 
         disclaimer (სიტყვასიტყვით დაურთე ბოლოს):
         $disclaimer
@@ -79,6 +99,7 @@ class ChatOrchestrator
     {
         $specialty = null; // future: route by detected specialty
         $ragChunks = $this->rag->search($userText, $specialty);
+        $this->lastRagRefs = $ragChunks;
 
         $system = $this->systemPrompt($ragChunks);
 
@@ -88,7 +109,13 @@ class ChatOrchestrator
         );
         $messages[] = ['role' => 'user', 'content' => $userText];
 
-        $model = $this->router->pick($userText, ['has_rag' => $ragChunks !== []]);
+        // Every message that reaches the orchestrator is a cleared medical
+        // turn (triage already handled emergencies). Medical content goes to
+        // the premium model: the cheap model mangles Georgian terminology.
+        $model = $this->router->pick($userText, [
+            'has_rag' => $ragChunks !== [],
+            'medical' => true,
+        ]);
         $this->lastModel = $model;
 
         $full = '';

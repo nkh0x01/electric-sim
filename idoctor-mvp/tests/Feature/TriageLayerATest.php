@@ -78,7 +78,7 @@ class TriageLayerATest extends TestCase
             $recall, $caught, count($emergencies), $specificity, $tn, count($negatives), count($missed)
         ));
         if ($missed !== []) {
-            fwrite(STDERR, "  first missed: ".implode("\n  first missed: ", array_slice($missed, 0, 8))."\n");
+            fwrite(STDERR, '  first missed: '.implode("\n  first missed: ", array_slice($missed, 0, 8))."\n");
         }
 
         $baseline = (float) config('idoctor.triage.layer_a_min_recall', 0.85);

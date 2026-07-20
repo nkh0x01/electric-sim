@@ -6,13 +6,15 @@ use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 /**
- * Voyage AI embeddings client (voyage-3, 1536-dim by default).
+ * Voyage AI embeddings client (voyage-3, 1024-dim). The kb_chunks vector
+ * column is sized from config('idoctor.embeddings.dimensions'), which must
+ * match this model's native output dimension.
  */
 class EmbeddingClient
 {
     /**
      * @param  array<int,string>  $inputs
-     * @return array<int,array<int,float>>  one vector per input
+     * @return array<int,array<int,float>> one vector per input
      */
     public function embed(array $inputs, string $inputType = 'document'): array
     {
@@ -24,8 +26,8 @@ class EmbeddingClient
         $response = Http::withToken($key)
             ->timeout((int) config('services.voyage.timeout', 30))
             ->post(rtrim((string) config('services.voyage.base_url'), '/').'/embeddings', [
-                'model'      => config('idoctor.embeddings.model'),
-                'input'      => $inputs,
+                'model' => config('idoctor.embeddings.model'),
+                'input' => $inputs,
                 'input_type' => $inputType, // 'document' | 'query'
             ]);
 

@@ -16,13 +16,13 @@ class HealthController extends Controller
     public function show(): JsonResponse
     {
         $checks = [
-            'db'              => $this->dbOk(),
-            'lab_ranges'      => $this->labRangesOk(),   // Rule #1 source present
-            'triage_layer_a'  => (bool) config('idoctor.triage.redflag_phrases'),
-            'triage_layer_b'  => (bool) config('idoctor.triage.llm_enabled'),
-            'anthropic_key'   => (bool) config('services.anthropic.key'),
-            'voyage_key'      => (bool) config('services.voyage.key'),
-            'rag_enabled'     => (bool) config('idoctor.rag.enabled'),
+            'db' => $this->dbOk(),
+            'lab_ranges' => $this->labRangesOk(),   // Rule #1 source present
+            'triage_layer_a' => (bool) config('idoctor.triage.redflag_phrases'),
+            'triage_layer_b' => (bool) config('idoctor.triage.llm_enabled'),
+            'anthropic_key' => (bool) config('services.anthropic.key'),
+            'voyage_key' => (bool) config('services.voyage.key'),
+            'rag_enabled' => (bool) config('idoctor.rag.enabled'),
         ];
 
         // Core = the minimum needed to serve a safe (triage + disclaimer) reply.

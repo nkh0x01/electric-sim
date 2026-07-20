@@ -13,9 +13,9 @@ class LabReferenceRange extends Model
     ];
 
     protected $casts = [
-        'age_min'  => 'integer',
-        'age_max'  => 'integer',
-        'ref_low'  => 'float',
+        'age_min' => 'integer',
+        'age_max' => 'integer',
+        'ref_low' => 'float',
         'ref_high' => 'float',
     ];
 }

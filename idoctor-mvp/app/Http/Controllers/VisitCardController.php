@@ -17,8 +17,7 @@ class VisitCardController extends Controller
     public function __construct(
         private readonly ClaudeClient $claude,
         private readonly AuditLogger $audit,
-    ) {
-    }
+    ) {}
 
     /**
      * Summarise the anamnesis into a structured visit card the patient can
@@ -60,21 +59,21 @@ class VisitCardController extends Controller
         }
 
         $card = $session->visitCards()->create([
-            'summary'              => (string) ($parsed['summary'] ?? ''),
-            'symptoms'             => (array) ($parsed['symptoms'] ?? []),
+            'summary' => (string) ($parsed['summary'] ?? ''),
+            'symptoms' => (array) ($parsed['symptoms'] ?? []),
             'questions_for_doctor' => (array) ($parsed['questions_for_doctor'] ?? []),
-            'suggested_specialty'  => (string) ($parsed['suggested_specialty'] ?? 'general'),
+            'suggested_specialty' => (string) ($parsed['suggested_specialty'] ?? 'general'),
         ]);
 
         $this->audit->event($session->id, 'visit_card.generated');
 
         return response()->json([
-            'id'                   => $card->id,
-            'summary'              => $card->summary,
-            'symptoms'             => $card->symptoms,
+            'id' => $card->id,
+            'summary' => $card->summary,
+            'symptoms' => $card->symptoms,
             'questions_for_doctor' => $card->questions_for_doctor,
-            'suggested_specialty'  => $card->suggested_specialty,
-            'pdf_url'              => route('visit-card.pdf', $card),
+            'suggested_specialty' => $card->suggested_specialty,
+            'pdf_url' => route('visit-card.pdf', $card),
         ]);
     }
 
@@ -84,11 +83,11 @@ class VisitCardController extends Controller
     public function pdf(VisitCard $card): Response
     {
         $pdf = Pdf::loadView('pdf.visit-card', [
-            'card'       => $card,
+            'card' => $card,
             'disclaimer' => config('idoctor.disclaimer'),
-            'generated'  => $card->created_at,
+            'generated' => $card->created_at,
         ])->setOptions([
-            'defaultFont'   => 'DejaVu Sans', // ships Georgian glyphs
+            'defaultFont' => 'DejaVu Sans', // ships Georgian glyphs
             'isRemoteEnabled' => false,
         ]);
 

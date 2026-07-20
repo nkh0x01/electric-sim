@@ -11,17 +11,22 @@ class LabUpload extends Model
     use HasUuids;
 
     protected $fillable = [
-        'chat_session_id', 'original_name', 'mime', 'storage_path',
+        'user_id', 'chat_session_id', 'original_name', 'mime', 'storage_path',
         'status', 'extracted', 'classified', 'interpretation',
     ];
 
     protected $casts = [
-        'extracted'  => 'array',
+        'extracted' => 'array',
         'classified' => 'array',
     ];
 
     public function session(): BelongsTo
     {
         return $this->belongsTo(ChatSession::class, 'chat_session_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

@@ -16,7 +16,7 @@ class VisitCard extends Model
     ];
 
     protected $casts = [
-        'symptoms'             => 'array',
+        'symptoms' => 'array',
         'questions_for_doctor' => 'array',
     ];
 

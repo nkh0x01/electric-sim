@@ -19,8 +19,7 @@ class ChatController extends Controller
         private readonly TriageService $triage,
         private readonly ChatOrchestrator $orchestrator,
         private readonly AuditLogger $audit,
-    ) {
-    }
+    ) {}
 
     /**
      * The full chat pipeline (Rule #2 ordering):
@@ -30,7 +29,7 @@ class ChatController extends Controller
     {
         $data = $request->validate([
             'session_id' => ['required', 'uuid'],
-            'message'    => ['required', 'string', 'max:4000'],
+            'message' => ['required', 'string', 'max:4000'],
         ]);
 
         $session = ChatSession::findOrFail($data['session_id']);
@@ -57,7 +56,7 @@ class ChatController extends Controller
 
             // --- persist user message (encrypted at rest) -------------------
             $userMsg = $session->messages()->create([
-                'role'    => 'user',
+                'role' => 'user',
                 'content' => $text,
             ]);
 
@@ -67,14 +66,14 @@ class ChatController extends Controller
                 $template = $this->emergencyTemplate($verdict['matched']);
 
                 $session->messages()->create([
-                    'role'          => 'assistant',
-                    'content'       => $template,
-                    'is_emergency'  => true,
+                    'role' => 'assistant',
+                    'content' => $template,
+                    'is_emergency' => true,
                     'triage_reason' => $verdict['reason'],
                 ]);
 
                 $this->audit->event($session->id, 'chat.emergency', [
-                    'layer'  => $verdict['layer'],
+                    'layer' => $verdict['layer'],
                     'reason' => $verdict['reason'],
                 ]);
 
@@ -91,6 +90,7 @@ class ChatController extends Controller
             $this->sse('start', ['message_id' => (string) Str::uuid()]);
 
             $full = '';
+            $startedAt = microtime(true);
             try {
                 $full = $this->orchestrator->streamReply(
                     $session,
@@ -111,28 +111,58 @@ class ChatController extends Controller
             $disclaimer = (string) config('idoctor.disclaimer');
             $this->sse('disclaimer', ['text' => $disclaimer]);
 
+            $latencyMs = (int) round((microtime(true) - $startedAt) * 1000);
+
             $assistantMsg = $session->messages()->create([
-                'role'       => 'assistant',
-                'content'    => $full."\n\n".$disclaimer,
+                'role' => 'assistant',
+                'content' => $full."\n\n".$disclaimer,
                 'model_used' => $this->orchestrator->lastModel,
+                'latency_ms' => $latencyMs,
             ]);
+
+            // Quality loop: record which KB chunks grounded this answer
+            // (content-free — ids + score only). Never blocks the reply.
+            $this->recordKbReferences($assistantMsg, $this->orchestrator->lastRagRefs);
 
             $this->audit->event($session->id, 'chat.reply', [
                 'chars' => mb_strlen($full),
+                'latency_ms' => $latencyMs,
             ]);
 
             $this->touchSession($session);
             $this->sse('done', [
-                'emergency'    => false,
-                'message_id'   => $assistantMsg->id,
+                'emergency' => false,
+                'message_id' => $assistantMsg->id,
                 'show_visit_card' => $session->anamnesis_stage === 'ready',
             ]);
         }, 200, [
-            'Content-Type'      => 'text/event-stream',
-            'Cache-Control'     => 'no-cache, no-transform',
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache, no-transform',
             'X-Accel-Buffering' => 'no',
-            'Connection'        => 'keep-alive',
+            'Connection' => 'keep-alive',
         ]);
+    }
+
+    /**
+     * Persist the content-free links between an assistant answer and the KB
+     * chunks that grounded it. Swallows failures — telemetry never breaks chat.
+     *
+     * @param  array<int,array<string,mixed>>  $refs
+     */
+    private function recordKbReferences(Message $message, array $refs): void
+    {
+        foreach ($refs as $ref) {
+            try {
+                $message->kbReferences()->create([
+                    'kb_document_id' => $ref['document_id'] ?? null,
+                    'kb_chunk_id' => $ref['chunk_id'] ?? null,
+                    'specialty' => $ref['specialty'] ?? null,
+                    'score' => (float) ($ref['score'] ?? 0),
+                ]);
+            } catch (Throwable) {
+                // A missing chunk id (e.g. stale retrieval) must not fail chat.
+            }
+        }
     }
 
     private function emergencyTemplate(?string $category): string

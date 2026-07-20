@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use Closure;
-use Generator;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -21,8 +20,8 @@ class ClaudeClient
         }
 
         return [
-            'key'     => $key,
-            'base'    => rtrim((string) config('services.anthropic.base_url'), '/'),
+            'key' => $key,
+            'base' => rtrim((string) config('services.anthropic.base_url'), '/'),
             'version' => (string) config('services.anthropic.version'),
             'timeout' => (int) config('services.anthropic.timeout', 60),
         ];
@@ -31,9 +30,9 @@ class ClaudeClient
     private function headers(array $c): array
     {
         return [
-            'x-api-key'         => $c['key'],
+            'x-api-key' => $c['key'],
             'anthropic-version' => $c['version'],
-            'content-type'      => 'application/json',
+            'content-type' => 'application/json',
         ];
     }
 
@@ -53,10 +52,10 @@ class ClaudeClient
         $response = Http::withHeaders($this->headers($c))
             ->timeout($c['timeout'])
             ->post($c['base'].'/v1/messages', [
-                'model'      => $model ?? config('idoctor.models.cheap'),
+                'model' => $model ?? config('idoctor.models.cheap'),
                 'max_tokens' => $maxTokens,
-                'system'     => $system,
-                'messages'   => $messages,
+                'system' => $system,
+                'messages' => $messages,
             ]);
 
         if ($response->failed()) {
@@ -81,18 +80,18 @@ class ClaudeClient
         int $maxTokens = 1500,
     ): string {
         $block = [
-            'type'   => 'image',
+            'type' => 'image',
             'source' => [
-                'type'       => 'base64',
+                'type' => 'base64',
                 'media_type' => $mime,
-                'data'       => base64_encode($image),
+                'data' => base64_encode($image),
             ],
         ];
 
         return $this->complete(
             system: $system,
             messages: [[
-                'role'    => 'user',
+                'role' => 'user',
                 'content' => [
                     $block,
                     ['type' => 'text', 'text' => $prompt],
@@ -121,11 +120,11 @@ class ClaudeClient
             ->timeout($c['timeout'])
             ->withOptions(['stream' => true])
             ->post($c['base'].'/v1/messages', [
-                'model'      => $model ?? config('idoctor.models.cheap'),
+                'model' => $model ?? config('idoctor.models.cheap'),
                 'max_tokens' => $maxTokens,
-                'system'     => $system,
-                'messages'   => $messages,
-                'stream'     => true,
+                'system' => $system,
+                'messages' => $messages,
+                'stream' => true,
             ]);
 
         if ($response->failed()) {

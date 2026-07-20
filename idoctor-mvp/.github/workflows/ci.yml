@@ -1,0 +1,106 @@
+name: CI
+
+# iDoctor.ge CI. Runs the full test suite on every push/PR, then validates the
+# real PostgreSQL + pgvector migration path (which the sqlite test DB skips).
+#
+# This file lives at .github/workflows/ci.yml in the standalone `idoctor` repo.
+# The test suite itself uses an in-memory sqlite DB (see phpunit.xml), so it is
+# hermetic and fast; the pgvector service only backs the migrate/seed check.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Code style (Pint)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Check formatting (Laravel Pint)
+        run: ./vendor/bin/pint --test
+
+  test:
+    name: Tests + pgvector migrations (PHP 8.4)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        # Official pgvector image — ships the `vector` extension.
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: idoctor
+          POSTGRES_PASSWORD: idoctor
+          POSTGRES_DB: idoctor_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U idoctor"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, gd, zip, bcmath, pdo, pdo_pgsql, pgsql, pdo_sqlite, sqlite3
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      # The suite runs on in-memory sqlite (phpunit.xml). The live-LLM
+      # triage-integration group self-skips without ANTHROPIC_API_KEY.
+      - name: Run test suite
+        run: php artisan test
+
+      # Exercises the pieces sqlite can't: CREATE EXTENSION vector, the
+      # vector(1536) column + ivfflat index, and the CSV/KB seeders.
+      - name: Validate migrations + seed on PostgreSQL + pgvector
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: idoctor_test
+          DB_USERNAME: idoctor
+          DB_PASSWORD: idoctor
+        run: |
+          php artisan migrate --force
+          php artisan db:seed --force
