@@ -49,6 +49,9 @@ class KbSeeder extends Seeder
                 'title' => $meta['title'] ?? $meta['slug'],
                 'specialty' => $meta['specialty'] ?? 'general_labs',
                 'source' => $meta['source'] ?? null,
+                // reviewed_by stays null until a clinician vets the doc; only a
+                // `reviewed_by:` meta line marks one as reviewed (see kb-status).
+                'reviewed_by' => $meta['reviewed_by'] ?? null,
                 'body' => $body,
             ]);
             $docs++;
@@ -80,7 +83,7 @@ class KbSeeder extends Seeder
                 $bodyStart = $i + 1;
                 break;
             }
-            if (preg_match('/^(slug|title|specialty|source):\s*(.+)$/', trim($line), $m)) {
+            if (preg_match('/^(slug|title|specialty|source|reviewed_by):\s*(.+)$/', trim($line), $m)) {
                 $meta[$m[1]] = trim($m[2]);
             }
         }

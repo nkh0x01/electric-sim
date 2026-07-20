@@ -19,7 +19,7 @@ class TriageMissTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function session(): ChatSession
+    private function makeSession(): ChatSession
     {
         $id = (string) Str::uuid();
 
@@ -32,7 +32,7 @@ class TriageMissTest extends TestCase
 
     public function test_down_on_non_emergency_answer_records_a_miss(): void
     {
-        $s = $this->session();
+        $s = $this->makeSession();
         $s->messages()->create(['role' => 'user', 'content' => 'ძლიერი გულმკერდის ტკივილი მაქვს']);
         $asst = $s->messages()->create(['role' => 'assistant', 'content' => 'reply', 'is_emergency' => false]);
 
@@ -51,7 +51,7 @@ class TriageMissTest extends TestCase
 
     public function test_no_miss_when_answer_was_an_emergency(): void
     {
-        $s = $this->session();
+        $s = $this->makeSession();
         $s->messages()->create(['role' => 'user', 'content' => 'გამარჯობა']);
         $asst = $s->messages()->create(['role' => 'assistant', 'content' => '112', 'is_emergency' => true]);
 

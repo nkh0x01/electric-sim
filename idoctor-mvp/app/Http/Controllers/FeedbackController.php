@@ -4,12 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Feedback;
 use App\Services\AuditLogger;
+use App\Services\TriageMissRecorder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class FeedbackController extends Controller
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly TriageMissRecorder $misses,
+    ) {}
 
     public function store(Request $request): JsonResponse
     {
@@ -28,6 +32,11 @@ class FeedbackController extends Controller
         ]);
 
         $this->audit->event($data['session_id'], 'feedback.'.$data['kind']);
+
+        // Safety loop: a 👎/report on a non-emergency answer may be a triage miss.
+        if (in_array($data['kind'], ['down', 'report'], true)) {
+            $this->misses->captureFromFeedback($data['session_id'], $data['message_id'] ?? null);
+        }
 
         return response()->json(['id' => $feedback->id, 'ok' => true]);
     }

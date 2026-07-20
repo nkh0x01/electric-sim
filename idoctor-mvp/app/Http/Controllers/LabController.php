@@ -52,6 +52,19 @@ class LabController extends Controller
             $bytes = Storage::get($path);
             $extracted = $this->parser->extract($bytes, $file->getMimeType());
 
+            // Nothing legible: fail with a clear message instead of an empty
+            // "parsed" result the user can't act on.
+            if ($extracted === []) {
+                $upload->update(['status' => 'unreadable']);
+                $this->audit->event($session->id, 'lab.unreadable', []);
+
+                return response()->json([
+                    'id' => $upload->id,
+                    'status' => 'unreadable',
+                    'error' => 'ვერ ამოვიკითხე მაჩვენებლები. სცადეთ უფრო მკაფიო ან სწორად გადაღებული ფოტო.',
+                ], 422);
+            }
+
             // Rule #1: flags decided deterministically, never by the LLM.
             $classified = $this->parser->classify(
                 $extracted,
