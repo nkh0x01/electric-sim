@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\HealthController;
@@ -28,3 +29,15 @@ Route::post('/visit-card', [VisitCardController::class, 'generate']);
 
 // Feedback
 Route::post('/feedback', [FeedbackController::class, 'store']);
+
+// Optional accounts (Prompt 4). Anonymous use never requires these.
+Route::post('/account/register', [AccountController::class, 'register']);
+Route::post('/account/login', [AccountController::class, 'login']);
+
+Route::middleware('account.auth')->group(function () {
+    Route::post('/account/logout', [AccountController::class, 'logout']);
+    Route::get('/account', [AccountController::class, 'me']);
+    Route::post('/account/claim-session', [AccountController::class, 'claimSession']);
+    Route::get('/account/labs', [AccountController::class, 'labHistory']);
+    Route::get('/account/labs/trends', [AccountController::class, 'labTrends']);
+});

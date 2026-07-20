@@ -56,7 +56,14 @@ class SessionController extends Controller
     {
         $id = $session->id;
 
-        // Cascade delete handles messages / lab_uploads / visit_cards.
+        // Erasing one session must not silently wipe an account's saved lab
+        // history. Detach account-owned uploads first (chat_session_id is
+        // nullable) so they survive; anonymous uploads still cascade away.
+        $session->labUploads()
+            ->whereNotNull('user_id')
+            ->update(['chat_session_id' => null]);
+
+        // Cascade delete handles messages / anonymous lab_uploads / visit_cards.
         $session->delete();
 
         $this->audit->event($id, 'session.erased');

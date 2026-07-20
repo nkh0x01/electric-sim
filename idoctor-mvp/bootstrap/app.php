@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\ResolveAccountToken;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,7 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
         apiPrefix: 'api',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'account.auth' => ResolveAccountToken::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

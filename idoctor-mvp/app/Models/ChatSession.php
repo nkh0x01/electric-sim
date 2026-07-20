@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ChatSession extends Model
@@ -11,7 +12,7 @@ class ChatSession extends Model
     use HasUuids;
 
     protected $fillable = [
-        'consent_given', 'consent_at', 'session_hash',
+        'user_id', 'consent_given', 'consent_at', 'session_hash',
         'anamnesis_stage', 'message_count', 'locale', 'last_seen_at',
     ];
 
@@ -21,6 +22,11 @@ class ChatSession extends Model
         'last_seen_at' => 'datetime',
         'message_count' => 'integer',
     ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function messages(): HasMany
     {

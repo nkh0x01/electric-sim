@@ -40,6 +40,9 @@ class LabController extends Controller
         $path = $file->store('lab_uploads');
 
         $upload = $session->labUploads()->create([
+            // If the session belongs to an account, the upload is owned too so
+            // it shows up in lab history/trends (Prompt 4). Null = anonymous.
+            'user_id' => $session->user_id,
             'original_name' => $file->getClientOriginalName(),
             'mime' => $file->getMimeType(),
             'storage_path' => $path,
