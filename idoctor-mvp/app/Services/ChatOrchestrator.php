@@ -18,6 +18,15 @@ class ChatOrchestrator
     /** Model chosen for the most recent streamReply() call. */
     public ?string $lastModel = null;
 
+    /**
+     * KB chunks that grounded the most recent streamReply() call. Content-free
+     * references (ids + specialty + score) the controller persists so the
+     * quality loop can trace a 👎 back to the docs it leaned on.
+     *
+     * @var array<int,array<string,mixed>>
+     */
+    public array $lastRagRefs = [];
+
     public function __construct(
         private readonly ClaudeClient $claude,
         private readonly RouterService $router,
@@ -90,6 +99,7 @@ class ChatOrchestrator
     {
         $specialty = null; // future: route by detected specialty
         $ragChunks = $this->rag->search($userText, $specialty);
+        $this->lastRagRefs = $ragChunks;
 
         $system = $this->systemPrompt($ragChunks);
 

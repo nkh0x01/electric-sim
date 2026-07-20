@@ -17,7 +17,7 @@ class RagService
     public function __construct(private readonly EmbeddingClient $embeddings) {}
 
     /**
-     * @return array<int,array{content:string,title:string,specialty:string,score:float}>
+     * @return array<int,array{content:string,title:string,specialty:string,score:float,chunk_id:int,document_id:int}>
      */
     public function search(string $query, ?string $specialty = null): array
     {
@@ -51,7 +51,8 @@ class RagService
 
         // Cosine similarity = 1 - cosine distance (<=>).
         $rows = DB::select(
-            "SELECT c.content, d.title, c.specialty,
+            "SELECT c.id AS chunk_id, c.kb_document_id AS document_id,
+                    c.content, d.title, c.specialty,
                     1 - (c.embedding <=> ?::vector) AS score
              FROM kb_chunks c
              JOIN kb_documents d ON d.id = c.kb_document_id
@@ -67,6 +68,8 @@ class RagService
                 'title' => $r->title,
                 'specialty' => $r->specialty,
                 'score' => (float) $r->score,
+                'chunk_id' => (int) $r->chunk_id,
+                'document_id' => (int) $r->document_id,
             ])
             ->filter(fn ($r) => $r['score'] >= $minScore)
             ->values()

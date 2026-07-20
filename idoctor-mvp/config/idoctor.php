@@ -41,6 +41,16 @@ return [
         'max_output_tokens' => (int) env('IDOCTOR_MAX_OUTPUT_TOKENS', 1536),
     ],
 
+    // Rough USD cost per assistant reply, by model tier. A planning estimate
+    // for the value loop (idoctor:metrics) — NOT a billing figure. Token
+    // counts are deliberately not stored, so cost is approximated per reply.
+    'costs' => [
+        'per_reply_usd' => [
+            'cheap' => (float) env('IDOCTOR_COST_CHEAP_USD', 0.002),
+            'premium' => (float) env('IDOCTOR_COST_PREMIUM_USD', 0.02),
+        ],
+    ],
+
     // ---------------------------------------------------------------------
     // Triage (Rule #2). Recall-first: a false positive (an unnecessary 112
     // screen) is acceptable; a false negative (a missed emergency) is fatal.

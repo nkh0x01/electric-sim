@@ -6,6 +6,7 @@ use App\Models\ChatSession;
 use App\Models\Feedback;
 use App\Models\LabUpload;
 use App\Models\Message;
+use App\Models\MessageKbReference;
 use App\Models\VisitCard;
 use Illuminate\Console\Command;
 
@@ -47,20 +48,68 @@ class Metrics extends Command
         $consentRate = $sessions > 0 ? $consented / $sessions : 0.0;
         $satisfaction = ($fbUp + $fbDown) > 0 ? $fbUp / ($fbUp + $fbDown) : 0.0;
 
+        // --- value loop: response time -------------------------------------
+        $assistant = Message::where('role', 'assistant')
+            ->where('created_at', '>=', $since);
+        $avgLatency = (float) (clone $assistant)->whereNotNull('latency_ms')->avg('latency_ms');
+
+        // --- value loop: model mix + estimated API cost --------------------
+        $cheapModel = (string) config('idoctor.models.cheap');
+        $premiumModel = (string) config('idoctor.models.premium');
+        $cheapReplies = (clone $assistant)->where('model_used', $cheapModel)->count();
+        $premiumReplies = (clone $assistant)->where('model_used', $premiumModel)->count();
+        $costCheap = (float) config('idoctor.costs.per_reply_usd.cheap', 0.0);
+        $costPremium = (float) config('idoctor.costs.per_reply_usd.premium', 0.0);
+        $estCost = $cheapReplies * $costCheap + $premiumReplies * $costPremium;
+        $costPerSession = $sessions > 0 ? $estCost / $sessions : 0.0;
+
         $this->info("iDoctor metrics — last {$days} day(s)");
         $this->table(['metric', 'value'], [
-            ['sessions created',      $sessions],
-            ['active sessions',       $active],
-            ['consent rate',          sprintf('%.1f%%', $consentRate * 100)],
-            ['user messages',         $userMsgs],
-            ['emergency screens',     $emergencies],
-            ['emergency rate',        sprintf('%.2f%%', $emergencyRate * 100)],
-            ['lab uploads',           "$labsParsed/$labs parsed"],
-            ['visit cards',           $cards],
-            ['feedback 👍/👎/⚠',       "$fbUp / $fbDown / $fbRep"],
-            ['satisfaction (👍 share)', sprintf('%.1f%%', $satisfaction * 100)],
+            ['sessions created',       $sessions],
+            ['active sessions',        $active],
+            ['consent rate',           sprintf('%.1f%%', $consentRate * 100)],
+            ['user messages',          $userMsgs],
+            ['emergency screens',      $emergencies],
+            ['triage activation rate', sprintf('%.2f%%', $emergencyRate * 100)],
+            ['lab uploads',            "$labsParsed/$labs parsed"],
+            ['visit cards',            $cards],
+            ['feedback 👍/👎/⚠',        "$fbUp / $fbDown / $fbRep"],
+            ['satisfaction (👍 share)',  sprintf('%.1f%%', $satisfaction * 100)],
+            ['avg response time',      $avgLatency > 0 ? sprintf('%.0f ms', $avgLatency) : '—'],
+            ['replies cheap/premium',  "$cheapReplies / $premiumReplies"],
+            ['est. API cost',          sprintf('$%.2f', $estCost)],
+            ['est. cost / session',    sprintf('$%.4f', $costPerSession)],
         ]);
 
+        $this->renderTopSpecialties($since);
+
         return self::SUCCESS;
+    }
+
+    /**
+     * Content-free "most common topics": which KB specialties the retriever
+     * surfaced most. Derived entirely from KB reference ids — no message text.
+     */
+    private function renderTopSpecialties(\DateTimeInterface $since): void
+    {
+        $rows = MessageKbReference::query()
+            ->where('created_at', '>=', $since)
+            ->whereNotNull('specialty')
+            ->selectRaw('specialty, count(*) as c')
+            ->groupBy('specialty')
+            ->orderByDesc('c')
+            ->limit(10)
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return;
+        }
+
+        $this->line('');
+        $this->info('Top topics (by KB specialty retrieved):');
+        $this->table(
+            ['specialty', 'retrievals'],
+            $rows->map(fn ($r) => [$r->specialty, (int) $r->c])->all(),
+        );
     }
 }
